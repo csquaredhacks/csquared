@@ -23,7 +23,7 @@ Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 | **Before** | A recovery code, so the profile you made at home opens on your phone at the venue. | Built |
 | **Before** | A chosen arrival group and an agreed meeting plan. | Built |
 | **Before** | Wave at people you want to meet. Private until they wave back. | Planned |
-| **Before** | Community signup, event invitations, and an organizer crowd board. | Planned |
+| **Before** | Community signup, event invitations, and an organizer crowd board (`/crowd`). | Built |
 | **During** | Scan a QR code to connect. A live graph on the venue screen. A room map. | Built |
 | **After** | A recap of who you met and what to follow up on. | Built |
 

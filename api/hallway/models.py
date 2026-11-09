@@ -263,6 +263,32 @@ class AcceptIn(BaseModel):
     companion: bool = False  # bringing one friend or companion, who takes a seat too
 
 
+class Topic(BaseModel):
+    topic: str
+    asking: int  # people whose asks mention it
+    offering: int  # people whose offers mention it
+
+
+class Count(BaseModel):
+    key: str
+    count: int
+
+
+class Crowd(BaseModel):
+    """The organizer board. Counts only; anything about fewer than three people is left out."""
+
+    registered: int
+    in_groups: int  # people who accepted an arrival group
+    groups: int
+    groups_with_meeting: int  # groups that agreed where and when to meet
+    invitations: int  # sent and not yet answered
+    plans: int  # pairs who agreed to meet
+    meetings: int  # pairs who met (one scanned the other's code)
+    checked_in: int  # people who checked in to a room in Hallway; not Luma event check-in
+    topics: list[Topic]  # widest gap between asking and offering first
+    comfort: list[Count]
+
+
 class Rum(BaseModel):
     url: str
     token: str

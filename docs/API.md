@@ -78,6 +78,18 @@ interface Crew { id: string; members: Attendee[]; seats_taken: number;  // compa
                  limit: number;    // smallest comfort limit: one_on_one 2, small_groups 4, open 5
                  why: string; meeting: Meeting | null; }  // null until a member sets it
 interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: boolean; }
+
+// Organizer board. Counts only: no name, id, free text or affiliation. A topic or a
+// comfort row that describes fewer than three people is left out.
+interface Topic { topic: string; asking: number; offering: number; }  // widest gap (asking - offering) first, at most 15
+interface Count { key: string; count: number; }
+interface Crowd { registered: number;
+                  in_groups: number;            // people who accepted an arrival group
+                  groups: number; groups_with_meeting: number;
+                  invitations: number;          // sent, not yet answered
+                  plans: number; meetings: number;  // pairs
+                  checked_in: number;           // Hallway room check-ins, not Luma event check-in
+                  topics: Topic[]; comfort: Count[]; }
 ```
 
 ## Endpoints
@@ -110,6 +122,7 @@ interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: b
 | POST | `/api/crew/decline` | cookie | | `CrewOut` (`none`); that crew is not suggested again | 401 |
 | DELETE | `/api/crew` | cookie | | `CrewOut` (`none`); you are not reassigned | 401 |
 | PUT | `/api/crew/meeting` | cookie | `{place, starts_at, timezone}` | `CrewOut` | 401, 403 not a member, 422 no offset, unknown zone, or an offset that is not the zone's offset at that time |
+| GET | `/api/crowd` | | | `Crowd` | |
 | GET | `/api/chaos` | | | `{mode: "off" \| "slow" \| "error"}` | |
 | POST | `/api/chaos` | header `X-Admin-Token` | `{mode}` | `{mode}` | 403 |
 
@@ -152,11 +165,7 @@ Not built yet. Build against these shapes. The design and the order are in
 // C. Waves: built as invitations. See "The four relationships" above. Still planned:
 interface Recap { /* existing fields */ planned: number; planned_met: number; still_to_meet: Attendee[]; }
 
-// D. Crowd board
-interface Topic { topic: string; asking: number; offering: number; }  // sorted by asking - offering, largest first
-interface Count { key: string; count: number; }
-interface Crowd { registered: number; with_crew: number; waves: number;
-                  topics: Topic[]; comfort: Count[]; groups: Count[]; }
+// D. Crowd board: built as the organizer board; see Shapes and Endpoints above.
 
 // E. Phase
 type Phase = "before" | "live" | "after";
@@ -165,7 +174,6 @@ interface Config { /* existing fields */ phase: Phase; }
 
 | Method | Path | Auth | Body | Returns | Errors |
 |---|---|---|---|---|---|
-| GET | `/api/crowd` | | | `Crowd` | |
 | POST | `/api/phase` | header `X-Admin-Token` | `{phase}` | `{phase}` | 403 |
 
-New web routes: `/plan` (replaces `/five`, which redirects), `/crowd` (`?kiosk=1` full screen).
+Web routes built: `/plan` (replaces `/five`, which redirects) and `/crowd`.
