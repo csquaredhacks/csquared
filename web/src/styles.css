@@ -68,9 +68,11 @@ h2 { font-size: 1.2rem; margin: 2rem 0 0.75rem; }
   display: flex; gap: 0.15rem; padding: 0.35rem;
   background: rgba(29, 28, 37, 0.94); border: 1px solid var(--line); border-radius: 999px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  /* On a narrow phone the bar scrolls sideways instead of cutting off its last item. */
+  max-width: calc(100vw - 1rem); overflow-x: auto; scrollbar-width: none;
 }
 .nav a {
-  display: flex; align-items: center; min-height: 2.75rem; padding: 0 0.85rem;
+  display: flex; align-items: center; flex: none; min-height: 2.75rem; padding: 0 0.85rem;
   border-radius: 999px; color: var(--muted); font-weight: 600; font-size: 0.95rem; text-decoration: none;
 }
 .nav a:hover { color: var(--text); }
@@ -250,3 +252,10 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .facts dt { margin-top: 0.85rem; color: var(--muted); font-size: 0.9rem; }
 .facts dd { margin: 0.1rem 0 0; }
 .share-link { padding: 0.75rem 1rem; font-family: var(--mono); font-size: 0.9rem; overflow-wrap: anywhere; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+
+/* ---- Organizer board ---- */
+.stats small { font: 400 1rem var(--body); color: var(--muted); }
+.topics { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1rem; }
+.topics th, .topics td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid var(--line); }
+.topics thead th { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.topics td:nth-child(2), .topics td:nth-child(3) { font: 700 1.1rem var(--mono); color: var(--accent); }

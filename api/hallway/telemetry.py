@@ -34,6 +34,26 @@ meter.create_observable_gauge(
     "hallway.room.occupancy", callbacks=[_observe_rooms], description="People checked in, by room"
 )
 
+_funnel: dict[str, int] = {}
+
+
+def set_funnel(values: dict[str, int]) -> None:
+    """Called whenever the organizer board is computed. Stage names are a small fixed
+    set; no attendee id, affiliation or free text is ever a label."""
+    _funnel.clear()
+    _funnel.update(values)
+
+
+def _observe_funnel(_: CallbackOptions):
+    return [Observation(count, {"stage": stage}) for stage, count in _funnel.items()]
+
+
+meter.create_observable_gauge(
+    "hallway.funnel",
+    callbacks=[_observe_funnel],
+    description="People or pairs at each stage: registered, in_group, planned, met, checked_in",
+)
+
 
 def tag_attendee(attendee_id: str) -> None:
     """Put the attendee id on the current span so any trace can be found by person."""

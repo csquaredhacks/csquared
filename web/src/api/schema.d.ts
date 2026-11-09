@@ -429,6 +429,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/crowd": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Crowd
+         * @description Public on purpose: it holds counts only, never a person.
+         */
+        get: operations["get_crowd_api_crowd_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chaos": {
         parameters: {
             query?: never;
@@ -602,6 +622,13 @@ export interface components {
             created: boolean;
             other: components["schemas"]["Attendee"];
         };
+        /** Count */
+        Count: {
+            /** Key */
+            key: string;
+            /** Count */
+            count: number;
+        };
         /**
          * Crew
          * @description An arrival group. `members` are only people who accepted. Pending suggestions
@@ -633,6 +660,32 @@ export interface components {
              * @default false
              */
             bringing_companion: boolean;
+        };
+        /**
+         * Crowd
+         * @description The organizer board. Counts only; anything about fewer than three people is left out.
+         */
+        Crowd: {
+            /** Registered */
+            registered: number;
+            /** In Groups */
+            in_groups: number;
+            /** Groups */
+            groups: number;
+            /** Groups With Meeting */
+            groups_with_meeting: number;
+            /** Invitations */
+            invitations: number;
+            /** Plans */
+            plans: number;
+            /** Meetings */
+            meetings: number;
+            /** Checked In */
+            checked_in: number;
+            /** Topics */
+            topics: components["schemas"]["Topic"][];
+            /** Comfort */
+            comfort: components["schemas"]["Count"][];
         };
         /** Edge */
         Edge: {
@@ -873,6 +926,15 @@ export interface components {
             url: string;
             /** Token */
             token: string;
+        };
+        /** Topic */
+        Topic: {
+            /** Topic */
+            topic: string;
+            /** Asking */
+            asking: number;
+            /** Offering */
+            offering: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -1562,6 +1624,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_crowd_api_crowd_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Crowd"];
                 };
             };
         };
