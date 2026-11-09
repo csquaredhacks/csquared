@@ -85,7 +85,7 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => void })
       return;
     }
     onFill(data);
-    setStatus(`Filled from your resume: ${filled.join(", ")}. Review and edit the suggestions below. Your needs and privacy choices stay yours.`);
+    setStatus(`Found in your resume: ${filled.join(", ")}. Existing entries were kept; review the suggestions below.`);
   }
 
   async function handleFile(file: File | undefined) {
