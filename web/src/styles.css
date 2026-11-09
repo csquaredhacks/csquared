@@ -14,6 +14,15 @@
   --accent: #ffc233;
   --accent-deep: #8a5a00;  /* amber text on light backgrounds */
   --on-accent: #1b1500;
+  --join-light: #f1c777;
+  --join-edge: #fffdf7;
+  --join-sheen: rgba(255, 255, 255, 0.83);
+  --join-clear: rgba(255, 251, 237, 0.37);
+  --join-button-fallback: #f3d08a;
+  --join-button-hover: #f7dfa8;
+  --join-depth: inset 0 2px 1px rgba(255, 255, 255, 0.95), inset 0 -2px 4px rgba(106, 69, 21, 0.14), 0 12px 28px rgba(75, 50, 18, 0.14);
+  --join-rim: inset 0 1px 1px rgba(255, 255, 255, 0.92), inset 0 -2px 4px rgba(106, 69, 21, 0.25), 0 3px 7px rgba(75, 50, 18, 0.16);
+  --join-rim-pressed: inset 0 2px 5px rgba(106, 69, 21, 0.26);
   --good: #1d7a4d;
   --bad: #b3261e;
   --shadow: 0 1px 2px rgba(34, 29, 22, 0.06), 0 8px 28px rgba(34, 29, 22, 0.08);
@@ -124,31 +133,66 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .error, .success { margin: 1rem 0; padding: 0.75rem 1rem; border-radius: 10px; border-left: 4px solid var(--bad); background: rgba(179, 38, 30, 0.08); color: #7c1d18; }
 .success { border-color: var(--good); background: rgba(29, 122, 77, 0.1); color: #145c39; }
 
-/* ---------- Join card: one Get started button, then the form ---------- */
+/* ---------- Join: warm light behind one glass surface ---------- */
 
+.page:has(> .signin-card) {
+  background: radial-gradient(ellipse 78% 19rem at 88% 20rem, var(--join-light), transparent);
+}
 .signin-card {
-  margin: 1.5rem 0 0; padding: 1.5rem 1.25rem 1.25rem;
-  background: var(--raised); border: 1px solid var(--line); border-radius: 26px;
+  margin: 1.5rem 0 0;
+  padding: clamp(1rem, 5vw, 2rem);
+  border: 1px solid var(--join-edge);
+  border-radius: 26px;
+  background: var(--raised);
+  box-shadow: var(--join-depth);
 }
 .signin-card h2 { margin: 0 0 0.35rem; font: 700 1.5rem/1.2 var(--display); }
-.signin-card > p { color: var(--muted); margin: 0 0 1.1rem; }
+.signin-card > p { color: var(--muted); margin: 0 0 1.25rem; }
 
-.provider-btn {
-  display: flex; align-items: center; justify-content: center; gap: 0.7rem;
-  width: 100%; min-height: 3.5rem; padding: 0.5rem 1.25rem;
-  font: 600 1.05rem var(--body); cursor: pointer;
-  color: var(--text); background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 999px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 4px 16px rgba(34, 29, 22, 0.1);
-  -webkit-backdrop-filter: blur(16px) saturate(1.6); backdrop-filter: blur(16px) saturate(1.6);
-  transition: background 0.15s;
+.join-start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  padding: 0.5rem 1.25rem;
+  border: 1px solid var(--join-edge);
+  border-radius: 999px;
+  background: var(--join-button-fallback);
+  color: var(--text);
+  font: 600 1rem var(--body);
+  cursor: pointer;
+  box-shadow: var(--join-rim);
 }
-.provider-btn:hover { background: rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 8px 22px rgba(34, 29, 22, 0.14); }
-.provider-btn:active { transform: scale(0.98); }
+.join-start:hover { background-color: var(--join-button-hover); }
+.join-start:active { box-shadow: var(--join-rim-pressed); }
+.signin-card .form > .button { box-shadow: var(--join-rim); }
+.join-form-title { margin: 1.75rem 0 0; font-size: 1rem; }
+.join-note { margin: 1rem 0 0; }
 
-.divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0 0; color: var(--muted); font-size: 0.9rem; }
-.divider::before, .divider::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .signin-card {
+    background: linear-gradient(155deg, var(--join-sheen), var(--join-clear) 45%, var(--join-sheen));
+    -webkit-backdrop-filter: blur(30px) saturate(1.85);
+    backdrop-filter: blur(30px) saturate(1.85);
+  }
+  .join-start {
+    background-color: var(--join-button-fallback);
+    background-image: linear-gradient(170deg, var(--join-sheen), var(--join-clear) 52%, var(--join-sheen));
+    -webkit-backdrop-filter: blur(20px) saturate(1.85);
+    backdrop-filter: blur(20px) saturate(1.85);
+  }
+  .signin-card .form > .button {
+    background-image: linear-gradient(170deg, var(--join-sheen), transparent 52%);
+  }
+}
 
+@media (prefers-reduced-transparency: reduce) {
+  .signin-card, .join-start {
+    background: var(--raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
 
 /* ---------- Resume ingest: one drop instead of a form ---------- */
 

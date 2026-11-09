@@ -37,7 +37,8 @@ export default function Register() {
 
   /** One tap takes the person to the short form, which is the only step. */
   function startForm() {
-    document.getElementById("join-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth";
+    document.getElementById("join-form")?.scrollIntoView({ behavior, block: "start" });
     document.getElementById("name")?.focus({ preventScroll: true });
   }
 
@@ -89,26 +90,26 @@ export default function Register() {
 
   return (
     <>
-      <h1 className="hero">Nobody at a conference goes <em>solo</em>.</h1>
+      <h1 className="hero">Find your people before the conference</h1>
       <p className="lede">
         {hasPendingConnect()
           ? "You scanned someone's code. Fill this in once and we will connect you two straight after."
           : hasPendingCommunity()
           ? "You came from a community invitation. Fill this in once and we will take you back to it, where you can choose to join."
-          : "Going to a conference? Meet your people before you get there. One form, no account: say what you need and what you can give, and we will find your five and a group to walk in with."}
+          : "Tell us what you need and what you can offer. Hallway helps you find people to meet and a group to walk in with."}
       </p>
 
       <section className="signin-card" aria-labelledby="join-title">
         <h2 id="join-title">Join Hallway</h2>
-        <p>One short form and you are in. No password, no account, and no sign-in with another service.</p>
+        <p>Create a profile without a password. Use your recovery code to return on another device.</p>
 
         <ResumeIngest onFill={fillFromResume} />
 
-        <button type="button" className="provider-btn" onClick={startForm}>
-          Get started
+        <button type="button" className="join-start" onClick={startForm}>
+          Fill in the form
         </button>
 
-        <h3 className="divider">Tell us about you</h3>
+        <h3 className="join-form-title">About you</h3>
 
         <form onSubmit={submit} className="form" id="join-form">
 
@@ -184,8 +185,8 @@ export default function Register() {
         </form>
       </section>
 
-      <p className="muted center">Been here before? <Link to="/recover">Use your recovery code</Link></p>
-      <p className="muted center">Organizing a community? Register first, then <Link to="/communities/new">create an event invitation</Link>.{" "}
+      <p className="muted join-note">Been here before? <Link to="/recover">Use your recovery code</Link></p>
+      <p className="muted join-note">Organizing a community? Register first, then <Link to="/communities/new">create an event invitation</Link>.{" "}
         <Link to="/crowd">See what the crowd needs</Link>.</p>
     </>
   );
