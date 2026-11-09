@@ -21,7 +21,7 @@ at the same moment are both kept.
 import secrets
 
 from elasticsearch import ConflictError, Elasticsearch, NotFoundError
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import es
 from ..auth import current_attendee, optional_attendee
@@ -88,6 +88,25 @@ def create_community(body: CommunityIn, attendee: dict = Depends(current_attende
     }
     es.get_client().index(index=es.COMMUNITIES, id=doc["id"], document=doc, refresh=True)
     return _view(doc, attendee)
+
+
+@router.get("/api/communities")
+def list_communities(
+    q: str | None = Query(default=None, max_length=80),
+    limit: int = Query(default=20, ge=1, le=50),
+    viewer: dict | None = Depends(optional_attendee),
+) -> list[Community]:
+    """Browse existing communities. Public; a signed-in person also learns whether they joined."""
+    term = q.strip() if q else ""
+    query: dict = (
+        {"match_all": {}}
+        if not term
+        else {"multi_match": {"query": term, "fields": ["name", "description"]}}
+    )
+    hits = es.get_client().search(
+        index=es.COMMUNITIES, query=query, size=limit, sort=[{"created_at": "desc"}]
+    )["hits"]["hits"]
+    return [_view(h["_source"], viewer) for h in hits]
 
 
 @router.get("/api/communities/{community_id}")

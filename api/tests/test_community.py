@@ -8,7 +8,7 @@ from threading import Barrier, get_ident
 from fastapi.testclient import TestClient
 
 from hallway import es
-from hallway.auth import current_attendee
+from hallway.auth import current_attendee, optional_attendee
 from hallway.main import app
 from hallway.routes import communities
 
@@ -310,3 +310,136 @@ def test_community_accepts_valid_luma_links():
     # Explicit port 443 is fine
     c = CommunityIn(name="Community", luma_url="https://luma.com:443/event")
     assert c.luma_url == "https://luma.com:443/event"
+
+# ---- Community discovery: GET /api/communities (list / search) -----------------
+# These tests fake the store (same pattern as the first test in this file), so
+# they run without Elasticsearch. The integration test below runs against real
+# Elasticsearch in CI / live ES.
+
+
+class _ListStore:
+    """In-memory communities index: index / get / search / count, ES-shaped."""
+
+    def __init__(self, docs: list[dict] | None = None):
+        self.documents = {d["id"]: dict(d) for d in (docs or [])}
+
+    def index(self, *, index, id, document, refresh, **kwargs):
+        self.documents[id] = dict(document)
+
+    def get(self, *, index, id):
+        return {"_source": self.documents[id], "_seq_no": 0, "_primary_term": 1}
+
+    def count(self, *, index, query):
+        wanted = query.get("term", {}).get("members")
+        return {"count": sum(wanted in d.get("members", []) for d in self.documents.values())}
+
+    def search(self, *, index, query, size, sort=None):
+        docs = sorted(
+            self.documents.values(), key=lambda d: d["created_at"], reverse=True
+        )
+        if "multi_match" in query:
+            term = query["multi_match"]["query"].strip().lower()
+            fields = query["multi_match"]["fields"]
+            docs = [
+                d for d in docs
+                if term and any(term in str(d.get(f, "")).lower() for f in fields)
+            ]
+        return {"hits": {"hits": [{"_source": d} for d in docs[:size]]}}
+
+
+def _community_doc(
+    name, *, id, owner_id="owner-1", members=None, created_at="2026-11-09T10:00:00+00:00"
+):
+    return {
+        "id": id, "name": name, "description": "Meet together",
+        "luma_url": LUMA, "owner_id": owner_id, "members": members or [],
+        "created_at": created_at,
+    }
+
+
+def test_list_communities_is_empty_when_none_exist(monkeypatch):
+    monkeypatch.setattr(es, "get_client", lambda: _ListStore())
+    assert TestClient(app).get("/api/communities").json() == []
+
+
+def test_list_communities_shows_created_communities_with_counts_only(monkeypatch):
+    store = _ListStore()
+    monkeypatch.setattr(es, "get_client", lambda: store)
+    app.dependency_overrides[current_attendee] = lambda: {"id": "owner-1"}
+    try:
+        _create(TestClient(app), "Beta")
+        _create(TestClient(app), "alpha")
+    finally:
+        app.dependency_overrides.clear()
+    listed = TestClient(app).get("/api/communities")
+    assert listed.status_code == 200
+    assert {c["name"] for c in listed.json()} == {"Beta", "alpha"}
+    assert all(set(c) == PUBLIC_KEYS for c in listed.json())
+    assert all(c["member_count"] == 0 for c in listed.json())
+    assert all(c["is_member"] is False for c in listed.json())
+
+
+def test_list_communities_search_filters_by_name_and_description(monkeypatch):
+    store = _ListStore([
+        _community_doc("Girls Who Code", id="gwc", created_at="2026-11-09T10:00:00+00:00"),
+        _community_doc("Platform Engineering", id="pe", created_at="2026-11-09T11:00:00+00:00"),
+    ])
+    monkeypatch.setattr(es, "get_client", lambda: store)
+    client = TestClient(app)
+    assert [c["id"] for c in client.get("/api/communities?q=girls").json()] == ["gwc"]
+    assert [c["id"] for c in client.get("/api/communities?q=PLATFORM").json()] == ["pe"]
+    assert client.get("/api/communities?q=zzz-no-such").json() == []
+    assert len(client.get("/api/communities").json()) == 2
+
+
+def test_list_communities_marks_membership_for_the_caller(monkeypatch):
+    store = _ListStore([
+        _community_doc("Students", id="stu", owner_id="owner-1", members=["member-1"]),
+    ])
+    monkeypatch.setattr(es, "get_client", lambda: store)
+    app.dependency_overrides[optional_attendee] = lambda: {"id": "member-1"}
+    try:
+        mine = TestClient(app).get("/api/communities").json()
+    finally:
+        app.dependency_overrides.clear()
+    assert mine[0]["is_member"] is True and mine[0]["is_organizer"] is False
+    visitor = TestClient(app).get("/api/communities").json()
+    assert visitor[0]["is_member"] is False and visitor[0]["is_organizer"] is False
+
+
+def test_list_communities_limit_is_bounded(monkeypatch):
+    store = _ListStore([
+        _community_doc("One", id="one"), _community_doc("Two", id="two"),
+    ])
+    monkeypatch.setattr(es, "get_client", lambda: store)
+    client = TestClient(app)
+    assert client.get("/api/communities?limit=0").status_code == 422
+    assert client.get("/api/communities?limit=51").status_code == 422
+    assert client.get("/api/communities?limit=abc").status_code == 422
+    assert len(client.get("/api/communities?limit=1").json()) == 1
+
+
+def test_list_communities_shows_duplicate_names_as_separate_communities(monkeypatch):
+    # Documented behaviour, not fixed here: names are not unique, so two
+    # communities called "Students" are two entries with distinct ids.
+    store = _ListStore([
+        _community_doc("Students", id="stu-1"),
+        _community_doc("Students", id="stu-2", owner_id="owner-2"),
+    ])
+    monkeypatch.setattr(es, "get_client", lambda: store)
+    listed = TestClient(app).get("/api/communities").json()
+    assert [c["name"] for c in listed] == ["Students", "Students"]
+    assert {c["id"] for c in listed} == {"stu-1", "stu-2"}
+
+
+def test_list_communities_against_real_elasticsearch(person):
+    """Integration: the same browse behaviour on real ES (skipped without it)."""
+    organizer, _ = person("Olu Organizer")
+    first = _create(organizer, "Beta")
+    second = _create(organizer, "alpha")
+    listed = TestClient(app).get("/api/communities")
+    assert listed.status_code == 200
+    assert {c["id"] for c in listed.json()} == {first["id"], second["id"]}
+    assert [c["id"] for c in TestClient(app).get("/api/communities?q=beta").json()] == [
+        first["id"]
+    ]
