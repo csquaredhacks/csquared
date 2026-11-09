@@ -6,7 +6,10 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 Comfort = Literal["open", "small_groups", "one_on_one"]
-EdgeKind = Literal["connected", "suggested"]
+# Link kinds that may appear on the public graph. A pending invitation is never one of them.
+EdgeKind = Literal["connected", "planned", "suggested"]
+# How one person relates to me, in my own private view of the graph.
+RelationKind = Literal["met", "planned", "invited_you", "you_invited", "suggested"]
 ChaosMode = Literal["off", "slow", "error"]
 
 
@@ -19,7 +22,9 @@ class AttendeeIn(BaseModel):
     tags: list[str] = Field(default_factory=list, max_length=10)
     groups: list[str] = Field(default_factory=list, max_length=5)
     comfort: Comfort = "open"
-    on_graph: bool = True
+    # Two separate opt-in choices. Both are off unless the person turns them on.
+    on_graph: bool = False  # show me, and who I have met or planned to meet, on the public graph
+    show_groups: bool = False  # also show my communities there
 
     @field_validator("name", "working_on", "asks", "offers", "fun_fact")
     @classmethod
@@ -54,6 +59,14 @@ class Attendee(BaseModel):
 class Me(Attendee):
     recovery_code: str
     on_graph: bool
+    show_groups: bool = False
+
+
+class MeUpdate(BaseModel):
+    """PATCH /api/me. Leave a field out to keep it as it is."""
+
+    on_graph: bool | None = None
+    show_groups: bool | None = None
 
 
 class RecoverIn(BaseModel):
@@ -78,6 +91,7 @@ class Edge(BaseModel):
     kind: EdgeKind
     reason: str
     created_at: str
+    planned: bool = False  # true when the two had agreed to meet before they met
 
 
 class ConnectResult(BaseModel):
@@ -89,9 +103,8 @@ class ConnectResult(BaseModel):
 class GraphNode(BaseModel):
     id: str
     name: str
-    groups: list[str]
+    groups: list[str]  # empty unless the person chose to show their communities
     tags: list[str]
-    degree: int
 
 
 class GraphLink(BaseModel):
@@ -109,6 +122,22 @@ class Graph(BaseModel):
 class PathStep(BaseModel):
     id: str
     name: str
+
+
+class Relationship(BaseModel):
+    attendee: Attendee
+    kind: RelationKind
+    reason: str  # why this person is relevant to me, built from matching evidence
+    via: list[PathStep]  # people I have met who could introduce us, nearest first
+
+
+class MyGraph(BaseModel):
+    relationships: list[Relationship]
+
+
+class InvitationResult(BaseModel):
+    kind: Literal["you_invited", "planned"]
+    other: Attendee
 
 
 class Path(BaseModel):

@@ -12,7 +12,10 @@ export interface AttendeeIn {
   tags?: string[];
   groups?: string[];
   comfort?: Comfort;
+  /** Opt-in: show me, my plans and my meetings on the public graph. Default false. */
   on_graph?: boolean;
+  /** Opt-in, separate: also show my communities there. Default false. */
+  show_groups?: boolean;
 }
 
 /** Public profile */
@@ -31,6 +34,7 @@ export interface Attendee {
 export interface Me extends Attendee {
   recovery_code: string;
   on_graph: boolean;
+  show_groups: boolean;
 }
 
 export interface Match {
@@ -40,7 +44,11 @@ export interface Match {
   icebreaker: string;
 }
 
-export type EdgeKind = "connected" | "suggested";
+/** Link kinds on the public graph. A pending invitation is never public. */
+export type EdgeKind = "connected" | "planned" | "suggested";
+
+/** What one person is to me, in my own view of the graph. */
+export type RelationKind = "met" | "planned" | "invited_you" | "you_invited" | "suggested";
 
 export interface Edge {
   id: string;
@@ -49,6 +57,8 @@ export interface Edge {
   kind: EdgeKind;
   reason: string;
   created_at: string;
+  /** true when the two had agreed to meet before they met */
+  planned: boolean;
 }
 
 export interface ConnectResult {
@@ -60,9 +70,9 @@ export interface ConnectResult {
 export interface GraphNode {
   id: string;
   name: string;
+  /** empty unless the person chose to show their communities */
   groups: string[];
   tags: string[];
-  degree: number;
 }
 
 export interface GraphLink {
@@ -80,6 +90,24 @@ export interface Graph {
 export interface PathStep {
   id: string;
   name: string;
+}
+
+export interface Relationship {
+  attendee: Attendee;
+  kind: RelationKind;
+  /** why this person is relevant to me, from the matching evidence */
+  reason: string;
+  /** people I have met who could introduce us, nearest first */
+  via: PathStep[];
+}
+
+export interface MyGraph {
+  relationships: Relationship[];
+}
+
+export interface InvitationResult {
+  kind: "you_invited" | "planned";
+  other: Attendee;
 }
 
 /** path is [] when no chain of connected edges exists */

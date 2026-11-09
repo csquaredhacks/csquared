@@ -38,7 +38,9 @@ def person(indices):
 
     def make(name: str, **fields):
         client = TestClient(app)
-        body = {"name": name, "working_on": "testing hallway", **fields}
+        # Graph visibility is opt-in. Most tests want people who opted in.
+        shown = {"on_graph": True, "show_groups": True}
+        body = {"name": name, "working_on": "testing hallway", **shown, **fields}
         response = client.post("/api/attendees", json=body)
         assert response.status_code == 201, response.text
         return client, response.json()

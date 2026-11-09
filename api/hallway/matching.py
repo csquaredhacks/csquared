@@ -29,7 +29,11 @@ def _semantic(field: str, text: str, name: str) -> dict:
 
 
 def build_match_query(
-    a: dict, exclude_ids: list[str], size: int = 5, semantic: bool | None = None
+    a: dict,
+    exclude_ids: list[str],
+    size: int = 5,
+    semantic: bool | None = None,
+    only_ids: list[str] | None = None,
 ) -> dict:
     """Search body for "who should attendee `a` meet". Pure function, easy to test.
     Empty fields are left out: Elasticsearch rejects an empty semantic query."""
@@ -57,14 +61,18 @@ def build_match_query(
             {"standard": {"query": {"terms": {"groups": a["groups"], "_name": "shared_groups"}}}}
         )
 
+    # Never suggest yourself or someone you are already connected to.
+    keep: dict = {"must_not": [{"ids": {"values": exclude_ids}}]}
+    if only_ids is not None:
+        # Search only inside a given set of people, for example friends of friends.
+        keep["filter"] = [{"ids": {"values": only_ids}}]
     return {
         "retriever": {
             "rrf": {
                 "retrievers": retrievers,
                 "rank_window_size": 50,
                 "rank_constant": 20,
-                # Never suggest yourself or someone you are already connected to.
-                "filter": {"bool": {"must_not": [{"ids": {"values": exclude_ids}}]}},
+                "filter": {"bool": keep},
             }
         },
         "size": size,
@@ -101,10 +109,12 @@ def default_icebreaker(b: dict) -> str:
     return f"Ask {first_name} what the hardest part of “{_short(b['working_on'], 60)}” has been."
 
 
-def find_matches(client: Elasticsearch, a: dict, size: int = 5) -> list[tuple[dict, float, str]]:
+def find_matches(
+    client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
+) -> list[tuple[dict, float, str]]:
     """Run the query for attendee `a`. Returns (other attendee, score, reason) tuples."""
     exclude = [a["id"], *edges.connected_ids(client, a["id"])]
-    body = build_match_query(a, exclude, size)
+    body = build_match_query(a, exclude, size, only_ids=only_ids)
     hits = client.search(index=es.ATTENDEES, body=body)["hits"]["hits"]
     return [
         (

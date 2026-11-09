@@ -80,7 +80,7 @@ def test_graph_path_and_recap(person):
     assert all(
         link["source"] != hidden["id"] and link["target"] != hidden["id"] for link in graph["links"]
     )
-    assert next(n for n in graph["nodes"] if n["id"] == b["id"])["degree"] == 2
+    assert "degree" not in graph["nodes"][0]  # no public popularity score
 
     path = a_client.get(f"/api/graph/path?to={c['id']}").json()["path"]
     assert [step["name"] for step in path] == ["Path A", "Path B", "Path C"]

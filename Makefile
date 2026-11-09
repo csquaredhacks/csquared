@@ -13,7 +13,7 @@ PLATFORM ?= linux/amd64
 export
 
 .DEFAULT_GOAL := help
-.PHONY: help dev test lint types seed image image-ttl secrets deploy url logs matcher-now oom-demo oom-fix
+.PHONY: help dev test lint types seed seed-before seed-live image image-ttl secrets deploy url logs matcher-now oom-demo oom-fix
 
 help: ## List the targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
@@ -36,8 +36,14 @@ types: ## Regenerate web/src/api/schema.d.ts from the API models (CI fails if it
 	python -c "import json; from hallway.main import app; print(json.dumps(app.openapi()))" > web/openapi.json
 	cd web && npm run types
 
-seed: ## Load 60 synthetic attendees, connections and check-ins (API=<url>)
+seed: ## Load 60 synthetic attendees, plans, meetings and check-ins (API=<url>)
 	python seed/seed.py --api $(API) --checkins
+
+seed-before: ## Act one, the week before: 60 attendees, invitations and plans. Nobody has met.
+	python seed/seed.py --api $(API) --phase before
+
+seed-live: ## Act two, the day itself: plans become meetings, plus check-ins (run seed-before first)
+	python seed/seed.py --api $(API) --phase live --checkins
 
 # ---- Image ----
 

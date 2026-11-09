@@ -1,6 +1,8 @@
-"""Edges between attendees. Two kinds are stored:
-- "suggested": written by the matcher (dashed line on the graph)
-- "connected": written when one person scans another's QR (solid line)"""
+"""Edges between attendees. Four kinds are stored, and they never mean the same thing:
+- "suggested": written by the matcher. Nobody has agreed to anything.
+- "invited":   one person asked to meet another. Private to those two people.
+- "planned":   the invitation was accepted. Both people agreed to meet.
+- "connected": one person scanned the other's QR. They met."""
 
 from elasticsearch import ConflictError, Elasticsearch, NotFoundError
 
@@ -16,11 +18,23 @@ def edge_id(a: str, b: str, kind: str) -> str:
     return f"{low}:{high}:{kind}"
 
 
+def invitation_id(sender: str, receiver: str) -> str:
+    """An invitation has a direction, so unlike edge_id the order matters."""
+    return f"{sender}>{receiver}:invited"
+
+
 def upsert_edge(
-    client: Elasticsearch, source: str, target: str, kind: str, reason: str, icebreaker: str = ""
+    client: Elasticsearch,
+    source: str,
+    target: str,
+    kind: str,
+    reason: str,
+    icebreaker: str = "",
+    doc_id: str | None = None,
+    planned: bool = False,
 ) -> tuple[dict, bool]:
     """Create the edge if it does not exist. Returns (edge, created)."""
-    doc_id = edge_id(source, target, kind)
+    doc_id = doc_id or edge_id(source, target, kind)
     doc = {
         "id": doc_id,
         "source": source,
@@ -29,6 +43,7 @@ def upsert_edge(
         "reason": reason,
         "icebreaker": icebreaker,
         "created_at": es.now(),
+        "planned": planned,
     }
     try:
         client.create(index=es.EDGES, id=doc_id, document=doc, refresh=True)
@@ -43,6 +58,28 @@ def delete_edge(client: Elasticsearch, a: str, b: str, kind: str) -> None:
         client.delete(index=es.EDGES, id=edge_id(a, b, kind), refresh=True)
     except NotFoundError:
         pass
+
+
+def delete_between(client: Elasticsearch, a: str, b: str, kinds: list[str]) -> None:
+    """Remove the given kinds of edge between two people, in either direction."""
+    ids = [edge_id(a, b, kind) for kind in kinds if kind != "invited"]
+    if "invited" in kinds:
+        ids += [invitation_id(a, b), invitation_id(b, a)]
+    client.delete_by_query(
+        index=es.EDGES, query={"ids": {"values": ids}}, refresh=True, conflicts="proceed"
+    )
+
+
+def edges_of(client: Elasticsearch, attendee_id: str) -> list[dict]:
+    """Every edge that touches this attendee, of any kind."""
+    query = {
+        "bool": {
+            "should": [{"term": {"source": attendee_id}}, {"term": {"target": attendee_id}}],
+            "minimum_should_match": 1,
+        }
+    }
+    hits = client.search(index=es.EDGES, query=query, size=MAX_EDGES)["hits"]["hits"]
+    return [h["_source"] for h in hits]
 
 
 def connected_ids(client: Elasticsearch, attendee_id: str) -> set[str]:
