@@ -85,10 +85,12 @@ export default function Register() {
   function fillFromResume(data: ResumeData) {
     setForm((prev) => ({
       ...prev,
-      name: data.name || prev.name,
-      working_on: data.working_on || prev.working_on,
-      tags: data.tags.length > 0 ? data.tags.join(", ") : prev.tags,
-      groups: data.groups.length > 0 ? data.groups.join(", ") : prev.groups,
+      name: prev.name || data.name,
+      working_on: prev.working_on || data.working_on,
+      offers: prev.offers || data.offers,
+      asks: prev.asks || data.asks,
+      tags: [...new Map([...splitList(prev.tags, 10), ...data.tags].map((tag) => [tag.toLowerCase(), tag])).values()].slice(0, 10).join(", "),
+      groups: [...new Set([...splitList(prev.groups, 5), ...data.groups])].slice(0, 5).join(", "),
     }));
   }
 

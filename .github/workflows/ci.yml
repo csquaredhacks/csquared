@@ -58,6 +58,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: node --experimental-strip-types --test tests/resume.test.mjs
       - run: npm run build
 
   # Deliberate check: the web app's TypeScript types are generated from the API models,
