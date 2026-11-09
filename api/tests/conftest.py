@@ -25,10 +25,14 @@ def indices():
     except Exception:  # noqa: BLE001
         reachable = False
     if not reachable:
+        if os.getenv("CI_REQUIRE_ELASTICSEARCH") == "true":
+            pytest.fail("Elasticsearch is required for integration tests in CI")
         pytest.skip("Elasticsearch is not reachable; skipping integration tests")
     es.ensure_indices(client)
     yield
-    client.indices.delete(index=[es.ATTENDEES, es.EDGES, es.CHECKINS], ignore_unavailable=True)
+    client.indices.delete(
+        index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.COMMUNITIES], ignore_unavailable=True
+    )
 
 
 @pytest.fixture

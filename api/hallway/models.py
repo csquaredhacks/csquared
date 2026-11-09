@@ -1,7 +1,9 @@
 """Request and response shapes. Changing anything here means running `make types`
 so web/src/api/schema.d.ts stays in sync (CI checks this)."""
 
+import re
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -71,6 +73,43 @@ class MeUpdate(BaseModel):
 
 class RecoverIn(BaseModel):
     code: str = Field(min_length=6, max_length=6)
+
+
+class CommunityIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    description: str = Field(default="", max_length=500)
+    luma_url: str = Field(max_length=2048)
+
+    @field_validator("name", "description", mode="before")
+    @classmethod
+    def strip_community_text(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("luma_url")
+    @classmethod
+    def valid_luma_url(cls, value: str) -> str:
+        value = value.strip()
+        # Reject whitespace and control characters inside the URL.
+        if re.search(r"[\s\x00-\x1f]", value):
+            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma")
+        try:
+            url = urlsplit(value)
+            if (
+                url.scheme != "https"
+                or url.hostname not in {"luma.com", "www.luma.com", "lu.ma"}
+                or url.username
+                or url.password
+                or not url.path.strip("/")
+                or (url.port is not None and url.port != 443)
+            ):
+                raise ValueError
+        except ValueError as error:
+            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma") from error
+        return value
+
+
+class Community(CommunityIn):
+    id: str
 
 
 class Match(BaseModel):

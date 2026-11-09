@@ -63,6 +63,9 @@ interface Room { room: string; count: number; people: PathStep[]; }   // people:
 
 interface Recap { connections: Attendee[]; groups_bridged: number; nudges: string[]; }
 
+interface CommunityIn { name: string; description: string; luma_url: string; }
+interface Community extends CommunityIn { id: string; }
+
 interface Config { rooms: string[]; chaos_enabled: boolean;
                    rum: { url: string; token: string } | null; }
 ```
@@ -74,6 +77,8 @@ interface Config { rooms: string[]; chaos_enabled: boolean;
 | GET | `/healthz` | | | `{ok: true, es: "green" \| "red"}` | |
 | GET | `/api/config` | | | `Config` | |
 | POST | `/api/attendees` | | `AttendeeIn` | 201 `Me` + cookie | 422 |
+| POST | `/api/communities` | cookie | `CommunityIn` | 201 `Community` | 401, 422 |
+| GET | `/api/communities/{id}` | | | `Community` | 404 |
 | GET | `/api/me` | cookie | | `Me` | 401 |
 | PATCH | `/api/me` | cookie | `{on_graph?, show_groups?}` | `Me` | 401 |
 | POST | `/api/recover` | | `{code: string}` | `Me` + cookie | 404 |
@@ -115,6 +120,10 @@ only through meetings between people who are on the public graph.
 `/` register (or redirect to `/five` if already registered), `/five`, `/me`, `/connect/:id`,
 `/recover`, `/graph` (`?kiosk=1` full screen, `?focus=<id>`), `/rooms` (`?room=<name>` checks in), `/recap`.
 A profile QR encodes `<origin>/connect/<my id>`.
+
+`/communities/new` creates an invitation for a registered attendee.
+`/communities/:id` is its shareable public page. Registration happens on Luma;
+Hallway does not verify an RSVP or enroll a community member in this flow.
 
 ## Planned: pre-conference additions (v4)
 

@@ -14,6 +14,7 @@ log = logging.getLogger("hallway.es")
 ATTENDEES = f"{settings.index_prefix}-attendees"
 EDGES = f"{settings.index_prefix}-edges"
 CHECKINS = f"{settings.index_prefix}-checkins"
+COMMUNITIES = f"{settings.index_prefix}-communities"
 
 
 def now() -> str:
@@ -79,11 +80,19 @@ CHECKIN_MAPPING = {
 }
 
 
+COMMUNITY_MAPPING = {"properties": {
+    "id": {"type": "keyword"}, "name": {"type": "text"},
+    "description": {"type": "text"}, "luma_url": {"type": "keyword", "index": False},
+    "owner_id": {"type": "keyword"}, "created_at": {"type": "date"},
+}}
+
+
 def ensure_indices(client: Elasticsearch) -> None:
     wanted = {
         ATTENDEES: attendee_mapping(settings.elser_id),
         EDGES: EDGE_MAPPING,
         CHECKINS: CHECKIN_MAPPING,
+        COMMUNITIES: COMMUNITY_MAPPING,
     }
     for name, mapping in wanted.items():
         if not client.indices.exists(index=name):
