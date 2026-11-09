@@ -3,6 +3,8 @@ import type { components } from "./schema";
 
 /** Arrival groups come straight from the generated schema, so they cannot drift. */
 export type CrewOut = components["schemas"]["CrewOut"];
+/** The organizer board: counts only. */
+export type Crowd = components["schemas"]["Crowd"];
 
 export type Comfort = "open" | "small_groups" | "one_on_one";
 
