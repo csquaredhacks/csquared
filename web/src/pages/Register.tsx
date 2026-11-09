@@ -6,14 +6,14 @@ import type { Comfort } from "../api/types";
 import { hasPendingConnect, nextPath } from "../pending";
 import { ErrorNote } from "../ui";
 
-const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
+export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
   { value: "open", label: "Open to anyone" },
   { value: "small_groups", label: "Small groups" },
   { value: "one_on_one", label: "One-on-one" },
 ];
 
 /** "kubernetes, Rust , " -> ["kubernetes", "Rust"], at most `max` items */
-function splitList(text: string, max: number): string[] {
+export function splitList(text: string, max: number): string[] {
   return text.split(",").map((item) => item.trim()).filter(Boolean).slice(0, max);
 }
 

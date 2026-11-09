@@ -131,6 +131,8 @@ fieldset { border: 0; padding: 0; margin: 0; }
   display: grid; place-items: center; border-radius: 50%;
   background: var(--accent); color: var(--on-accent); font: 700 1rem var(--mono);
 }
+/* A fact about a card, said in words. The colour only repeats what the text says. */
+.badge { display: inline-block; padding: 0.15rem 0.65rem; font-size: 0.85rem; font-weight: 600; color: var(--good); border: 1px solid var(--good); border-radius: 999px; }
 .reason strong { color: var(--accent); }
 .icebreaker {
   margin: 0.85rem 0; padding: 0.75rem 1rem; background: var(--raised);

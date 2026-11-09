@@ -51,6 +51,8 @@ export interface Match {
   score: number;
   reason: string;
   icebreaker: string;
+  /** they offer something I asked for AND I offer something they asked for */
+  is_reciprocal: boolean;
 }
 
 /** Link kinds on the public graph. A pending invitation is never public. */

@@ -54,8 +54,8 @@ export interface paths {
         head?: never;
         /**
          * Update Me
-         * @description Change what I show publicly. Turning a choice off removes that information from
-         *     the public graph on its very next load.
+         * @description Change my own profile: what I need and offer, and what I show publicly. Turning a
+         *     public choice off removes that information from the public graph on its next load.
          */
         patch: operations["update_me_api_me_patch"];
         trace?: never;
@@ -845,6 +845,8 @@ export interface components {
             reason: string;
             /** Icebreaker */
             icebreaker: string;
+            /** Is Reciprocal */
+            is_reciprocal: boolean;
         };
         /** Me */
         Me: {
@@ -881,9 +883,24 @@ export interface components {
         };
         /**
          * MeUpdate
-         * @description PATCH /api/me. Leave a field out to keep it as it is.
+         * @description PATCH /api/me. Leave a field out (or send null) to keep it as it is. These are the
+         *     only fields a person can change: anything else, such as id or recovery_code, is a 422.
          */
         MeUpdate: {
+            /** Working On */
+            working_on?: string | null;
+            /** Asks */
+            asks?: string | null;
+            /** Offers */
+            offers?: string | null;
+            /** Fun Fact */
+            fun_fact?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Groups */
+            groups?: string[] | null;
+            /** Comfort */
+            comfort?: ("open" | "small_groups" | "one_on_one") | null;
             /** On Graph */
             on_graph?: boolean | null;
             /** Show Groups */

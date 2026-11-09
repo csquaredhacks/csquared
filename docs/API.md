@@ -37,7 +37,23 @@ interface Attendee {              // public profile
 
 interface Me extends Attendee { recovery_code: string; on_graph: boolean; show_groups: boolean; }
 
-interface Match { attendee: Attendee; score: number; reason: string; icebreaker: string; }
+// PATCH /api/me body. Every field is optional: send only what should change. A field left
+// out (or null) keeps its value. These are the only editable fields; any other field
+// (id, name, recovery_code, ...) is a 422. Text and tags are cleaned as in AttendeeIn.
+interface MeUpdate {
+  working_on?: string;            // 1..500 chars after trimming
+  asks?: string;                  // <= 500, "" clears it
+  offers?: string;                // <= 500, "" clears it
+  fun_fact?: string;              // <= 300
+  tags?: string[];                // max 10, lowercased by the server
+  groups?: string[];              // max 5
+  comfort?: Comfort;
+  on_graph?: boolean;
+  show_groups?: boolean;
+}
+
+interface Match { attendee: Attendee; score: number; reason: string; icebreaker: string;
+                  is_reciprocal: boolean; }   // works both ways, see "Matches" below
 
 interface Edge { id: string; source: string; target: string;
                  kind: "connected" | "planned" | "suggested";
@@ -107,10 +123,10 @@ interface Crowd { registered: number;
 | POST | `/api/communities` | cookie | `CommunityIn` | 201 `Community` | 401, 422 |
 | GET | `/api/communities/{id}` | | | `Community` | 404 |
 | GET | `/api/me` | cookie | | `Me` | 401 |
-| PATCH | `/api/me` | cookie | `{on_graph?, show_groups?}` | `Me` | 401 |
+| PATCH | `/api/me` | cookie | `MeUpdate` | `Me` (my own profile after the edit) | 401, 422 unknown field or invalid value |
 | POST | `/api/recover` | | `{code: string}` | `Me` + cookie | 404 |
 | GET | `/api/attendees/{id}` | | | `Attendee` | 404 |
-| GET | `/api/matches` | cookie | | `Match[]` (max 5) | 401 |
+| GET | `/api/matches` | cookie | | `Match[]` (max 5), each with `is_reciprocal` | 401 |
 | POST | `/api/edges` | cookie | `{to_id: string}` | `ConnectResult` | 400 self, 401, 404 |
 | GET | `/api/graph` | | | `Graph` | |
 | GET | `/api/graph/path?to={id}` | cookie | | `Path` (me → to) | 401 |
@@ -136,6 +152,22 @@ interface Crowd { registered: number;
 
 Errors are `{"detail": "<message>"}`.
 
+`PATCH /api/me` only ever changes the person in the session cookie. When `working_on`, `asks`,
+`offers`, `tags` or `groups` change, matching uses the new text at once, and in the background
+that person's `suggested` edges are deleted and written again, because a suggestion stores a
+reason that quotes the old text. Suggestions other people had for them return on the next
+matcher run. Invitations, plans and meetings are never touched by an edit.
+
+## Matches
+
+Every query in the match request is named, and Elasticsearch reports which names matched
+each person. `reason` and `is_reciprocal` are both read from that report, never guessed.
+`is_reciprocal` is true when both `asks_to_offers` (my asks against their offers) and
+`offers_to_asks` (my offers against their asks) matched. It is the same evidence as `reason`,
+and as loose: without ELSER one shared word is enough for a query to match. Filler
+words ("and", "with", "need", ...) are removed from the word query first, so they never
+count as a match.
+
 ## The four relationships
 
 They are stored as edges of different kinds and are never merged.
@@ -154,7 +186,8 @@ only through meetings between people who are on the public graph.
 
 ## Web routes (served by the same process, SPA fallback)
 
-`/` register (or redirect to `/five` if already registered), `/five`, `/me`, `/connect/:id`,
+`/` register (or redirect to `/five` if already registered), `/five`, `/me` (QR, recovery code,
+edit what you need and offer; `/me#edit` opens at the form), `/connect/:id`,
 `/recover`, `/graph` (`?kiosk=1` full screen, `?focus=<id>`), `/rooms` (`?room=<name>` checks in), `/recap`.
 A profile QR encodes `<origin>/connect/<my id>`.
 
