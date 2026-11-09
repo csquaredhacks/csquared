@@ -289,6 +289,39 @@ def test_a_success_is_not_returned_for_a_crew_removed_by_a_racing_accept(person,
     assert ana.get("/api/crew").json()["crew"]["id"] == "twocrews-a"
 
 
+def test_a_seat_left_behind_by_a_killed_request_does_not_lock_the_person_out(person):
+    """The API can be killed between claiming a seat and joining (the out-of-memory demo
+    does that). The leftover seat must not stop the person from ever joining a crew."""
+    (ana, ana_me), _ = _pair(person, "orphanseat")
+    client = es.get_client()
+    client.index(
+        index=es.CREWS,
+        id=crews._seat_id(ana_me["id"]),
+        document={
+            "attendee_id": ana_me["id"],
+            "crew_id": "a-crew-she-never-joined",
+            "claimed_at": "2026-01-01T00:00:00+00:00",
+        },
+        refresh=True,
+    )
+    ana.post("/api/crew/suggest")
+    assert ana.post("/api/crew/accept", json={}).status_code == 200
+    assert ana.get("/api/crew").json()["status"] == "member"
+
+
+def test_a_fresh_seat_still_blocks_a_second_accept(person):
+    (ana, ana_me), _ = _pair(person, "freshseat")
+    client = es.get_client()
+    client.index(
+        index=es.CREWS,
+        id=crews._seat_id(ana_me["id"]),
+        document={"attendee_id": ana_me["id"], "crew_id": "other", "claimed_at": es.now()},
+        refresh=True,
+    )
+    ana.post("/api/crew/suggest")
+    assert ana.post("/api/crew/accept", json={}).status_code == 409
+
+
 def test_leaving_sticks(person):
     (ana, ana_me), (ben, _) = _pair(person, "snorkelbat")
     ana.post("/api/crew/suggest")

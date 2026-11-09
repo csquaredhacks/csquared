@@ -143,7 +143,8 @@ export default function Register() {
       </form>
 
       <p className="muted center">Been here before? <Link to="/recover">Use your recovery code</Link></p>
-      <p className="muted center">Organizing a community? Register first, then <Link to="/communities/new">create an event invitation</Link>.</p>
+      <p className="muted center">Organizing a community? Register first, then <Link to="/communities/new">create an event invitation</Link>.{" "}
+        <Link to="/crowd">See what the crowd needs</Link>.</p>
     </>
   );
 }

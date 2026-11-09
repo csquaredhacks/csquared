@@ -1,5 +1,5 @@
 import type {
-  Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, CrewOut, Graph, Health,
+  Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, CrewOut, Crowd, Graph, Health,
   InvitationResult, Match, Me, MyGraph, Path, Recap, Room,
 } from "./types";
 import type { components } from "./schema";
@@ -91,6 +91,7 @@ export const setCrewMeeting = (place: string, startsAt: string, timezone: string
 export const getPath = (toId: string) => request<Path>("GET", `/api/graph/path?to=${encodeURIComponent(toId)}`);
 export const checkIn = (room: string) => request<Room>("POST", "/api/checkins", { room });
 export const getRooms = () => request<Room[]>("GET", "/api/rooms");
+export const getCrowd = () => request<Crowd>("GET", "/api/crowd");
 export const getRecap = () => request<Recap>("GET", "/api/recap");
 export const getChaos = () => request<Chaos>("GET", "/api/chaos");
 export const setChaos = (mode: ChaosMode, adminToken: string) =>

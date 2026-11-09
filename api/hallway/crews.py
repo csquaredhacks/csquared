@@ -23,6 +23,7 @@ import hashlib
 import hmac
 import os
 import secrets
+from datetime import UTC, datetime
 
 from elasticsearch import ConflictError, Elasticsearch, NotFoundError
 
@@ -69,6 +70,7 @@ def pair_crew_id(a: str, b: str, salt: bytes) -> str:
 COMFORT_LIMIT = {"one_on_one": 2, "small_groups": 4, "open": 5}
 MAX_CREWS = 2000
 RETRIES = 5
+SEAT_GRACE_SECONDS = 30  # longer than any accept takes
 
 
 class CrewError(Exception):
@@ -170,16 +172,50 @@ def _seat_id(attendee_id: str) -> str:
 
 def _claim_seat(client: Elasticsearch, attendee_id: str, crew_id: str) -> None:
     """Atomically allow only one concurrent accept for this person."""
+    for attempt in range(2):
+        try:
+            client.index(
+                index=es.CREWS,
+                id=_seat_id(attendee_id),
+                document={"attendee_id": attendee_id, "crew_id": crew_id, "claimed_at": es.now()},
+                op_type="create",
+                refresh=True,
+            )
+            return
+        except ConflictError:
+            if attempt == 0 and _clear_abandoned_seat(client, attendee_id):
+                continue
+            raise CrewError(409, "You are already in a crew. Leave it first.") from None
+
+
+def _clear_abandoned_seat(client: Elasticsearch, attendee_id: str) -> bool:
+    """A seat is claimed, then the person joins. If the process is killed in between
+    (the out-of-memory demo does exactly that), the seat is left behind with no
+    membership and the person could never join a crew again. A seat older than
+    SEAT_GRACE_SECONDS whose owner is in no crew is such a leftover: remove it.
+    Returns True when the caller can try to claim again."""
     try:
-        client.index(
+        seat = client.get(index=es.CREWS, id=_seat_id(attendee_id))
+    except NotFoundError:
+        return True
+    claimed_at = seat["_source"].get("claimed_at")
+    if claimed_at:
+        age = datetime.now(UTC) - datetime.fromisoformat(claimed_at)
+        if age.total_seconds() < SEAT_GRACE_SECONDS:
+            return False  # an accept may still be in progress
+    if crew_of(client, attendee_id):
+        return False
+    try:
+        client.delete(
             index=es.CREWS,
             id=_seat_id(attendee_id),
-            document={"attendee_id": attendee_id, "crew_id": crew_id},
-            op_type="create",
+            if_seq_no=seat["_seq_no"],
+            if_primary_term=seat["_primary_term"],
             refresh=True,
         )
-    except ConflictError:
-        raise CrewError(409, "You are already in a crew. Leave it first.") from None
+    except (ConflictError, NotFoundError):
+        pass  # someone else changed it; the retry decides
+    return True
 
 
 def _release_seat(client: Elasticsearch, attendee_id: str, crew_id: str) -> None:

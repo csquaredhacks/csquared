@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Connect from "./pages/Connect";
+import Crowd from "./pages/Crowd";
 import { CommunityPage, NewCommunity } from "./pages/Community";
 import Graph from "./pages/Graph";
 import Plan from "./pages/Plan";
@@ -12,15 +13,15 @@ import Rooms from "./pages/Rooms";
 
 const TITLES: Record<string, string> = {
   "/": "Join", "/plan": "Before you arrive", "/me": "My code", "/recover": "Recover",
-  "/graph": "Live graph", "/rooms": "Rooms", "/recap": "Recap",
+  "/graph": "Live graph", "/crowd": "What the crowd needs", "/rooms": "Rooms", "/recap": "Recap",
 };
-const WIDE_PAGES = ["/plan", "/graph", "/rooms", "/recap"];
+const WIDE_PAGES = ["/plan", "/crowd", "/graph", "/rooms", "/recap"];
 
 export default function App() {
   const { pathname, search } = useLocation();
   const kiosk = pathname === "/graph" && new URLSearchParams(search).get("kiosk") === "1";
   // People who have not registered yet have nowhere to navigate to.
-  const showNav = !kiosk && pathname !== "/" && pathname !== "/recover";
+  const showNav = !kiosk && !["/", "/recover", "/crowd"].includes(pathname);
 
   useEffect(() => {
     document.title = `${TITLES[pathname] ?? "Connect"} · Hallway`;
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/communities/:id" element={<CommunityPage />} />
           <Route path="/graph" element={<Graph />} />
           <Route path="/rooms" element={<Rooms />} />
+          <Route path="/crowd" element={<Crowd />} />
           <Route path="/recap" element={<Recap />} />
           <Route path="*" element={<p>Nothing here. <Link to="/">Back to the start</Link></p>} />
         </Routes>
