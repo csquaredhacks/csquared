@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Link, matchPath, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Connect from "./pages/Connect";
 import Crowd from "./pages/Crowd";
 import { CommunityPage, NewCommunity } from "./pages/Community";
@@ -28,13 +28,14 @@ export default function App() {
   }, [pathname]);
 
   return (
-    <>
+    // Keep both Graph modes on the original palette, including inherited tokens.
+    <div className={matchPath("/graph", pathname) ? undefined : "product-theme"}>
       {!kiosk && (
         <header className="topbar">
           <Link to="/" className="wordmark">Hallway</Link>
         </header>
       )}
-      <main className={kiosk ? "kiosk" : WIDE_PAGES.includes(pathname) ? "page wide" : "page"}>
+      <main data-page={pathname} className={kiosk ? "kiosk" : WIDE_PAGES.includes(pathname) ? "page wide" : "page"}>
         <Routes>
           <Route path="/" element={<Register />} />
           <Route path="/plan" element={<Plan />} />
@@ -62,6 +63,6 @@ export default function App() {
           <NavLink to="/recap">Recap</NavLink>
         </nav>
       )}
-    </>
+    </div>
   );
 }
