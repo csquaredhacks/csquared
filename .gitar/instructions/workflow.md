@@ -1,6 +1,8 @@
 # Hallway contribution workflow
 
 Ship every feature and fix on a branch through a pull request to `main`.
+Enable automatic fixes on each PR with the comment `gitar auto-apply:on` and
+verify Gitar confirms the setting.
 Read the affected code and PR discussion before changing behavior. Keep fixes
 small and run the relevant existing checks. State checks that could not run.
 
