@@ -28,6 +28,7 @@ def _out(me: dict, crew: dict | None) -> CrewOut:
             meeting=Meeting(**crew["meeting"]) if crew.get("meeting") else None,
         ),
         bringing_companion=me["id"] in crew.get("companions", []),
+        left_alone=crews.left_alone(crew, me["id"]),
     )
 
 
@@ -67,6 +68,13 @@ def leave_crew(me: dict = Depends(current_attendee)) -> CrewOut:
     """Leave (or decline). You are not reassigned; ask for a new suggestion when ready."""
     _run(lambda: crews.leave(es.get_client(), me))
     return CrewOut(status="none", crew=None)
+
+
+@router.post("/api/crew/replace")
+def replace_crew(me: dict = Depends(current_attendee)) -> CrewOut:
+    """My plan fell through (for example, everyone else left). Leave this crew and get a
+    new suggestion. I still have to accept it; nothing is joined for me."""
+    return _out(me, _run(lambda: crews.replace(es.get_client(), me)))
 
 
 @router.put("/api/crew/meeting")

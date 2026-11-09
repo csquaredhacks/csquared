@@ -257,3 +257,16 @@ fieldset { border: 0; padding: 0; margin: 0; }
 .topics th, .topics td { padding: 0.6rem 0.5rem; text-align: left; border-bottom: 1px solid var(--line); }
 .topics thead th { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
 .topics td:nth-child(2), .topics td:nth-child(3) { font: 700 1.1rem var(--mono); color: var(--accent); }
+
+/* ---- Goals and notices ---- */
+.goals { list-style: none; padding: 0; margin: 0 0 0.75rem; }
+.goals li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid var(--line); }
+.goals .choice { flex: 1; }
+.goal-done { color: var(--muted); text-decoration: line-through; }
+.link-button { min-height: 2.75rem; padding: 0 0.5rem; font: inherit; color: var(--accent); background: none; border: 0; text-decoration: underline; cursor: pointer; }
+.ideas { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0.75rem 0; }
+.chip { min-height: 2.75rem; padding: 0 1rem; font: inherit; color: var(--text); background: var(--raised); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+.chip:hover { border-color: var(--accent); }
+.goal-form .button { margin-top: 0.75rem; }
+.notice { margin: 1rem 0; padding: 1rem; border-left: 4px solid var(--accent); background: var(--raised); border-radius: 0 12px 12px 0; }
+.notice .button { margin-top: 0.75rem; }

@@ -46,6 +46,8 @@ def attendee_mapping(elser_id: str) -> dict:
         "on_graph": {"type": "boolean"},
         "show_groups": {"type": "boolean"},
         "created_at": {"type": "date"},
+        # Private to the person. Stored, never searched or aggregated.
+        "goals": {"type": "object", "enabled": False},
     }
     if elser_id:
         for source, target in [
@@ -88,6 +90,7 @@ CREW_MAPPING = {
         "companions": {"type": "keyword"},
         "invited": {"type": "keyword"},
         "declined": {"type": "keyword"},
+        "left": {"type": "keyword"},  # people who joined and then left
         # Free text chosen by members; stored, never searched or aggregated.
         "meeting": {"type": "object", "enabled": False},
         "created_at": {"type": "date"},
@@ -118,6 +121,10 @@ def ensure_indices(client: Elasticsearch) -> None:
     client.indices.put_mapping(index=ATTENDEES, properties={"show_groups": {"type": "boolean"}})
     client.indices.put_mapping(index=EDGES, properties={"planned": {"type": "boolean"}})
     client.indices.put_mapping(index=COMMUNITIES, properties={"members": {"type": "keyword"}})
+    client.indices.put_mapping(
+        index=ATTENDEES, properties={"goals": {"type": "object", "enabled": False}}
+    )
+    client.indices.put_mapping(index=CREWS, properties={"left": {"type": "keyword"}})
 
 
 def ensure_indices_with_retry(client: Elasticsearch, seconds: int = 60) -> bool:

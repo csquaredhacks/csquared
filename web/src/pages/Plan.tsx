@@ -3,9 +3,10 @@ import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ApiError, acceptCrew, declineCrew, errorMessage, getCrew, getMatches, getMe, leaveCrew,
-  setCrewMeeting, suggestCrew,
+  replaceCrew, setCrewMeeting, suggestCrew,
 } from "../api/client";
 import type { CrewOut, Match, Me } from "../api/types";
+import { GoalBoard } from "../Goals";
 import { ErrorNote, PersonCard } from "../ui";
 import { MyCommunities } from "./Community";
 
@@ -54,6 +55,11 @@ export default function Plan() {
       </section>
 
       <MyCommunities />
+
+      <section aria-labelledby="goals">
+        <h2 id="goals">What do you want from this conference?</h2>
+        <GoalBoard />
+      </section>
 
       <section aria-labelledby="about-me">
         <h2 id="about-me">What people see about you</h2>
@@ -112,7 +118,7 @@ function Five() {
   );
 }
 
-const NONE: CrewOut = { status: "none", crew: null, bringing_companion: false };
+const NONE: CrewOut = { status: "none", crew: null, bringing_companion: false, left_alone: false };
 
 function CrewSection() {
   const [out, setOut] = useState<CrewOut | null>(null); // null = still loading
@@ -195,6 +201,19 @@ function CrewSection() {
             {crew.seats_taken} of {crew.limit} places taken
             {out.bringing_companion ? ", including your companion" : ""}.
           </p>
+          {out.left_alone && (
+            <div className="notice">
+              <p>
+                <strong>Someone left this group, so you are the only one in it now.</strong>{" "}
+                Nothing has been changed for you. You can stay, and others may still join,
+                or ask for another group.
+              </p>
+              <button type="button" className="button" disabled={busy}
+                onClick={() => run(replaceCrew, "You left that group. Nobody suitable is free right now; try again later.")}>
+                Find me another group
+              </button>
+            </div>
+          )}
           <MeetingPlan crew={crew} busy={busy}
             onSave={(place, startsAt, zone) => run(() => setCrewMeeting(place, startsAt, zone))} />
           <button type="button" className="button secondary" disabled={busy}

@@ -3,6 +3,9 @@ import type { components } from "./schema";
 
 /** Arrival groups come straight from the generated schema, so they cannot drift. */
 export type CrewOut = components["schemas"]["CrewOut"];
+/** One of my own goals. Private to me. */
+export type Goal = components["schemas"]["Goal"];
+export type Goals = components["schemas"]["Goals"];
 /** The organizer board: counts only. */
 export type Crowd = components["schemas"]["Crowd"];
 

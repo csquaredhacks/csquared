@@ -5,7 +5,7 @@ until you accept, and you can decline or leave at any time without being reassig
 
 Stored in its own index (no change to the attendee mapping, no reindex):
 
-    {id, members: [ids], companions: [ids], invited: [ids], declined: [ids],
+    {id, members: [ids], companions: [ids], invited: [ids], declined: [ids], left: [ids],
      meeting: {place, starts_at, timezone, set_by} | null, created_at}
 
 - `members` accepted. `companions` is the subset of members bringing one companion,
@@ -370,9 +370,24 @@ def leave(client: Elasticsearch, me: dict) -> None:
         _drop(c, me["id"], "companions")
         if me["id"] not in c["declined"]:
             c["declined"].append(me["id"])
+        # Remembered so that someone left on their own can be told (see `left_alone`).
+        if me["id"] not in c.setdefault("left", []):
+            c["left"].append(me["id"])
 
     _update(client, crew["id"], change)
     _release_seat(client, me["id"], crew["id"])
+
+
+def left_alone(crew: dict, attendee_id: str) -> bool:
+    """Someone joined this crew and left, and I am the only member still in it."""
+    return crew["members"] == [attendee_id] and bool(crew.get("left"))
+
+
+def replace(client: Elasticsearch, me: dict) -> dict | None:
+    """Leave my crew and ask for another, in one step. Only ever called because the
+    person asked: nobody is moved to another group on their behalf."""
+    leave(client, me)
+    return suggest(client, me)
 
 
 def set_meeting(client: Elasticsearch, me: dict, place: str, starts_at: str, tz: str) -> dict:
