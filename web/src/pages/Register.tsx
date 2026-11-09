@@ -4,8 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { createAttendee, errorMessage, getMe } from "../api/client";
 import type { Comfort } from "../api/types";
 import { hasPendingCommunity, hasPendingConnect, nextPath } from "../pending";
-import { ErrorNote, ProviderButtons, ProviderMark, getSigninProvider, setSigninProvider } from "../ui";
-import type { SigninProvider } from "../ui";
+import { ErrorNote, ProviderButtons, ProviderMark, ResumeIngest, TagChips, getSigninProvider, setSigninProvider } from "../ui";
+import type { ResumeData, SigninProvider } from "../ui";
 
 export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
   { value: "open", label: "Open to anyone" },
@@ -49,6 +49,26 @@ export default function Register() {
     setSigninProvider(null);
   }
 
+  /** A resume fills the fields it can. Anything it could not read stays blank. */
+  function fillFromResume(data: ResumeData) {
+    setForm((prev) => ({
+      ...prev,
+      name: data.name || prev.name,
+      working_on: data.working_on || prev.working_on,
+      tags: data.tags.length > 0 ? data.tags.join(", ") : prev.tags,
+      groups: data.groups.length > 0 ? data.groups.join(", ") : prev.groups,
+    }));
+  }
+
+  function toggleTag(tag: string) {
+    const current = splitList(form.tags, 10);
+    const lower = tag.toLowerCase();
+    const next = current.some((t) => t.toLowerCase() === lower)
+      ? current.filter((t) => t.toLowerCase() !== lower)
+      : [...current, tag].slice(0, 10);
+    setForm({ ...form, tags: next.join(", ") });
+  }
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -89,6 +109,8 @@ export default function Register() {
       <section className="signin-card" aria-labelledby="join-title">
         <h2 id="join-title">Join Hallway</h2>
         <p>Pick how you sign in, then tell us a little about you. No password, no account.</p>
+
+        <ResumeIngest onFill={fillFromResume} />
 
         <ProviderButtons picked={provider} onPick={pickProvider} />
 
@@ -132,6 +154,7 @@ export default function Register() {
             <p className="hint" id="tags-hint">Comma separated, up to 10. Example: kubernetes, rust, ebpf</p>
             <input id="tags" aria-describedby="tags-hint" autoCapitalize="none" value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+            <TagChips tags={splitList(form.tags, 10)} onToggle={toggleTag} />
 
             <label htmlFor="groups">Groups</label>
             <p className="hint" id="groups-hint">Company, community or school. Comma separated, up to 5.</p>
