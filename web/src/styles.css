@@ -135,8 +135,8 @@ fieldset { border: 0; padding: 0; margin: 0; }
 
 /* ---------- Join: warm light behind one glass surface ---------- */
 
-.page:has(> .signin-card) {
-  background: radial-gradient(ellipse 78% 19rem at 88% 20rem, var(--join-light), transparent);
+body:has(.signin-card) {
+  background: radial-gradient(ellipse 24rem 19rem at calc(50% + 6rem) 20rem, var(--join-light), transparent), var(--ink);
 }
 .signin-card {
   margin: 1.5rem 0 0;
