@@ -3,7 +3,7 @@ Each test uses its own made-up topic words so people from other tests don't matc
 
 from concurrent.futures import ThreadPoolExecutor
 from importlib import reload
-from threading import Barrier, local
+from threading import Barrier, Event, local
 
 from hallway import crews, es
 
@@ -135,6 +135,20 @@ def test_legacy_declined_pair_is_not_suggested_again(person):
     assert out["status"] == "none"
 
 
+def test_declined_group_does_not_block_everyone_as_a_pair(monkeypatch):
+    crews_with_declines = [
+        {"members": [], "invited": [], "declined": ["ana", "pair-partner"]},
+        {
+            "members": ["member-one", "member-two"],
+            "invited": ["invitee"],
+            "declined": ["ana"],
+        },
+    ]
+    monkeypatch.setattr(crews, "_search", lambda *_args, **_kwargs: crews_with_declines)
+
+    assert crews._declined_partners(None, "ana") == {"pair-partner"}
+
+
 def test_a_second_person_joins_the_first_persons_crew(person):
     (ana, ana_me), (ben, ben_me) = _pair(person, "quillfeather")
     ana.post("/api/crew/suggest")
@@ -168,7 +182,7 @@ def test_one_on_one_person_never_ends_up_in_a_crew_of_three(person):
 
 
 def test_a_companion_takes_a_seat(person):
-    (ana, _), (ben, _) = _pair(person, "brindleglow", a_comfort="one_on_one")
+    (ana, _), (ben, ben_me) = _pair(person, "brindleglow", a_comfort="one_on_one")
     ana.post("/api/crew/suggest")
     out = ana.post("/api/crew/accept", json={"companion": True}).json()
     assert out["bringing_companion"] is True
@@ -176,6 +190,23 @@ def test_a_companion_takes_a_seat(person):
     response = ben.post("/api/crew/accept", json={})
     assert response.status_code == 409  # Ana + companion fill a one_on_one crew
     assert ben.get("/api/crew").json()["status"] == "none"  # dead suggestion cleared
+
+    next_crew = {
+        "id": f"after-full-{ben_me['id']}",
+        "members": [],
+        "companions": [],
+        "invited": [ben_me["id"]],
+        "declined": [],
+        "meeting": None,
+        "created_at": es.now(),
+    }
+    es.get_client().index(
+        index=es.CREWS,
+        id=next_crew["id"],
+        document=next_crew,
+        refresh=True,
+    )
+    assert ben.post("/api/crew/accept", json={}).status_code == 200
 
 
 def test_two_people_racing_for_the_last_seat_cannot_both_get_it(person):
@@ -200,8 +231,8 @@ def test_two_people_racing_for_the_last_seat_cannot_both_get_it(person):
     assert len(stored["members"]) == 2
 
 
-def test_one_person_accepting_two_crews_at_once_ends_up_in_one(person, monkeypatch):
-    """Two accept requests for the same person, each for a different pending crew."""
+def test_a_success_is_not_returned_for_a_crew_removed_by_a_racing_accept(person, monkeypatch):
+    """A second accept must not succeed while the first is still joining another crew."""
     ana, ana_me = person("Ana twocrews", working_on="twocrews")
     client = es.get_client()
     for crew_id in ("twocrews-a", "twocrews-b"):
@@ -220,16 +251,22 @@ def test_one_person_accepting_two_crews_at_once_ends_up_in_one(person, monkeypat
             refresh=True,
         )
 
-    # Each request is handed a different pending crew, and both pass the "already in a
-    # crew" check before either one joins: the worst ordering.
-    barrier = Barrier(2)
     turn = local()
 
     def pending_for(es_client, _attendee_id):
-        barrier.wait(timeout=5)
         return crews._get(es_client, turn.crew_id)[0]
 
     monkeypatch.setattr(crews, "pending_for", pending_for)
+    paused, resumed = Event(), Event()
+    original_has_room = crews.has_room
+
+    def pause_first_join(es_client, crew, joiner, companion=False):
+        if crew["id"] == "twocrews-a":
+            paused.set()
+            assert resumed.wait(timeout=5)
+        return original_has_room(es_client, crew, joiner, companion)
+
+    monkeypatch.setattr(crews, "has_room", pause_first_join)
 
     def accept_one(crew_id: str) -> str:
         turn.crew_id = crew_id
@@ -238,13 +275,17 @@ def test_one_person_accepting_two_crews_at_once_ends_up_in_one(person, monkeypat
         except crews.CrewError as error:
             return str(error.status)
 
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        results = sorted(pool.map(accept_one, ["twocrews-a", "twocrews-b"]))
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        first = pool.submit(accept_one, "twocrews-a")
+        assert paused.wait(timeout=5)
+        second_result = accept_one("twocrews-b")
+        resumed.set()
+        first_result = first.result(timeout=5)
 
-    monkeypatch.undo()
     member_of = [c["id"] for c in crews._search(client, "members", ana_me["id"])]
-    assert member_of == ["twocrews-a"]  # exactly one, and always the same one
-    assert results == ["409", "twocrews-a"]
+    assert member_of == ["twocrews-a"]
+    assert first_result == "twocrews-a"
+    assert second_result == "409"
     assert ana.get("/api/crew").json()["crew"]["id"] == "twocrews-a"
 
 
@@ -257,6 +298,23 @@ def test_leaving_sticks(person):
     ben.post("/api/crew/accept", json={})
     again = ana.post("/api/crew/suggest").json()
     assert again["crew"] is None or again["crew"]["id"] != crew_id
+
+    next_crew = {
+        "id": f"after-leave-{ana_me['id']}",
+        "members": [],
+        "companions": [],
+        "invited": [ana_me["id"]],
+        "declined": [],
+        "meeting": None,
+        "created_at": es.now(),
+    }
+    es.get_client().index(
+        index=es.CREWS,
+        id=next_crew["id"],
+        document=next_crew,
+        refresh=True,
+    )
+    assert ana.post("/api/crew/accept", json={}).status_code == 200
 
 
 def test_only_members_set_the_meeting_and_it_keeps_its_time_zone(person):

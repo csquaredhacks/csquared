@@ -15,8 +15,8 @@ Stored in its own index (no change to the attendee mapping, no reindex):
 - `declined` stops the same crew from being suggested to the same person again.
 
 Capacity is enforced on accept with optimistic concurrency (if_seq_no/if_primary_term),
-so two people accepting the last seat at the same moment cannot both get it. One person
-accepting two crews at the same moment ends up in exactly one (`_keep_one_membership`).
+so two people accepting the last seat at the same moment cannot both get it. An atomic
+seat claim serializes one person's concurrent accepts for different crews.
 """
 
 import hashlib
@@ -99,13 +99,12 @@ def _search(client: Elasticsearch, field: str, attendee_id: str) -> list[dict]:
 
 
 def _declined_partners(client: Elasticsearch, attendee_id: str) -> set[str]:
-    """Pairs already declined remain blocked even if their crew id predates key storage."""
+    """Partners of pair crews I declined or left, even if the crew id predates key storage."""
     partners: set[str] = set()
     for crew in _search(client, "declined", attendee_id):
-        if attendee_id in crew.get("declined", []):
-            partners.update(crew.get("members", []))
-            partners.update(crew.get("invited", []))
-            partners.update(crew.get("declined", []))
+        people = {*crew.get("members", []), *crew.get("invited", []), *crew.get("declined", [])}
+        if attendee_id in crew.get("declined", []) and len(people) == 2:
+            partners.update(people)
     partners.discard(attendee_id)
     return partners
 
@@ -163,6 +162,43 @@ def _update(client: Elasticsearch, crew_id: str, change) -> dict:
         except ConflictError:
             continue
     raise CrewError(409, "The crew changed while you were joining. Try again.")
+
+
+def _seat_id(attendee_id: str) -> str:
+    return f"_crew-seat-{attendee_id}"
+
+
+def _claim_seat(client: Elasticsearch, attendee_id: str, crew_id: str) -> None:
+    """Atomically allow only one concurrent accept for this person."""
+    try:
+        client.index(
+            index=es.CREWS,
+            id=_seat_id(attendee_id),
+            document={"attendee_id": attendee_id, "crew_id": crew_id},
+            op_type="create",
+            refresh=True,
+        )
+    except ConflictError:
+        raise CrewError(409, "You are already in a crew. Leave it first.") from None
+
+
+def _release_seat(client: Elasticsearch, attendee_id: str, crew_id: str) -> None:
+    try:
+        seat = client.get(index=es.CREWS, id=_seat_id(attendee_id))
+    except NotFoundError:
+        return
+    if seat["_source"].get("crew_id") != crew_id:
+        return
+    try:
+        client.delete(
+            index=es.CREWS,
+            id=_seat_id(attendee_id),
+            if_seq_no=seat["_seq_no"],
+            if_primary_term=seat["_primary_term"],
+            refresh=True,
+        )
+    except (ConflictError, NotFoundError):
+        pass
 
 
 def suggest(client: Elasticsearch, me: dict) -> dict | None:
@@ -238,6 +274,8 @@ def accept(client: Elasticsearch, me: dict, companion: bool = False) -> dict:
     if not pending:
         raise CrewError(404, "No crew has been suggested to you")
 
+    _claim_seat(client, me["id"], pending["id"])
+
     def join(crew: dict) -> None:
         if me["id"] not in crew["invited"]:
             raise CrewError(404, "That suggestion was withdrawn")
@@ -248,40 +286,22 @@ def accept(client: Elasticsearch, me: dict, companion: bool = False) -> dict:
         if companion:
             crew.setdefault("companions", []).append(me["id"])
 
+    joined = False
     try:
-        crew = _update(client, pending["id"], join)
-    except CrewError as error:
-        if error.status == 409 and "filled up" in error.message:
-            # Don't leave a dead suggestion behind: the next suggest finds a new crew.
-            _update(client, pending["id"], lambda c: _drop(c, me["id"], "invited"))
-        raise
-    crew = _keep_one_membership(client, me, crew)
+        try:
+            crew = _update(client, pending["id"], join)
+        except CrewError as error:
+            if error.status == 409 and "filled up" in error.message:
+                # Don't leave a dead suggestion behind: the next suggest finds a new crew.
+                _update(client, pending["id"], lambda c: _drop(c, me["id"], "invited"))
+            raise
+        joined = True
+    finally:
+        if not joined:
+            _release_seat(client, me["id"], pending["id"])
+
     crew_joins.add(1)
     return crew
-
-
-def _keep_one_membership(client: Elasticsearch, me: dict, joined: dict) -> dict:
-    """Two accepts by the same person, sent at the same moment, can both pass the
-    "already in a crew" check above and join two different crews. So look again after
-    joining. If I am now in more than one crew, the one with the smallest id is kept and
-    I am taken out of the others. Every racing request applies the same rule, so they
-    agree on the result whatever order they run in."""
-    mine = _search(client, "members", me["id"])
-    if len(mine) <= 1:
-        return joined
-    keep = min(mine, key=lambda c: c["id"])
-    for other in mine:
-        if other["id"] == keep["id"]:
-            continue
-
-        def undo(c: dict) -> None:
-            _drop(c, me["id"], "members")
-            _drop(c, me["id"], "companions")
-
-        _update(client, other["id"], undo)
-    if keep["id"] != joined["id"]:
-        raise CrewError(409, "You are already in a crew. Leave it first.")
-    return joined
 
 
 def _drop(crew: dict, attendee_id: str, field: str) -> None:
@@ -316,6 +336,7 @@ def leave(client: Elasticsearch, me: dict) -> None:
             c["declined"].append(me["id"])
 
     _update(client, crew["id"], change)
+    _release_seat(client, me["id"], crew["id"])
 
 
 def set_meeting(client: Elasticsearch, me: dict, place: str, starts_at: str, tz: str) -> dict:
