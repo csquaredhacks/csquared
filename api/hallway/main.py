@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from . import chaos, es
 from .config import settings
 from .models import Health
-from .routes import attendees, communities, edges, graph, matches, recap, rooms
+from .routes import attendees, communities, crews, edges, graph, matches, recap, rooms
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,7 +27,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="Hallway", lifespan=lifespan)
-for module in (attendees, communities, matches, edges, graph, rooms, recap, chaos):
+for module in (attendees, communities, matches, edges, graph, rooms, recap, crews, chaos):
     app.include_router(module.router)
 
 

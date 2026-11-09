@@ -334,6 +334,101 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/crew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Crew
+         * @description My crew if I accepted one, else my pending suggestion, else none.
+         */
+        get: operations["get_crew_api_crew_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Leave Crew
+         * @description Leave (or decline). You are not reassigned; ask for a new suggestion when ready.
+         */
+        delete: operations["leave_crew_api_crew_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crew/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Crew
+         * @description Ask for a suggestion. Changes nothing if I already have a crew or a suggestion.
+         */
+        post: operations["suggest_crew_api_crew_suggest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crew/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Crew */
+        post: operations["accept_crew_api_crew_accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crew/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline Crew */
+        post: operations["decline_crew_api_crew_decline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/crew/meeting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Meeting */
+        put: operations["set_meeting_api_crew_meeting_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chaos": {
         parameters: {
             query?: never;
@@ -376,6 +471,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AcceptIn */
+        AcceptIn: {
+            /**
+             * Companion
+             * @default false
+             */
+            companion: boolean;
+        };
         /**
          * Attendee
          * @description Public profile. Never contains the session secret or recovery code.
@@ -498,6 +601,38 @@ export interface components {
             /** Created */
             created: boolean;
             other: components["schemas"]["Attendee"];
+        };
+        /**
+         * Crew
+         * @description An arrival group. `members` are only people who accepted. Pending suggestions
+         *     and declines are never shown to anyone.
+         */
+        Crew: {
+            /** Id */
+            id: string;
+            /** Members */
+            members: components["schemas"]["Attendee"][];
+            /** Seats Taken */
+            seats_taken: number;
+            /** Limit */
+            limit: number;
+            /** Why */
+            why: string;
+            meeting: components["schemas"]["Meeting"] | null;
+        };
+        /** CrewOut */
+        CrewOut: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "none" | "suggested" | "member";
+            crew: components["schemas"]["Crew"] | null;
+            /**
+             * Bringing Companion
+             * @default false
+             */
+            bringing_companion: boolean;
         };
         /** Edge */
         Edge: {
@@ -635,6 +770,32 @@ export interface components {
             on_graph?: boolean | null;
             /** Show Groups */
             show_groups?: boolean | null;
+        };
+        /**
+         * Meeting
+         * @description Agreed by the crew. Stored as given; never derived from a hash of the crew id.
+         */
+        Meeting: {
+            /** Place */
+            place: string;
+            /** Starts At */
+            starts_at: string;
+            /** Timezone */
+            timezone: string;
+            /** Set By */
+            set_by: string;
+        };
+        /** MeetingIn */
+        MeetingIn: {
+            /** Place */
+            place: string;
+            /**
+             * Starts At
+             * Format: date-time
+             */
+            starts_at: string;
+            /** Timezone */
+            timezone: string;
         };
         /** MyGraph */
         MyGraph: {
@@ -1238,6 +1399,152 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Recap"];
+                };
+            };
+        };
+    };
+    get_crew_api_crew_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+        };
+    };
+    leave_crew_api_crew_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+        };
+    };
+    suggest_crew_api_crew_suggest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+        };
+    };
+    accept_crew_api_crew_accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decline_crew_api_crew_decline_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+        };
+    };
+    set_meeting_api_crew_meeting_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
