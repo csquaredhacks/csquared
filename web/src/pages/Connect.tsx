@@ -53,7 +53,7 @@ export default function Connect() {
       <>
         <h1>That did not work</h1>
         <ErrorNote message={error} />
-        <Link to="/five" className="button secondary">Back to my five</Link>
+        <Link to="/plan" className="button secondary">Back to my plan</Link>
       </>
     );
   }
@@ -77,7 +77,7 @@ export default function Connect() {
       </PersonCard>
 
       <Link to={`/graph?focus=${other.id}`} className="button">See your link on the graph</Link>
-      <Link to="/five" className="button secondary">Back to my five</Link>
+      <Link to="/plan" className="button secondary">Back to my plan</Link>
     </>
   );
 }

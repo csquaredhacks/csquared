@@ -6,7 +6,7 @@ from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AwareDatetime, BaseModel, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, Field, field_validator, model_validator
 
 Comfort = Literal["open", "small_groups", "one_on_one"]
 # Link kinds that may appear on the public graph. A pending invitation is never one of them.
@@ -230,6 +230,15 @@ class MeetingIn(BaseModel):
         except (ZoneInfoNotFoundError, ValueError):
             raise ValueError("Unknown time zone; use an IANA name like America/Denver") from None
         return value
+
+    @model_validator(mode="after")
+    def offset_matches_timezone(self) -> "MeetingIn":
+        """"09:00+00:00" in America/Denver is two different times. Refuse it instead of
+        storing a meeting that people in the group would read differently."""
+        in_zone = self.starts_at.astimezone(ZoneInfo(self.timezone))
+        if in_zone.utcoffset() != self.starts_at.utcoffset():
+            raise ValueError("The UTC offset of starts_at does not match the time zone")
+        return self
 
 
 class Crew(BaseModel):

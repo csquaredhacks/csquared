@@ -333,6 +333,9 @@ def test_only_members_set_the_meeting_and_it_keeps_its_time_zone(person):
     bad = ana.put("/api/crew/meeting", json=meeting | {"starts_at": "2026-11-10T08:30:00"})
     assert bad.status_code == 422  # a time without an offset is ambiguous
     assert ana.put("/api/crew/meeting", json=meeting | {"timezone": "Mars/Base"}).status_code == 422
+    # 08:30 UTC is not 08:30 in Denver: an offset that disagrees with the zone is refused.
+    wrong_offset = meeting | {"starts_at": "2026-11-10T08:30:00+00:00"}
+    assert ana.put("/api/crew/meeting", json=wrong_offset).status_code == 422
 
 
 def test_crew_limit_is_the_smallest_comfort_limit():

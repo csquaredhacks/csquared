@@ -1,4 +1,8 @@
 // Hand-written to match docs/API.md exactly. If a shape changes there, change it here.
+import type { components } from "./schema";
+
+/** Arrival groups come straight from the generated schema, so they cannot drift. */
+export type CrewOut = components["schemas"]["CrewOut"];
 
 export type Comfort = "open" | "small_groups" | "one_on_one";
 

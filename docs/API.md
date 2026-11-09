@@ -109,7 +109,7 @@ interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: b
 | POST | `/api/crew/accept` | cookie | `{companion?: boolean}` | `CrewOut` (`member`) | 401, 404 no suggestion, 409 full or already in a crew |
 | POST | `/api/crew/decline` | cookie | | `CrewOut` (`none`); that crew is not suggested again | 401 |
 | DELETE | `/api/crew` | cookie | | `CrewOut` (`none`); you are not reassigned | 401 |
-| PUT | `/api/crew/meeting` | cookie | `{place, starts_at, timezone}` | `CrewOut` | 401, 403 not a member, 422 no offset or unknown zone |
+| PUT | `/api/crew/meeting` | cookie | `{place, starts_at, timezone}` | `CrewOut` | 401, 403 not a member, 422 no offset, unknown zone, or an offset that is not the zone's offset at that time |
 | GET | `/api/chaos` | | | `{mode: "off" \| "slow" \| "error"}` | |
 | POST | `/api/chaos` | header `X-Admin-Token` | `{mode}` | `{mode}` | 403 |
 
