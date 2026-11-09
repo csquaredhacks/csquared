@@ -1,20 +1,20 @@
 import { useEffect } from "react";
-import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Connect from "./pages/Connect";
 import { CommunityPage, NewCommunity } from "./pages/Community";
 import Graph from "./pages/Graph";
+import Plan from "./pages/Plan";
 import Profile from "./pages/Profile";
 import Recap from "./pages/Recap";
 import Recover from "./pages/Recover";
 import Register from "./pages/Register";
 import Rooms from "./pages/Rooms";
-import YourFive from "./pages/YourFive";
 
 const TITLES: Record<string, string> = {
-  "/": "Join", "/five": "Your five", "/me": "My code", "/recover": "Recover",
+  "/": "Join", "/plan": "Before you arrive", "/me": "My code", "/recover": "Recover",
   "/graph": "Live graph", "/rooms": "Rooms", "/recap": "Recap",
 };
-const WIDE_PAGES = ["/five", "/graph", "/rooms", "/recap"];
+const WIDE_PAGES = ["/plan", "/graph", "/rooms", "/recap"];
 
 export default function App() {
   const { pathname, search } = useLocation();
@@ -36,7 +36,9 @@ export default function App() {
       <main className={kiosk ? "kiosk" : WIDE_PAGES.includes(pathname) ? "page wide" : "page"}>
         <Routes>
           <Route path="/" element={<Register />} />
-          <Route path="/five" element={<YourFive />} />
+          <Route path="/plan" element={<Plan />} />
+          {/* Old links and printed QR codes still point at /five. */}
+          <Route path="/five" element={<Navigate to="/plan" replace />} />
           <Route path="/me" element={<Profile />} />
           <Route path="/connect/:id" element={<Connect />} />
           <Route path="/recover" element={<Recover />} />
@@ -50,7 +52,7 @@ export default function App() {
       </main>
       {showNav && (
         <nav className="nav" aria-label="Main">
-          <NavLink to="/five">Five</NavLink>
+          <NavLink to="/plan">Plan</NavLink>
           <NavLink to="/me">Me</NavLink>
           <NavLink to="/communities/new">Community</NavLink>
           <NavLink to="/graph">Graph</NavLink>

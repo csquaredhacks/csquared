@@ -66,7 +66,7 @@ export default function Register() {
       <p className="lede">
         {hasPendingConnect()
           ? "You scanned someone's code. Fill this in once and we will connect you two straight after."
-          : "One form, no account. Tell us what you need and what you can give, and we will find the five people you should meet."}
+          : "Going to a conference? Meet your people before you get there. One form, no account: say what you need and what you can give, and we will find your five and a group to walk in with."}
       </p>
 
       <form onSubmit={submit} className="form">
@@ -136,7 +136,7 @@ export default function Register() {
 
         <ErrorNote message={error} />
         <button type="submit" className="button" disabled={busy}>
-          {busy ? "Finding your people…" : "Find my five"}
+          {busy ? "Finding your people…" : "Make my plan"}
         </button>
       </form>
 

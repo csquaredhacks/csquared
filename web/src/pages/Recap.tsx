@@ -40,7 +40,7 @@ export default function Recap() {
       <section aria-labelledby="met-title">
         <h2 id="met-title">People you met</h2>
         {recap.connections.length === 0 && (
-          <p className="empty">Nobody yet. <Link to="/five">Start with your five</Link>.</p>
+          <p className="empty">Nobody yet. <Link to="/plan">Start with your five</Link>.</p>
         )}
         <ul className="grid">
           {recap.connections.map((person) => (

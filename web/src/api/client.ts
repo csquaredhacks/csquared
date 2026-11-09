@@ -1,5 +1,5 @@
 import type {
-  Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, Graph, Health,
+  Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, CrewOut, Graph, Health,
   InvitationResult, Match, Me, MyGraph, Path, Recap, Room,
 } from "./types";
 import type { components } from "./schema";
@@ -68,6 +68,15 @@ export const acceptInvitation = (fromId: string) =>
 /** Decline theirs, take back mine, or cancel our plan. */
 export const withdrawInvitation = (otherId: string) =>
   request<void>("DELETE", `/api/invitations/${encodeURIComponent(otherId)}`);
+// Arrival groups. Every call returns where I stand now: none, suggested or member.
+export const getCrew = () => request<CrewOut>("GET", "/api/crew");
+export const suggestCrew = () => request<CrewOut>("POST", "/api/crew/suggest");
+export const acceptCrew = (companion: boolean) => request<CrewOut>("POST", "/api/crew/accept", { companion });
+export const declineCrew = () => request<CrewOut>("POST", "/api/crew/decline");
+export const leaveCrew = () => request<CrewOut>("DELETE", "/api/crew");
+/** `startsAt` is ISO 8601 with the UTC offset of `timezone` (an IANA name). */
+export const setCrewMeeting = (place: string, startsAt: string, timezone: string) =>
+  request<CrewOut>("PUT", "/api/crew/meeting", { place, starts_at: startsAt, timezone });
 export const getPath = (toId: string) => request<Path>("GET", `/api/graph/path?to=${encodeURIComponent(toId)}`);
 export const checkIn = (room: string) => request<Room>("POST", "/api/checkins", { room });
 export const getRooms = () => request<Room[]>("GET", "/api/rooms");

@@ -17,5 +17,5 @@ export function hasPendingConnect(): boolean {
 /** Where to go once we know who the user is. */
 export function nextPath(): string {
   const id = sessionStorage.getItem(KEY);
-  return id ? `/connect/${encodeURIComponent(id)}` : "/five";
+  return id ? `/connect/${encodeURIComponent(id)}` : "/plan";
 }
