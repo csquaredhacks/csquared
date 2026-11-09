@@ -21,7 +21,8 @@ async def lifespan(_: FastAPI):
     # Create indices in the background so the pod starts (and /healthz answers)
     # even if Elasticsearch is slow or unreachable for the first minute.
     threading.Thread(
-        target=es.ensure_indices_with_retry, args=(es.get_client(),), daemon=True
+        target=es.ensure_indices_with_retry, args=(es.get_client(),),
+        kwargs={"seconds": None}, daemon=True,
     ).start()
     yield
 
@@ -35,9 +36,12 @@ for module in (
 
 @app.get("/healthz")
 def healthz() -> Health:
-    """Always 200 while the process is alive; `es` says whether the datastore is reachable."""
+    """Always 200 while alive; `es` is green only when the required indices exist."""
     try:
-        reachable = es.get_client().ping()
+        client = es.get_client()
+        reachable = client.ping() and client.indices.exists(
+            index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.CREWS, es.COMMUNITIES]
+        )
     except Exception:  # noqa: BLE001
         reachable = False
     return Health(ok=True, es="green" if reachable else "red")
