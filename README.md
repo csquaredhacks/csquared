@@ -21,6 +21,7 @@ Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 | **Before** | Your five: the people to meet, each with a true reason and an icebreaker, and a mark when a match works both ways. | Built |
 | **Before** | Send your link to someone you already know, and you are connected before day one. | Built |
 | **Before** | A recovery code, so the profile you made at home opens on your phone at the venue. | Built |
+| **Before** | Or sign in with Google or LinkedIn: your name is filled in, and the same button opens your profile on any device. | Built (needs your own client ids, see below) |
 | **Before** | A suggested arrival group you can accept, decline or leave, with an agreed place and time to meet. | Built |
 | **Before** | If your group falls apart, you are told, and you can ask for another. Nobody is moved for you. | Built |
 | **Before** | Invite someone to meet. Private until they accept. | Built |
@@ -128,6 +129,33 @@ make url
 
 `make url` prints a public https address. Share it or turn it into a QR code. No ingress, DNS or account is needed.
 If you cannot log in to the GitHub container registry, `make image-ttl` pushes to a free anonymous registry instead and prints the deploy command.
+
+### Sign in with Google or LinkedIn
+
+Optional. Without it the two buttons are not shown and people join with the form. Each
+button appears once its two values are in `.env` (then `make secrets && make deploy` on a
+cluster). Hallway keeps the provider's id for the person and their name: no email
+address, no picture, no token. The flow is explained at the top of
+[`api/hallway/signin.py`](api/hallway/signin.py).
+
+1. **Google.** [Google Cloud console](https://console.cloud.google.com/apis/credentials) ->
+   Create credentials -> OAuth client ID -> Web application. Copy the client ID and secret to
+   `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. While the consent screen is in "Testing",
+   only the test users you list there can sign in; publish it to let anyone in.
+2. **LinkedIn.** [LinkedIn developer portal](https://www.linkedin.com/developers/apps) ->
+   Create app -> Products -> request "Sign In with LinkedIn using OpenID Connect". Copy the
+   client ID and secret from the Auth tab to `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET`.
+3. **Redirect addresses.** At both providers, add the address people open, followed by the
+   callback path, exactly:
+
+   ```
+   http://localhost:5173/api/signin/google/callback
+   http://localhost:5173/api/signin/linkedin/callback
+   ```
+
+   On the cluster, replace `http://localhost:5173` with the address from `make url`.
+   A quick tunnel gets a new address every time the tunnel pod restarts, so the two
+   addresses have to be registered again after each restart. A fixed hostname avoids that.
 
 ### Option 3: just the tests
 

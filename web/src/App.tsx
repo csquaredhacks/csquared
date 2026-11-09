@@ -59,7 +59,6 @@ export default function App() {
           <NavLink to="/me">Me</NavLink>
           <NavLink to="/communities/new">Community</NavLink>
           <NavLink to="/graph">Graph</NavLink>
-          <NavLink to="/rooms">Rooms</NavLink>
           <NavLink to="/recap">Recap</NavLink>
         </nav>
       )}

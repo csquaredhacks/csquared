@@ -1,6 +1,6 @@
 import type {
   Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, CrewOut, Crowd, Goal, Goals, Graph, Health,
-  InvitationResult, Match, Me, MyGraph, Path, Recap, Room,
+  InvitationResult, Match, Me, MyGraph, Path, PendingSignin, Recap, Room,
 } from "./types";
 import type { components } from "./schema";
 
@@ -66,6 +66,10 @@ export const leaveCommunity = (id: string) =>
 export const getMyCommunities = () => request<Community[]>("GET", "/api/me/communities");
 export const createAttendee = (body: AttendeeIn) => request<Me>("POST", "/api/attendees", body);
 export const getMe = () => request<Me>("GET", "/api/me");
+/** Who just signed in with a provider and still has to send the form. null: nobody. */
+export const getPendingSignin = () => request<PendingSignin | null>("GET", "/api/signin/pending");
+/** Go back to the plain form, as if the sign in button was never pressed. */
+export const forgetPendingSignin = () => request<void>("DELETE", "/api/signin/pending");
 export const recover = (code: string) => request<Me>("POST", "/api/recover", { code });
 export const getAttendee = (id: string) => request<Attendee>("GET", `/api/attendees/${encodeURIComponent(id)}`);
 export const getMatches = () => request<Match[]>("GET", "/api/matches");

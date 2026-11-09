@@ -8,7 +8,8 @@ image:
   pullPolicy: Always
 
 # The one Secret. Keys: ES_URL, ES_API_KEY, ELSER_ID, OPENAI_API_KEY, ADMIN_TOKEN,
-# DASH0_OTLP_ENDPOINT, DASH0_AUTH_TOKEN, DASH0_RUM_URL, DASH0_RUM_TOKEN.
+# DASH0_OTLP_ENDPOINT, DASH0_AUTH_TOKEN, DASH0_RUM_URL, DASH0_RUM_TOKEN, and for the sign in
+# buttons GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET.
 secretName: hallway-secrets
 
 # Comma-separated room names. With --set, escape the commas: --set rooms="A\,B".
