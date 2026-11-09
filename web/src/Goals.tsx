@@ -21,6 +21,7 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getGoals().then((out) => setLocal(out.goals)).catch((err) => setError(errorMessage(err)));
@@ -30,51 +31,57 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
   // reach the server in the wrong order and the older list would win. While one is in
   // flight, only the newest wanted list is kept, and it is sent when the first returns.
   const inFlight = useRef(false);
-  const queued = useRef<{ goals: Goal[]; message: string } | null>(null);
+  const queued = useRef<{ goals: Goal[]; message: string; onSuccess?: () => void } | null>(null);
   const saved = useRef<Goal[]>([]); // what the server last confirmed
 
   useEffect(() => {
     if (goals !== null && !inFlight.current && queued.current === null) saved.current = goals;
   }, [goals]);
 
-  async function send(next: Goal[], message: string) {
+  async function send(next: Goal[], message: string, onSuccess?: () => void) {
     inFlight.current = true;
+    setSaving(true);
+    let current: { goals: Goal[]; message: string; onSuccess?: () => void } | null = { goals: next, message, onSuccess };
     try {
-      const confirmed = (await setGoals(next)).goals;
-      saved.current = confirmed;
-      if (queued.current === null) {
-        setLocal(confirmed);
-        setStatus(message);
+      while (current) {
+        try {
+          const confirmed = (await setGoals(current.goals)).goals;
+          saved.current = confirmed;
+          if (queued.current === null) {
+            setLocal(confirmed);
+            setStatus(current.message);
+            current.onSuccess?.();
+          }
+        } catch (err) {
+          queued.current = null;
+          setLocal(saved.current); // show what is really stored
+          setStatus("");
+          setError(errorMessage(err));
+          break;
+        }
+        current = queued.current;
+        queued.current = null;
       }
-    } catch (err) {
-      queued.current = null;
-      setLocal(saved.current); // show what is really stored
-      setStatus("");
-      setError(errorMessage(err));
     } finally {
       inFlight.current = false;
-    }
-    const waiting = queued.current;
-    if (waiting) {
-      queued.current = null;
-      await send(waiting.goals, waiting.message);
+      setSaving(false);
     }
   }
 
   /** Shows the change at once and saves it. */
-  function save(next: Goal[], message: string) {
+  function save(next: Goal[], message: string, onSuccess?: () => void) {
     setLocal(next);
     setError("");
-    if (inFlight.current) queued.current = { goals: next, message };
-    else void send(next, message);
+    if (inFlight.current) queued.current = { goals: next, message, onSuccess };
+    else void send(next, message, onSuccess);
   }
 
   function add(event: FormEvent) {
     event.preventDefault();
+    const entered = text;
     const wanted = text.trim();
     if (!wanted || !goals) return;
-    setText("");
-    save([...goals, { text: wanted, done: false }], "Goal added.");
+    save([...goals, { text: wanted, done: false }], "Goal added.", () => setText((current) => current === entered ? "" : current));
   }
 
   if (goals === null) return error ? <ErrorNote message={error} /> : <p className="muted" role="status">Loading your goals…</p>;
@@ -93,7 +100,7 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
             {goals.map((goal, index) => (
               <li key={`${index}-${goal.text}`}>
                 <label className="choice">
-                  <input type="checkbox" checked={goal.done} disabled={readOnly}
+                  <input type="checkbox" checked={goal.done} disabled={readOnly || saving}
                     onChange={(e) => save(
                       goals.map((g, i) => (i === index ? { ...g, done: e.target.checked } : g)),
                       e.target.checked ? "Marked as done." : "Marked as not done.",
@@ -101,7 +108,7 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
                   <span className={goal.done ? "goal-done" : undefined}>{goal.text}</span>
                 </label>
                 {!readOnly && (
-                  <button type="button" className="link-button"
+                  <button type="button" className="link-button" disabled={saving}
                     aria-label={`Remove goal: ${goal.text}`}
                     onClick={() => save(goals.filter((_, i) => i !== index), "Goal removed.")}>
                     Remove
@@ -119,7 +126,7 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
             <ul className="ideas" aria-label="Goal ideas">
               {unused.map((idea) => (
                 <li key={idea}>
-                  <button type="button" className="chip"
+                  <button type="button" className="chip" disabled={saving}
                     onClick={() => save([...goals, { text: idea, done: false }], "Goal added.")}>
                     + {idea}
                   </button>
@@ -129,8 +136,8 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
           )}
           <form onSubmit={add} className="form goal-form">
             <label htmlFor="goal-text">Add your own goal</label>
-            <input id="goal-text" maxLength={120} value={text} onChange={(e) => setText(e.target.value)} />
-            <button type="submit" className="button secondary" disabled={!text.trim()}>Add goal</button>
+            <input id="goal-text" maxLength={120} value={text} disabled={saving} onChange={(e) => setText(e.target.value)} />
+            <button type="submit" className="button secondary" disabled={!text.trim() || saving}>Add goal</button>
           </form>
         </>
       )}
