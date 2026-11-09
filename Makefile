@@ -2,7 +2,7 @@
 # Deploy to the cluster in three commands:  make secrets && make deploy && make url
 
 NS       ?= hallway
-IMAGE    ?= ghcr.io/biancaravago/hallway
+IMAGE    ?= ghcr.io/csquaredhacks/hallway
 TAG      ?= latest
 API      ?= http://localhost:8000
 # Most clusters run amd64 nodes; without this an Apple Silicon laptop builds an arm64 image.

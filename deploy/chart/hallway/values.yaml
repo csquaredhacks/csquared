@@ -2,7 +2,7 @@
 # Kubernetes Secret named below, created by `make secrets` from your .env file.
 
 image:
-  repository: ghcr.io/biancaravago/hallway
+  repository: ghcr.io/csquaredhacks/hallway
   tag: latest
   # Always: `latest` and ttl.sh tags are reused for new builds, so never trust a node's cached copy.
   pullPolicy: Always
