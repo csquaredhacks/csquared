@@ -115,8 +115,10 @@ def main() -> None:
         # The planted two-way pairs come first: each asker invites the person whose
         # offer answers their ask, and that invitation is accepted, so the demo's
         # reciprocal matches already have a plan before the random invitations start.
-        by_name = {p["name"]: p for p in people if "name" in p}
+        by_name = {p["name"]: p for p in people}
         for planted in json.loads(DATA.read_text()).get("_planted_pairs", []):
+            if len(invited) >= wanted:
+                break
             asker = by_name.get(planted["asker"])
             offerer = by_name.get(planted["offerer"])
             if asker is None or offerer is None or asker is offerer:
