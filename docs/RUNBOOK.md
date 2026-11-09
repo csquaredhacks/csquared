@@ -2,7 +2,8 @@
 
 **The plan in one line:** get the app running first, then spend the afternoon on the
 pre-conference experience, because that is what we pitch. Design and order of the
-pre-conference work: [`PRE_CONFERENCE.md`](PRE_CONFERENCE.md). Times are Mountain Time.
+pre-conference work: [`WORKING_PLAN.md`](WORKING_PLAN.md). The historical v4 design
+is in [`PRE_CONFERENCE.md`](PRE_CONFERENCE.md). Times are Mountain Time.
 
 ## Where we are
 
