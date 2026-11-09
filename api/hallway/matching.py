@@ -10,10 +10,20 @@ Every query is named, and Elasticsearch reports which names matched each hit
 (`matched_queries`). That is how the app can honestly say WHY two people were matched.
 """
 
-from elasticsearch import Elasticsearch
+import logging
+import time
+
+from elasticsearch import ApiError, Elasticsearch
 
 from . import edges, es
 from .config import settings
+
+log = logging.getLogger("hallway.matching")
+
+# When Elasticsearch refuses the hybrid query (the ELSER trial quota answers 429 when it
+# runs out), matching carries on with keywords only and tries semantic again after this.
+SEMANTIC_PAUSE_SECONDS = 60
+_semantic_paused_until = 0.0
 
 SOURCE_FIELDS = [
     "id", "name", "working_on", "asks", "offers", "fun_fact", "tags", "groups", "comfort",
@@ -136,16 +146,52 @@ def is_reciprocal(matched: set[str]) -> bool:
     return {"asks_to_offers", "offers_to_asks"} <= matched
 
 
+def search_people(
+    client: Elasticsearch,
+    a: dict,
+    exclude: list[str],
+    size: int,
+    only_ids: list[str] | None = None,
+    semantic: bool | None = None,
+) -> list[dict]:
+    """Run the match query and return the hits. Hybrid (keywords plus meaning) when ELSER
+    is configured and answering. If Elasticsearch refuses the hybrid query, the same
+    question is asked again with keywords only, so a person still gets their five.
+    `semantic=False` skips the semantic half without trying it."""
+    global _semantic_paused_until
+    if semantic is None:
+        semantic = bool(settings.elser_id)
+    if semantic and time.monotonic() >= _semantic_paused_until:
+        body = build_match_query(a, exclude, size, semantic=True, only_ids=only_ids)
+        try:
+            # No retries: a rate-limited model answers slowly, and the keyword query
+            # below is a better use of the person's wait than asking again.
+            return client.options(max_retries=0).search(index=es.ATTENDEES, body=body)["hits"][
+                "hits"
+            ]
+        except ApiError as error:
+            _semantic_paused_until = time.monotonic() + SEMANTIC_PAUSE_SECONDS
+            log.warning(
+                "hybrid match query refused (status %s); keywords only for %d seconds",
+                error.status_code,
+                SEMANTIC_PAUSE_SECONDS,
+            )
+    body = build_match_query(a, exclude, size, semantic=False, only_ids=only_ids)
+    return client.search(index=es.ATTENDEES, body=body)["hits"]["hits"]
+
+
 def find_matches_detailed(
-    client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
+    client: Elasticsearch,
+    a: dict,
+    size: int = 5,
+    only_ids: list[str] | None = None,
+    semantic: bool | None = None,
 ) -> list[tuple[dict, float, str, set[str]]]:
     """Run the query for attendee `a`. Returns (other attendee, score, reason, matched)
     tuples, where `matched` is the names of the queries that matched that person."""
     exclude = [a["id"], *edges.connected_ids(client, a["id"])]
-    body = build_match_query(a, exclude, size, only_ids=only_ids)
-    hits = client.search(index=es.ATTENDEES, body=body)["hits"]["hits"]
     found = []
-    for h in hits:
+    for h in search_people(client, a, exclude, size, only_ids, semantic):
         other = h["_source"]
         matched = set(h.get("matched_queries", []))
         found.append((other, h["_score"] or 0.0, explain_why(a, other, matched), matched))
@@ -153,9 +199,13 @@ def find_matches_detailed(
 
 
 def find_matches(
-    client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
+    client: Elasticsearch,
+    a: dict,
+    size: int = 5,
+    only_ids: list[str] | None = None,
+    semantic: bool | None = None,
 ) -> list[tuple[dict, float, str]]:
     """Returns (other attendee, score, reason) tuples. Most callers unpack exactly these
     three; the ones that need the matched query names call find_matches_detailed."""
-    detailed = find_matches_detailed(client, a, size, only_ids)
+    detailed = find_matches_detailed(client, a, size, only_ids, semantic)
     return [(other, score, reason) for other, score, reason, _matched in detailed]

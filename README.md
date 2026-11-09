@@ -34,6 +34,22 @@ Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 The current build order is in [`docs/WORKING_PLAN.md`](docs/WORKING_PLAN.md).
 [`docs/PRE_CONFERENCE.md`](docs/PRE_CONFERENCE.md) preserves the earlier v4 design.
 
+## What it looks like
+
+All data in these pictures is fictional seed data, running on a laptop.
+
+| Before you arrive | The room map | Your recap |
+|---|---|---|
+| ![The plan page on a phone: a four-step checklist and the first match with a reason](docs/screenshots/plan.png) | ![The room map on a phone: who is in Main Stage and Room A](docs/screenshots/rooms.png) | ![The recap on a phone: people met, groups bridged, a follow-up and goals](docs/screenshots/recap.png) |
+
+The organizer board, in counts only:
+
+![The organizer board: eight tiles of counts, such as registered, in an arrival group, pairs who plan to meet](docs/screenshots/crowd.png)
+
+The live graph on the venue screen:
+
+![The kiosk graph: sixty people linked by met, planned and suggested lines, with a QR code to join](docs/screenshots/graph.png)
+
 ## How it works
 
 ```
@@ -56,9 +72,9 @@ Everything runs on a Kubernetes cluster that Radar is connected to. It is one He
 | Sponsor tool | What it does in Hallway |
 | --- | --- |
 | **Elasticsearch** | The only datastore, and the matchmaker. One hybrid query with reciprocal rank fusion crosses *my asks* with *their offers*, *my offers* with *their asks*, similar work, shared tags and shared groups. Each signal runs as keyword search and, when an inference endpoint is configured, as semantic search too. Named queries tell us which signal matched, so the reason shown to the user is true and not made up by a language model. See [`api/hallway/matching.py`](api/hallway/matching.py). |
-| **Dash0** | The API runs under OpenTelemetry auto-instrumentation and adds its own spans (`match.query`, `match.icebreaker`, `graph.bfs`, `matcher.run`) and metrics (connections made, room occupancy). The browser sends real user monitoring data. The room map in the product is drawn from the same numbers the dashboard shows. |
+| **Dash0** | The API runs under OpenTelemetry auto-instrumentation and adds its own spans (`match.query`, `match.icebreaker`, `graph.bfs`, `matcher.run`) and metrics (connections made, room occupancy). The browser can send real user monitoring data once its token is set. The room map and the organizer board are drawn from the same numbers the dashboard shows. The dashboard, two check rules and an SLO are kept as code in [`deploy/dash0/`](deploy/dash0/); see [`docs/DASH0.md`](docs/DASH0.md). Dash0's own data showed us the matcher failing on a rate limit: [`docs/investigations/2026-11-09-1558-elser-rate-limit-dash0.md`](docs/investigations/2026-11-09-1558-elser-rate-limit-dash0.md). |
 | **Radar** | The cluster view during the whole build, and the investigation tool when a pod is killed for using too much memory: Radar's AI named the cause in 87 seconds. See [`docs/investigations/2026-11-09-1518-oom-radar.md`](docs/investigations/2026-11-09-1518-oom-radar.md). |
-| **Gitar** | Reviews every pull request against our own rules in [`docs/GITAR_RULES.md`](docs/GITAR_RULES.md), and diagnoses CI failures. |
+| **Gitar** | Reviews every pull request against our own rules in [`docs/GITAR_RULES.md`](docs/GITAR_RULES.md), and diagnoses CI failures. When a PR forgot to regenerate the browser types, Gitar named the rule and pushed the fix in two minutes: [`docs/investigations/2026-11-09-1347-gitar-schema-drift.md`](docs/investigations/2026-11-09-1347-gitar-schema-drift.md). |
 
 ## Run it
 
@@ -156,7 +172,7 @@ We used AI tools to build this, as the hackathon rules allow.
 
 - **Claude Code** helped review our plan and wrote a large part of the first version of the API, the web app, the Helm chart, the tests and these docs.
 - **Gitar** reviews our pull requests and suggests fixes for CI failures.
-- **Dash0 Agent0** and **Radar's AI investigation** were used on the incidents in `docs/investigations/`.
+- **Dash0** (its query API, driven from Claude Code) and **Radar's AI investigation** were used on the incidents in `docs/investigations/`.
 - The app itself calls a language model for one thing only: an optional one-line icebreaker. Matching and the reasons shown never depend on it.
 
 Every team member has read the code they present and can explain it. `docs/REVIEW.md` records the design decisions and why we made them.
