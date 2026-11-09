@@ -13,7 +13,7 @@ PLATFORM ?= linux/amd64
 export
 
 .DEFAULT_GOAL := help
-.PHONY: help dash0 dev test lint types seed seed-before seed-live image image-ttl secrets deploy url logs matcher-now oom-demo oom-fix
+.PHONY: help dash0 dev test test-smoke smoke lint types seed seed-before seed-live image image-ttl secrets deploy url logs matcher-now oom-demo oom-fix
 
 help: ## List the targets
 	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
@@ -29,8 +29,11 @@ dev: ## Run the API (:8000, auto-reload) and Vite (:5173) together; Ctrl-C stops
 test: ## Run the API tests
 	cd api && pytest -q
 
+test-smoke: ## Test the demo smoke check against a local HTTP fixture
+	python -m pytest -q deploy/test_smoke.py
+
 lint: ## Lint the Python code
-	ruff check api seed
+	ruff check api seed deploy
 
 types: ## Regenerate web/src/api/schema.d.ts from the API models (CI fails if it is stale)
 	python -c "import json; from hallway.main import app; print(json.dumps(app.openapi()))" > web/openapi.json
@@ -57,6 +60,9 @@ image-ttl: ## No-login fallback: push to ttl.sh (anonymous, image expires after 
 	echo "Deploy it with: make deploy IMAGE=$$ref TAG=8h"
 
 # ---- Cluster ----
+
+smoke: ## Read-only demo check: Join, Plan, Graph, asset and ES readiness (API=<url>)
+	python deploy/smoke.py --api "$(API)"
 
 secrets: ## Create or update the Secret hallway-secrets from .env
 	kubectl create namespace $(NS) 2>/dev/null || true  # "already exists" is fine
