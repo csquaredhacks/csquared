@@ -1,5 +1,7 @@
 # Hallway Implementation Plan (v2: cluster on Radar, one image, zero-friction setup)
 
+> **Superseded on the day (v3).** The code no longer follows this plan in several places: there is no OTel Collector, the session cookie carries a secret, matching is hybrid, and the email field is gone. Read [`docs/REVIEW.md`](../../REVIEW.md) for what changed and why, [`docs/RUNBOOK.md`](../../RUNBOOK.md) for today's tasks, and [`docs/API.md`](../../API.md) for the contract. This file is kept as a record of the original plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
 > **For the humans:** this is a one-day hackathon plan. Tasks are grouped into four parallel **lanes** (Platform, API, Web, Story). Each lane is one person. Each task states exactly what it produces so the next lane can build against it. Tests are smoke checks; the demo is the test. Every task ends in a PR so Gitar reviews it. Phases carry durations, not clock times, so start Phase 0 whenever you read this.

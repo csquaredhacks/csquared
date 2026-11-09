@@ -8,3 +8,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+!.env.example
+web/openapi.json
+*.egg-info/
