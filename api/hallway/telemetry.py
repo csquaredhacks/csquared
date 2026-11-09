@@ -13,6 +13,9 @@ edges_total = meter.create_counter(
 matcher_pairs = meter.create_counter(
     "hallway.matcher.pairs", description="New suggested pairs written by the matcher"
 )
+crew_joins = meter.create_counter(
+    "hallway.crew.joins", description="People who accepted an arrival group"
+)
 
 _room_occupancy: dict[str, int] = {}
 

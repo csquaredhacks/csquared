@@ -54,6 +54,16 @@ interface Recap { connections: Attendee[]; groups_bridged: number; nudges: strin
 
 interface Config { rooms: string[]; chaos_enabled: boolean;
                    rum: { url: string; token: string } | null; }
+
+// Arrival groups (working plan step 3). Pending suggestions and declines are never
+// returned to anyone; `members` lists only people who accepted.
+type CrewStatus = "none" | "suggested" | "member";
+interface Meeting { place: string; starts_at: string;   // ISO 8601 with UTC offset
+                    timezone: string; set_by: string; }   // IANA zone, e.g. "America/Denver"
+interface Crew { id: string; members: Attendee[]; seats_taken: number;  // companions count
+                 limit: number;    // smallest comfort limit: one_on_one 2, small_groups 4, open 5
+                 why: string; meeting: Meeting | null; }  // null until a member sets it
+interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: boolean; }
 ```
 
 ## Endpoints
@@ -73,6 +83,12 @@ interface Config { rooms: string[]; chaos_enabled: boolean;
 | POST | `/api/checkins` | cookie | `{room: string}` | `Room` | 400 unknown room, 401 |
 | GET | `/api/rooms` | | | `Room[]` (every configured room, even empty) | |
 | GET | `/api/recap` | cookie | | `Recap` | 401 |
+| GET | `/api/crew` | cookie | | `CrewOut`: my crew, else my pending suggestion, else none | 401 |
+| POST | `/api/crew/suggest` | cookie | | `CrewOut` (no change if I already have a crew or suggestion) | 401 |
+| POST | `/api/crew/accept` | cookie | `{companion?: boolean}` | `CrewOut` (`member`) | 401, 404 no suggestion, 409 full or already in a crew |
+| POST | `/api/crew/decline` | cookie | | `CrewOut` (`none`); that crew is not suggested again | 401 |
+| DELETE | `/api/crew` | cookie | | `CrewOut` (`none`); you are not reassigned | 401 |
+| PUT | `/api/crew/meeting` | cookie | `{place, starts_at, timezone}` | `CrewOut` | 401, 403 not a member, 422 no offset or unknown zone |
 | GET | `/api/chaos` | | | `{mode: "off" \| "slow" \| "error"}` | |
 | POST | `/api/chaos` | header `X-Admin-Token` | `{mode}` | `{mode}` | 403 |
 
@@ -90,9 +106,7 @@ Not built yet. Build against these shapes. The design and the order are in
 [`PRE_CONFERENCE.md`](PRE_CONFERENCE.md). Move each block up into the sections above when it merges.
 
 ```ts
-// B. Crews
-interface Crew { id: string; members: Attendee[]; room: string; when: string; why: string; }
-interface CrewOut { crew: Crew | null; }       // null: not assigned yet, or opted out
+// B. Crews: built as arrival groups; see Shapes and Endpoints above.
 
 // C. Waves
 type WaveState = "none" | "sent" | "received" | "mutual";
@@ -116,8 +130,6 @@ interface Config { /* existing fields */ phase: Phase; }
 
 | Method | Path | Auth | Body | Returns | Errors |
 |---|---|---|---|---|---|
-| GET | `/api/crew` | cookie | | `CrewOut` | 401 |
-| DELETE | `/api/crew` | cookie | | `CrewOut` (always `null`; you are not reassigned) | 401 |
 | POST | `/api/waves` | cookie | `{to_id: string}` | `WaveResult` | 400 self or already connected, 401, 404, 429 after 20 |
 | GET | `/api/waves` | cookie | | `Waves` | 401 |
 | GET | `/api/crowd` | | | `Crowd` | |

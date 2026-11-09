@@ -14,6 +14,7 @@ log = logging.getLogger("hallway.es")
 ATTENDEES = f"{settings.index_prefix}-attendees"
 EDGES = f"{settings.index_prefix}-edges"
 CHECKINS = f"{settings.index_prefix}-checkins"
+CREWS = f"{settings.index_prefix}-crews"
 
 
 def now() -> str:
@@ -77,11 +78,26 @@ CHECKIN_MAPPING = {
 }
 
 
+CREW_MAPPING = {
+    "properties": {
+        "id": {"type": "keyword"},
+        "members": {"type": "keyword"},
+        "companions": {"type": "keyword"},
+        "invited": {"type": "keyword"},
+        "declined": {"type": "keyword"},
+        # Free text chosen by members; stored, never searched or aggregated.
+        "meeting": {"type": "object", "enabled": False},
+        "created_at": {"type": "date"},
+    }
+}
+
+
 def ensure_indices(client: Elasticsearch) -> None:
     wanted = {
         ATTENDEES: attendee_mapping(settings.elser_id),
         EDGES: EDGE_MAPPING,
         CHECKINS: CHECKIN_MAPPING,
+        CREWS: CREW_MAPPING,
     }
     for name, mapping in wanted.items():
         if not client.indices.exists(index=name):

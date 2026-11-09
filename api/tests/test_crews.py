@@ -1,0 +1,137 @@
+"""Arrival groups (working plan step 3): suggested, then accepted, declined or left.
+Each test uses its own made-up topic words so people from other tests don't match."""
+
+from concurrent.futures import ThreadPoolExecutor
+
+from hallway import crews, es
+
+
+def _pair(person, topic: str, a_comfort: str = "open", b_comfort: str = "open"):
+    a = person(f"Ana {topic}", asks=f"{topic}", working_on=f"{topic}", comfort=a_comfort)
+    b = person(f"Ben {topic}", offers=f"{topic}", working_on=f"{topic}", comfort=b_comfort)
+    return a, b
+
+
+def test_nothing_happens_until_you_accept(person):
+    (ana, ana_me), (ben, ben_me) = _pair(person, "zorblax")
+    assert ana.get("/api/crew").json() == {
+        "status": "none",
+        "crew": None,
+        "bringing_companion": False,
+    }
+
+    out = ana.post("/api/crew/suggest").json()
+    assert out["status"] == "suggested"
+    assert out["crew"]["members"] == []  # nobody has accepted yet
+    # Ben was suggested the same crew, but is not in it until he says yes.
+    assert ben.get("/api/crew").json()["status"] == "suggested"
+
+    joined = ana.post("/api/crew/accept", json={}).json()
+    assert joined["status"] == "member"
+    assert [m["id"] for m in joined["crew"]["members"]] == [ana_me["id"]]
+    assert ben.get("/api/crew").json()["crew"]["members"][0]["id"] == ana_me["id"]
+
+
+def test_a_second_person_joins_the_first_persons_crew(person):
+    (ana, ana_me), (ben, ben_me) = _pair(person, "quillfeather")
+    ana.post("/api/crew/suggest")
+    ana.post("/api/crew/accept", json={})
+    cat, _ = person("Cat quillfeather", offers="quillfeather", working_on="quillfeather")
+    out = cat.post("/api/crew/suggest").json()
+    assert out["status"] == "suggested"
+    assert [m["id"] for m in out["crew"]["members"]] == [ana_me["id"]]
+
+
+def test_pending_suggestions_and_declines_stay_private(person):
+    (ana, _), (ben, ben_me) = _pair(person, "vexmoor")
+    ana.post("/api/crew/suggest")
+    ana.post("/api/crew/accept", json={})
+    ben.post("/api/crew/decline")
+    crew = ana.get("/api/crew").json()["crew"]
+    text = str(crew)
+    assert ben_me["id"] not in text  # Ana never learns Ben was suggested or said no
+    assert set(crew) == {"id", "members", "seats_taken", "limit", "why", "meeting"}
+
+
+def test_one_on_one_person_never_ends_up_in_a_crew_of_three(person):
+    (ana, _), (ben, _) = _pair(person, "plinthwhorl", a_comfort="one_on_one")
+    ana.post("/api/crew/suggest")
+    assert ana.post("/api/crew/accept", json={}).json()["crew"]["limit"] == 2
+    assert ben.post("/api/crew/accept", json={}).status_code == 200
+    cat, _ = person("Cat plinthwhorl", offers="plinthwhorl", working_on="plinthwhorl")
+    out = cat.post("/api/crew/suggest").json()
+    # The pair is full, so Cat is not offered it.
+    assert out["crew"] is None or len(out["crew"]["members"]) == 0
+
+
+def test_a_companion_takes_a_seat(person):
+    (ana, _), (ben, _) = _pair(person, "brindleglow", a_comfort="one_on_one")
+    ana.post("/api/crew/suggest")
+    out = ana.post("/api/crew/accept", json={"companion": True}).json()
+    assert out["bringing_companion"] is True
+    assert out["crew"]["seats_taken"] == 2
+    response = ben.post("/api/crew/accept", json={})
+    assert response.status_code == 409  # Ana + companion fill a one_on_one crew
+    assert ben.get("/api/crew").json()["status"] == "none"  # dead suggestion cleared
+
+
+def test_two_people_racing_for_the_last_seat_cannot_both_get_it(person):
+    client = es.get_client()
+    (ana, ana_me), _ = _pair(person, "grumbletoast", a_comfort="one_on_one")
+    others = [person(f"Racer{i} grumbletoast", offers="grumbletoast") for i in range(2)]
+    crew = {
+        "id": "race-" + ana_me["id"],
+        "members": [ana_me["id"]],
+        "companions": [],
+        "invited": [me["id"] for _, me in others],
+        "declined": [],
+        "meeting": None,
+        "created_at": es.now(),
+    }
+    client.index(index=es.CREWS, id=crew["id"], document=crew, refresh=True)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        codes = list(pool.map(lambda o: o[0].post("/api/crew/accept", json={}).status_code, others))
+    assert sorted(codes) == [200, 409]
+    stored = client.get(index=es.CREWS, id=crew["id"])["_source"]
+    assert len(stored["members"]) == 2
+
+
+def test_leaving_sticks(person):
+    (ana, ana_me), (ben, _) = _pair(person, "snorkelbat")
+    ana.post("/api/crew/suggest")
+    crew_id = ana.post("/api/crew/accept", json={}).json()["crew"]["id"]
+    assert ana.delete("/api/crew").json()["status"] == "none"
+    assert ana.get("/api/crew").json()["status"] == "none"  # not reassigned
+    ben.post("/api/crew/accept", json={})
+    again = ana.post("/api/crew/suggest").json()
+    assert again["crew"] is None or again["crew"]["id"] != crew_id
+
+
+def test_only_members_set_the_meeting_and_it_keeps_its_time_zone(person):
+    (ana, _), (ben, _) = _pair(person, "fennelquark")
+    ana.post("/api/crew/suggest")
+    ana.post("/api/crew/accept", json={})
+    meeting = {
+        "place": "North entrance, by the ramp",
+        "starts_at": "2026-11-10T08:30:00-07:00",
+        "timezone": "America/Denver",
+    }
+    assert ben.put("/api/crew/meeting", json=meeting).status_code == 403  # only suggested
+    out = ana.put("/api/crew/meeting", json=meeting).json()
+    assert out["crew"]["meeting"]["starts_at"] == "2026-11-10T08:30-07:00"
+    assert out["crew"]["meeting"]["timezone"] == "America/Denver"
+    bad = ana.put("/api/crew/meeting", json=meeting | {"starts_at": "2026-11-10T08:30:00"})
+    assert bad.status_code == 422  # a time without an offset is ambiguous
+    assert ana.put("/api/crew/meeting", json=meeting | {"timezone": "Mars/Base"}).status_code == 422
+
+
+def test_crew_limit_is_the_smallest_comfort_limit():
+    assert crews.crew_limit([{"comfort": "open"}, {"comfort": "small_groups"}]) == 4
+    assert crews.crew_limit([{"comfort": "open"}, {"comfort": "one_on_one"}]) == 2
+    assert crews.crew_limit([]) == 5
+
+
+def test_why_uses_only_tags_members_share():
+    assert crews.why([{"tags": ["go", "k8s"]}, {"tags": ["k8s"]}]) == "You share k8s"
+    assert crews.why([{"tags": ["go"]}, {"tags": ["rust"]}]) == "Suggested from your best matches"
