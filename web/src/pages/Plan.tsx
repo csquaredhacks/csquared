@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  ApiError, acceptCrew, declineCrew, errorMessage, getCrew, getMatches, getMe, leaveCrew,
-  replaceCrew, setCrewMeeting, suggestCrew,
+  ApiError, acceptCrew, acceptInvitation, declineCrew, errorMessage, getCrew, getMatches, getMe,
+  getMyGraph, invite, leaveCrew, replaceCrew, setCrewMeeting, suggestCrew, withdrawInvitation,
 } from "../api/client";
-import type { CrewOut, Match, Me } from "../api/types";
+import type { CrewOut, Match, Me, Relationship } from "../api/types";
 import { GoalBoard } from "../Goals";
 import { ErrorNote, PersonCard } from "../ui";
 import { MyCommunities } from "./Community";
@@ -77,13 +77,39 @@ export default function Plan() {
 
 function Five() {
   const [matches, setMatches] = useState<Match[] | null>(null); // null = still loading
+  const [relations, setRelations] = useState<Relationship[] | null>(null);
   const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState("");
 
   function load() {
     setError("");
     getMatches().then(setMatches).catch((err) => setError(errorMessage(err)));
+    // My invitations and plans, so a card can show where things stand. If this
+    // fails the matches still work; the section below just stays empty.
+    getMyGraph().then((g) => setRelations(g.relationships)).catch(() => setRelations([]));
   }
   useEffect(load, []);
+
+  const kindById = new Map((relations ?? []).map((r) => [r.attendee.id, r.kind]));
+  const invitations = (relations ?? []).filter(
+    (r) => r.kind === "invited_you" || r.kind === "you_invited" || r.kind === "planned",
+  );
+
+  /** Runs one invitation action, then reloads my relationships so every card and
+      the list below show what is true now. */
+  async function act(id: string, action: () => Promise<unknown>) {
+    setBusyId(id);
+    setError("");
+    try {
+      await action();
+      const g = await getMyGraph();
+      setRelations(g.relationships);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusyId("");
+    }
+  }
 
   return (
     <section aria-labelledby="five">
@@ -91,7 +117,7 @@ function Five() {
       <p className="muted">
         The people most worth finding, each with the real reason you matched.
         “Works both ways” means you can each help the other.
-        You can <Link to="/graph">invite any of them to meet</Link> before the day.
+        Invite any of them to meet right here, before the day.
       </p>
       <ErrorNote message={error} />
       {matches === null && !error && <p className="muted" role="status">Looking for your people…</p>}
@@ -105,18 +131,99 @@ function Five() {
       )}
 
       <ol className="grid">
-        {matches?.map((match, index) => (
-          <li key={match.attendee.id}>
-            <PersonCard person={match.attendee} nested>
-              <span className="rank" aria-hidden="true">{index + 1}</span>
-              {match.is_reciprocal && <p><span className="badge">Works both ways</span></p>}
-              <p className="reason"><strong>Why:</strong> {match.reason}</p>
-              <blockquote className="icebreaker">{match.icebreaker}</blockquote>
-              <p><Link to={`/graph?focus=${match.attendee.id}`}>Find them on the graph</Link></p>
-            </PersonCard>
-          </li>
-        ))}
+        {matches?.map((match, index) => {
+          const id = match.attendee.id;
+          const kind = kindById.get(id);
+          const busy = busyId === id;
+          return (
+            <li key={id}>
+              <PersonCard person={match.attendee} nested>
+                <span className="rank" aria-hidden="true">{index + 1}</span>
+                {match.is_reciprocal && <p><span className="badge">Works both ways</span></p>}
+                <p className="reason"><strong>Why:</strong> {match.reason}</p>
+                <blockquote className="icebreaker">{match.icebreaker}</blockquote>
+                {kind === "planned" && <p><span className="badge">Plan to meet</span></p>}
+                {kind === "met" && <p><span className="badge">You have met</span></p>}
+                {kind === "you_invited" && (
+                  <p className="muted">Invitation sent. Waiting for them to accept.</p>
+                )}
+                {kind === "invited_you" && (
+                  <>
+                    <p>They invited you to meet.</p>
+                    <div className="actions">
+                      <button type="button" className="button" disabled={busy}
+                        onClick={() => act(id, () => acceptInvitation(id))}>
+                        {busy ? "Accepting…" : "Accept and make a plan"}
+                      </button>
+                    </div>
+                  </>
+                )}
+                {(kind === undefined || kind === "suggested") && (
+                  <div className="actions">
+                    <button type="button" className="button" disabled={busy}
+                      onClick={() => act(id, () => invite(id))}>
+                      {busy ? "Sending…" : "Invite to meet"}
+                    </button>
+                  </div>
+                )}
+                <p><Link to={`/graph?focus=${id}`}>Find them on the graph</Link></p>
+              </PersonCard>
+            </li>
+          );
+        })}
       </ol>
+
+      {relations !== null && (
+        <>
+          <h3>Your invitations</h3>
+          {invitations.length === 0 ? (
+            <p className="muted">
+              No invitations yet. Invite someone from your five and they will show up here.
+            </p>
+          ) : (
+            <ul>
+              {invitations.map((r) => {
+                const id = r.attendee.id;
+                const busy = busyId === id;
+                return (
+                  <li key={id}>
+                    <strong>{r.attendee.name}</strong>{" "}
+                    {r.kind === "invited_you" && "invited you to meet."}
+                    {r.kind === "you_invited" && "has your invitation, not answered yet."}
+                    {r.kind === "planned" && "and you have a plan to meet."}
+                    <div className="actions">
+                      {r.kind === "invited_you" && (
+                        <>
+                          <button type="button" className="button" disabled={busy}
+                            onClick={() => act(id, () => acceptInvitation(id))}>
+                            {busy ? "Accepting…" : "Accept and make a plan"}
+                          </button>
+                          <button type="button" className="button secondary" disabled={busy}
+                            onClick={() => act(id, () => withdrawInvitation(id))}>
+                            No thanks
+                          </button>
+                        </>
+                      )}
+                      {r.kind === "you_invited" && (
+                        <button type="button" className="button secondary" disabled={busy}
+                          onClick={() => act(id, () => withdrawInvitation(id))}>
+                          Take back invitation
+                        </button>
+                      )}
+                      {r.kind === "planned" && (
+                        <button type="button" className="button secondary" disabled={busy}
+                          onClick={() => act(id, () => withdrawInvitation(id))}>
+                          Cancel plan
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      )}
     </section>
   );
 }
