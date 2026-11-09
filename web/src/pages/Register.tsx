@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { createAttendee, errorMessage, getMe } from "../api/client";
 import type { Comfort } from "../api/types";
 import { hasPendingCommunity, hasPendingConnect, nextPath } from "../pending";
-import { ErrorNote, GetStartedButton, ResumeIngest, TagChips } from "../ui";
+import { ErrorNote, ResumeIngest, TagChips } from "../ui";
 import type { ResumeData } from "../ui";
 
 export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
@@ -104,9 +104,11 @@ export default function Register() {
 
         <ResumeIngest onFill={fillFromResume} />
 
-        <GetStartedButton onStart={startForm} />
+        <button type="button" className="provider-btn" onClick={startForm}>
+          Get started
+        </button>
 
-        <p className="divider" role="separator">or tell us about you</p>
+        <h3 className="divider">Tell us about you</h3>
 
         <form onSubmit={submit} className="form" id="join-form">
 

@@ -2,22 +2,6 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Attendee } from "./api/types";
 
-/** The one way in: a single button that takes the person to the short form
-    below. Hallway has no passwords, no accounts and no sign-in with another
-    service, so the join page names no other service and there is nothing here
-    a visitor could mistake for one. */
-export function GetStartedButton({ onStart }: { onStart: () => void }) {
-  return (
-    <ul className="provider-list">
-      <li>
-        <button type="button" className="provider-btn" onClick={onStart}>
-          Get started
-        </button>
-      </li>
-    </ul>
-  );
-}
-
 /** What a resume gives us, and nothing else. The parser is deliberately
     conservative: it only fills a field when it finds something that looks
     like that field, and the person can fix anything before submitting. */
