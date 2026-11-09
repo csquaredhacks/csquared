@@ -1,4 +1,8 @@
 import secrets
+from collections import deque
+from math import ceil
+from threading import Lock
+from time import monotonic
 
 from elasticsearch import NotFoundError
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
@@ -15,6 +19,16 @@ router = APIRouter()
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 # The profile fields the match query reads. An edit to any of them changes the matches.
 MATCHING_FIELDS = ["working_on", "asks", "offers", "tags", "groups"]
+
+# One shared budget for the single-process, single-replica Helm deployment. The
+# Cloudflare tunnel is a separate proxy; do not key on untrusted forwarding headers.
+# Exhausting this budget temporarily blocks everyone's recovery, including valid codes.
+# State resets on restart and is independent per worker/replica. Scaling requires a
+# shared limiter (and explicitly trusted proxy configuration for per-client limits).
+RECOVERY_FAILURE_LIMIT = 10
+RECOVERY_WINDOW_SECONDS = 60
+_recovery_failures: deque[float] = deque(maxlen=RECOVERY_FAILURE_LIMIT)
+_recovery_lock = Lock()
 
 
 @router.get("/api/config")
@@ -72,10 +86,24 @@ def update_me(
 
 @router.post("/api/recover")
 def recover(body: RecoverIn, response: Response) -> Me:
-    query = {"term": {"recovery_code": body.code.upper()}}
-    hits = es.get_client().search(index=es.ATTENDEES, query=query, size=1)["hits"]["hits"]
-    if not hits:
-        raise HTTPException(404, "No attendee has that recovery code")
+    # Serialize the check, lookup and failure accounting so concurrent guesses cannot
+    # all pass the budget check before any failures have been recorded.
+    with _recovery_lock:
+        now = monotonic()
+        while _recovery_failures and _recovery_failures[0] <= now - RECOVERY_WINDOW_SECONDS:
+            _recovery_failures.popleft()
+        if len(_recovery_failures) >= RECOVERY_FAILURE_LIMIT:
+            retry_after = ceil(_recovery_failures[0] + RECOVERY_WINDOW_SECONDS - now)
+            raise HTTPException(
+                429,
+                "Too many failed recovery attempts. Try again shortly.",
+                headers={"Retry-After": str(retry_after)},
+            )
+        query = {"term": {"recovery_code": body.code.upper()}}
+        hits = es.get_client().search(index=es.ATTENDEES, query=query, size=1)["hits"]["hits"]
+        if not hits:
+            _recovery_failures.append(monotonic())
+            raise HTTPException(404, "No attendee has that recovery code")
     doc = hits[0]["_source"]
     set_session(response, doc)
     return Me(**doc)
