@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { startRum } from "./rum";
 import "./styles.css";
+import "./product-theme.css";
 
 void startRum();
 
