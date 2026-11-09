@@ -4,8 +4,9 @@ import type {
 } from "./types";
 import type { components } from "./schema";
 
-type Community = components["schemas"]["Community"];
+export type Community = components["schemas"]["Community"];
 type CommunityIn = components["schemas"]["CommunityIn"];
+type CommunityUpdate = components["schemas"]["CommunityUpdate"];
 
 /** Thrown for every non-2xx response. `detail` is the server's message. */
 export class ApiError extends Error {
@@ -52,6 +53,16 @@ export const getHealth = () => request<Health>("GET", "/healthz");
 export const getConfig = () => request<Config>("GET", "/api/config");
 export const createCommunity = (body: CommunityIn) => request<Community>("POST", "/api/communities", body);
 export const getCommunity = (id: string) => request<Community>("GET", `/api/communities/${encodeURIComponent(id)}`);
+/** Organizer only. Fields left out keep their value. */
+export const updateCommunity = (id: string, changes: CommunityUpdate) =>
+  request<Community>("PATCH", `/api/communities/${encodeURIComponent(id)}`, changes);
+// Membership is always my own choice: the server takes "me" from the session cookie.
+export const joinCommunity = (id: string) =>
+  request<Community>("POST", `/api/communities/${encodeURIComponent(id)}/members`);
+export const leaveCommunity = (id: string) =>
+  request<Community>("DELETE", `/api/communities/${encodeURIComponent(id)}/members`);
+/** The communities I joined and the ones I created. */
+export const getMyCommunities = () => request<Community[]>("GET", "/api/me/communities");
 export const createAttendee = (body: AttendeeIn) => request<Me>("POST", "/api/attendees", body);
 export const getMe = () => request<Me>("GET", "/api/me");
 export const recover = (code: string) => request<Me>("POST", "/api/recover", { code });

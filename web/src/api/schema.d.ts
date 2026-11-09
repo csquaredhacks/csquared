@@ -118,8 +118,59 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Community */
+        /**
+         * Get Community
+         * @description Public invitation page. A signed-in person also learns whether they joined.
+         */
         get: operations["get_community_api_communities__community_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit Community
+         * @description Only the organizer who created the community may change its invitation.
+         */
+        patch: operations["edit_community_api_communities__community_id__patch"];
+        trace?: never;
+    };
+    "/api/communities/{community_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join Community
+         * @description I join. Joining again changes nothing. This is separate from the Luma RSVP.
+         */
+        post: operations["join_community_api_communities__community_id__members_post"];
+        /**
+         * Leave Community
+         * @description I leave. Leaving a community I am not in changes nothing.
+         */
+        delete: operations["leave_community_api_communities__community_id__members_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/communities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Communities
+         * @description The communities I joined and the ones I created, by name. Private to me.
+         */
+        get: operations["my_communities_api_me_communities_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -561,7 +612,11 @@ export interface components {
             /** Room */
             room: string;
         };
-        /** Community */
+        /**
+         * Community
+         * @description What anyone may see. Members are only ever a count: no names, no ids. The last
+         *     two fields are about the signed-in caller, and false for a visitor.
+         */
         Community: {
             /** Name */
             name: string;
@@ -574,6 +629,12 @@ export interface components {
             luma_url: string;
             /** Id */
             id: string;
+            /** Member Count */
+            member_count: number;
+            /** Is Member */
+            is_member: boolean;
+            /** Is Organizer */
+            is_organizer: boolean;
         };
         /** CommunityIn */
         CommunityIn: {
@@ -586,6 +647,19 @@ export interface components {
             description: string;
             /** Luma Url */
             luma_url: string;
+        };
+        /**
+         * CommunityUpdate
+         * @description PATCH /api/communities/{id}. Leave a field out to keep it as it is. A field that
+         *     is sent follows the same rules as in CommunityIn.
+         */
+        CommunityUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Luma Url */
+            luma_url?: string | null;
         };
         /** Config */
         Config: {
@@ -1109,6 +1183,123 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_community_api_communities__community_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_community_api_communities__community_id__members_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leave_community_api_communities__community_id__members_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_communities_api_me_communities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"][];
                 };
             };
         };
