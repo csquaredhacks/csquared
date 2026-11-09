@@ -17,15 +17,19 @@ Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 
 | When | What you get | Status |
 |---|---|---|
-| **Before** | Register in a minute, with no account. | Built |
-| **Before** | Your five: the people to meet, each with a true reason and an icebreaker. | Built |
+| **Before** | Register in a minute, with no account. Edit what you need and offer at any time. | Built |
+| **Before** | Your five: the people to meet, each with a true reason and an icebreaker, and a mark when a match works both ways. | Built |
 | **Before** | Send your link to someone you already know, and you are connected before day one. | Built |
 | **Before** | A recovery code, so the profile you made at home opens on your phone at the venue. | Built |
-| **Before** | A chosen arrival group and an agreed meeting plan. | Built |
-| **Before** | Wave at people you want to meet. Private until they wave back. | Planned |
-| **Before** | Community signup, event invitations, and an organizer crowd board (`/crowd`). | Built |
+| **Before** | A suggested arrival group you can accept, decline or leave, with an agreed place and time to meet. | Built |
+| **Before** | If your group falls apart, you are told, and you can ask for another. Nobody is moved for you. | Built |
+| **Before** | Invite someone to meet. Private until they accept. | Built |
+| **Before** | Join a community from its invitation page, separately from the Luma RSVP. | Built |
+| **Before** | For organizers: a board of what people ask for against what they offer, in counts only (`/crowd`). | Built |
+| **Before** | Your own goals for the conference, which only you can see and tick. | Built |
+| **Before** | Luma registration and check-in kept in sync. | Planned (needs Luma API access) |
 | **During** | Scan a QR code to connect. A live graph on the venue screen. A room map. | Built |
-| **After** | A recap of who you met and what to follow up on. | Built |
+| **After** | A recap of who you met, your goals, and what to follow up on. | Built |
 
 The current build order is in [`docs/WORKING_PLAN.md`](docs/WORKING_PLAN.md).
 [`docs/PRE_CONFERENCE.md`](docs/PRE_CONFERENCE.md) preserves the earlier v4 design.
@@ -53,7 +57,7 @@ Everything runs on a Kubernetes cluster that Radar is connected to. It is one He
 | --- | --- |
 | **Elasticsearch** | The only datastore, and the matchmaker. One hybrid query with reciprocal rank fusion crosses *my asks* with *their offers*, *my offers* with *their asks*, similar work, shared tags and shared groups. Each signal runs as keyword search and, when an inference endpoint is configured, as semantic search too. Named queries tell us which signal matched, so the reason shown to the user is true and not made up by a language model. See [`api/hallway/matching.py`](api/hallway/matching.py). |
 | **Dash0** | The API runs under OpenTelemetry auto-instrumentation and adds its own spans (`match.query`, `match.icebreaker`, `graph.bfs`, `matcher.run`) and metrics (connections made, room occupancy). The browser sends real user monitoring data. The room map in the product is drawn from the same numbers the dashboard shows. |
-| **Radar** | The cluster view during the whole build, and the investigation tool when a pod is killed for using too much memory. See [`docs/investigations/`](docs/investigations/). |
+| **Radar** | The cluster view during the whole build, and the investigation tool when a pod is killed for using too much memory: Radar's AI named the cause in 87 seconds. See [`docs/investigations/2026-11-09-1518-oom-radar.md`](docs/investigations/2026-11-09-1518-oom-radar.md). |
 | **Gitar** | Reviews every pull request against our own rules in [`docs/GITAR_RULES.md`](docs/GITAR_RULES.md), and diagnoses CI failures. |
 
 ## Run it
