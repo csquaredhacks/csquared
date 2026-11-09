@@ -85,6 +85,9 @@ def healthz() -> Health:
 dist = settings.web_dist.resolve()
 if (dist / "index.html").exists():
     app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+    welcome = dist / "welcome"
+    if (welcome / "index.html").is_file():
+        app.mount("/welcome", StaticFiles(directory=welcome, html=True), name="welcome")
 
     @app.get("/{path:path}", include_in_schema=False)
     def web(path: str):
