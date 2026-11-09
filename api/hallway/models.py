@@ -147,6 +147,8 @@ class Match(BaseModel):
     score: float
     reason: str
     icebreaker: str
+    # They offer something I asked for AND I offer something they asked for.
+    is_reciprocal: bool
 
 
 class EdgeIn(BaseModel):

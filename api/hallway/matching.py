@@ -109,18 +109,33 @@ def default_icebreaker(b: dict) -> str:
     return f"Ask {first_name} what the hardest part of “{_short(b['working_on'], 60)}” has been."
 
 
-def find_matches(
+def is_reciprocal(matched: set[str]) -> bool:
+    """True when the match works in both directions: they offer something I asked for
+    AND I offer something they asked for. `matched` is the set of query names that
+    Elasticsearch reported for the hit, so this is evidence, not a guess."""
+    return {"asks_to_offers", "offers_to_asks"} <= matched
+
+
+def find_matches_detailed(
     client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
-) -> list[tuple[dict, float, str]]:
-    """Run the query for attendee `a`. Returns (other attendee, score, reason) tuples."""
+) -> list[tuple[dict, float, str, set[str]]]:
+    """Run the query for attendee `a`. Returns (other attendee, score, reason, matched)
+    tuples, where `matched` is the names of the queries that matched that person."""
     exclude = [a["id"], *edges.connected_ids(client, a["id"])]
     body = build_match_query(a, exclude, size, only_ids=only_ids)
     hits = client.search(index=es.ATTENDEES, body=body)["hits"]["hits"]
-    return [
-        (
-            h["_source"],
-            h["_score"] or 0.0,
-            explain_why(a, h["_source"], set(h.get("matched_queries", []))),
-        )
-        for h in hits
-    ]
+    found = []
+    for h in hits:
+        other = h["_source"]
+        matched = set(h.get("matched_queries", []))
+        found.append((other, h["_score"] or 0.0, explain_why(a, other, matched), matched))
+    return found
+
+
+def find_matches(
+    client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
+) -> list[tuple[dict, float, str]]:
+    """Returns (other attendee, score, reason) tuples. Most callers unpack exactly these
+    three; the ones that need the matched query names call find_matches_detailed."""
+    detailed = find_matches_detailed(client, a, size, only_ids)
+    return [(other, score, reason) for other, score, reason, _matched in detailed]

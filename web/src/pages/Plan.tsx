@@ -81,6 +81,7 @@ function Five() {
       <h2 id="five">1. Meet your five</h2>
       <p className="muted">
         The people most worth finding, each with the real reason you matched.
+        “Works both ways” means you can each help the other.
         You can <Link to="/graph">invite any of them to meet</Link> before the day.
       </p>
       <ErrorNote message={error} />
@@ -99,6 +100,7 @@ function Five() {
           <li key={match.attendee.id}>
             <PersonCard person={match.attendee} nested>
               <span className="rank" aria-hidden="true">{index + 1}</span>
+              {match.is_reciprocal && <p><span className="badge">Works both ways</span></p>}
               <p className="reason"><strong>Why:</strong> {match.reason}</p>
               <blockquote className="icebreaker">{match.icebreaker}</blockquote>
               <p><Link to={`/graph?focus=${match.attendee.id}`}>Find them on the graph</Link></p>

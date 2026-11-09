@@ -727,6 +727,8 @@ export interface components {
             reason: string;
             /** Icebreaker */
             icebreaker: string;
+            /** Is Reciprocal */
+            is_reciprocal: boolean;
         };
         /** Me */
         Me: {

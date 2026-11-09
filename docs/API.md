@@ -52,7 +52,8 @@ interface MeUpdate {
   show_groups?: boolean;
 }
 
-interface Match { attendee: Attendee; score: number; reason: string; icebreaker: string; }
+interface Match { attendee: Attendee; score: number; reason: string; icebreaker: string;
+                  is_reciprocal: boolean; }   // works both ways, see "Matches" below
 
 interface Edge { id: string; source: string; target: string;
                  kind: "connected" | "planned" | "suggested";
@@ -108,7 +109,7 @@ interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: b
 | PATCH | `/api/me` | cookie | `MeUpdate` | `Me` (my own profile after the edit) | 401, 422 unknown field or invalid value |
 | POST | `/api/recover` | | `{code: string}` | `Me` + cookie | 404 |
 | GET | `/api/attendees/{id}` | | | `Attendee` | 404 |
-| GET | `/api/matches` | cookie | | `Match[]` (max 5) | 401 |
+| GET | `/api/matches` | cookie | | `Match[]` (max 5), each with `is_reciprocal` | 401 |
 | POST | `/api/edges` | cookie | `{to_id: string}` | `ConnectResult` | 400 self, 401, 404 |
 | GET | `/api/graph` | | | `Graph` | |
 | GET | `/api/graph/path?to={id}` | cookie | | `Path` (me → to) | 401 |
@@ -135,6 +136,14 @@ Errors are `{"detail": "<message>"}`.
 that person's `suggested` edges are deleted and written again, because a suggestion stores a
 reason that quotes the old text. Suggestions other people had for them return on the next
 matcher run. Invitations, plans and meetings are never touched by an edit.
+
+## Matches
+
+Every query in the match request is named, and Elasticsearch reports which names matched
+each person. `reason` and `is_reciprocal` are both read from that report, never guessed.
+`is_reciprocal` is true when both `asks_to_offers` (my asks against their offers) and
+`offers_to_asks` (my offers against their asks) matched. It is the same evidence as `reason`,
+and as loose: without ELSER one shared word is enough for a query to match.
 
 ## The four relationships
 
