@@ -9,7 +9,11 @@ This document specifies the technical contract and verified behavior for integra
 ## 1. Official Documentation & References
 
 - **Luma API Reference & Webhooks Overview:** [https://docs.lu.ma/reference/webhooks](https://docs.lu.ma/reference/webhooks)
-- **Luma Public API (v2) Endpoints:** [https://public-api.luma.com/v2/webhooks/create](https://public-api.luma.com/v2/webhooks/create)
+- **Luma Official OpenAPI Spec:** [https://public-api.luma.com/openapi.json](https://public-api.luma.com/openapi.json)
+  - `components.securitySchemes.apiKeyAuth`: `name: x-luma-api-key`, `in: header`
+  - `paths["/v2/webhooks/create"]`: Returns `secret` (string), `url`, `event_types`, `status`
+  - `webhooks["guest.registered"]`: Triggered on initial registration and re-registration after cancellation
+  - `webhooks["guest.updated"]`: Triggered on check-in updates, approval status changes, answers, and ticket changes
 - **Standard Webhook Specifications:** Luma webhooks follow the Standard Webhooks convention with `whsec_` secrets and `Webhook-Signature` headers.
 
 ---
