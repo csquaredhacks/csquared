@@ -1,8 +1,9 @@
 """The matchmaking agent. It runs the match query for people and writes the results
 into the graph as "suggested" edges, so the big screen shows who SHOULD meet.
 
-Runs in two places:
+Runs in three places:
 - right after someone registers (suggest_for, as a background task)
+- right after someone edits what they need or offer (resuggest_for, as a background task)
 - every two minutes for everyone, as a Kubernetes CronJob:  python -m hallway.matcher
 """
 
@@ -34,6 +35,27 @@ def suggest_for(client: Elasticsearch, a: dict, use_llm: bool = True) -> int:
     if new:
         matcher_pairs.add(new)
     return new
+
+
+def resuggest_for(client: Elasticsearch, a: dict) -> int:
+    """After a profile edit: drop this person's old suggestions, then suggest again.
+    A suggested edge stores its reason as text that quotes asks and offers, so an old one
+    would keep showing words the person has since changed or removed. Suggestions other
+    people had for this person come back on the next scheduled run."""
+    touches_me = [{"term": {"source": a["id"]}}, {"term": {"target": a["id"]}}]
+    client.delete_by_query(
+        index=es.EDGES,
+        query={
+            "bool": {
+                "filter": [{"term": {"kind": "suggested"}}],
+                "should": touches_me,
+                "minimum_should_match": 1,
+            }
+        },
+        refresh=True,
+        conflicts="proceed",
+    )
+    return suggest_for(client, a)
 
 
 def run_once(client: Elasticsearch, llm_budget: int = 30) -> int:

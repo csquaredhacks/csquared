@@ -6,7 +6,14 @@ from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AwareDatetime, BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 Comfort = Literal["open", "small_groups", "one_on_one"]
 # Link kinds that may appear on the public graph. A pending invitation is never one of them.
@@ -16,7 +23,34 @@ RelationKind = Literal["met", "planned", "invited_you", "you_invited", "suggeste
 ChaosMode = Literal["off", "slow", "error"]
 
 
-class AttendeeIn(BaseModel):
+class ProfileText(BaseModel):
+    """Cleaning shared by registration and profile edits, so both store text the same way.
+    check_fields=False because each model below declares only the fields it accepts."""
+
+    @field_validator(
+        "name", "working_on", "asks", "offers", "fun_fact", mode="before", check_fields=False
+    )
+    @classmethod
+    def strip_text(cls, value: object) -> object:
+        # Before the length checks, so "   " is refused as empty instead of stored as "".
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("tags", check_fields=False)
+    @classmethod
+    def clean_tags(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:  # an edit that leaves the tags alone
+            return None
+        return sorted({t.strip().lower() for t in value if t.strip()})
+
+    @field_validator("groups", check_fields=False)
+    @classmethod
+    def clean_groups(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
+        return sorted({g.strip() for g in value if g.strip()})
+
+
+class AttendeeIn(ProfileText):
     name: str = Field(min_length=1, max_length=80)
     working_on: str = Field(min_length=1, max_length=500)
     asks: str = Field(default="", max_length=500)
@@ -28,21 +62,6 @@ class AttendeeIn(BaseModel):
     # Two separate opt-in choices. Both are off unless the person turns them on.
     on_graph: bool = False  # show me, and who I have met or planned to meet, on the public graph
     show_groups: bool = False  # also show my communities there
-
-    @field_validator("name", "working_on", "asks", "offers", "fun_fact")
-    @classmethod
-    def strip_text(cls, value: str) -> str:
-        return value.strip()
-
-    @field_validator("tags")
-    @classmethod
-    def clean_tags(cls, value: list[str]) -> list[str]:
-        return sorted({t.strip().lower() for t in value if t.strip()})
-
-    @field_validator("groups")
-    @classmethod
-    def clean_groups(cls, value: list[str]) -> list[str]:
-        return sorted({g.strip() for g in value if g.strip()})
 
 
 class Attendee(BaseModel):
@@ -65,9 +84,19 @@ class Me(Attendee):
     show_groups: bool = False
 
 
-class MeUpdate(BaseModel):
-    """PATCH /api/me. Leave a field out to keep it as it is."""
+class MeUpdate(ProfileText):
+    """PATCH /api/me. Leave a field out (or send null) to keep it as it is. These are the
+    only fields a person can change: anything else, such as id or recovery_code, is a 422."""
 
+    model_config = ConfigDict(extra="forbid")
+
+    working_on: str | None = Field(default=None, min_length=1, max_length=500)
+    asks: str | None = Field(default=None, max_length=500)
+    offers: str | None = Field(default=None, max_length=500)
+    fun_fact: str | None = Field(default=None, max_length=300)
+    tags: list[str] | None = Field(default=None, max_length=10)
+    groups: list[str] | None = Field(default=None, max_length=5)
+    comfort: Comfort | None = None
     on_graph: bool | None = None
     show_groups: bool | None = None
 
@@ -152,6 +181,8 @@ class Match(BaseModel):
     score: float
     reason: str
     icebreaker: str
+    # They offer something I asked for AND I offer something they asked for.
+    is_reciprocal: bool
 
 
 class EdgeIn(BaseModel):

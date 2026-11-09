@@ -7,6 +7,7 @@ import type { components } from "./schema";
 export type Community = components["schemas"]["Community"];
 type CommunityIn = components["schemas"]["CommunityIn"];
 type CommunityUpdate = components["schemas"]["CommunityUpdate"];
+type MeUpdate = components["schemas"]["MeUpdate"];
 
 /** Thrown for every non-2xx response. `detail` is the server's message. */
 export class ApiError extends Error {
@@ -71,8 +72,8 @@ export const getMatches = () => request<Match[]>("GET", "/api/matches");
 export const connect = (toId: string) => request<ConnectResult>("POST", "/api/edges", { to_id: toId });
 export const getGraph = () => request<Graph>("GET", "/api/graph");
 export const getMyGraph = () => request<MyGraph>("GET", "/api/graph/me");
-export const updateMe = (changes: { on_graph?: boolean; show_groups?: boolean }) =>
-  request<Me>("PATCH", "/api/me", changes);
+/** Send only the fields to change. The server refuses any field that is not editable. */
+export const updateMe = (changes: MeUpdate) => request<Me>("PATCH", "/api/me", changes);
 export const invite = (toId: string) => request<InvitationResult>("POST", "/api/invitations", { to_id: toId });
 export const acceptInvitation = (fromId: string) =>
   request<InvitationResult>("POST", `/api/invitations/${encodeURIComponent(fromId)}/accept`);

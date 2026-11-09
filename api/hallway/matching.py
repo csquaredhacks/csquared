@@ -20,6 +20,24 @@ SOURCE_FIELDS = [
 ]  # fmt: skip
 
 
+# Words that say nothing about what a person needs or offers. Without this, two people
+# "match" because both wrote "and" or "with", and the reason shown would not be true.
+STOP_WORDS = frozenset(
+    """a about after all also am an and any are as at be been both but by can could do does
+    for from get had has have he help her here him his how i if in into is it its just like
+    looking me more my need needs new no not of on one or our out please she so some someone
+    than that the their them then there these they this to too up us use using want wants
+    was we were what when where which who why will with would you your""".split()
+)
+
+
+def content_words(text: str) -> str:
+    """The text without stop words, for word matching. Semantic search gets the full text."""
+    punctuation = ".,;:!?()\"'“”‘’"
+    kept = [w for w in text.split() if w.strip(punctuation).lower() not in STOP_WORDS]
+    return " ".join(kept)
+
+
 def _lexical(field: str, text: str, name: str) -> dict:
     return {"standard": {"query": {"match": {field: {"query": text, "_name": name}}}}}
 
@@ -49,7 +67,9 @@ def build_match_query(
     for text, lexical_field, semantic_field, name in pairs:
         if not text:
             continue
-        retrievers.append(_lexical(lexical_field, text, name))
+        words = content_words(text)
+        if words:
+            retrievers.append(_lexical(lexical_field, words, name))
         if semantic:
             retrievers.append(_semantic(semantic_field, text, name))
     if a.get("tags"):
@@ -109,18 +129,33 @@ def default_icebreaker(b: dict) -> str:
     return f"Ask {first_name} what the hardest part of “{_short(b['working_on'], 60)}” has been."
 
 
-def find_matches(
+def is_reciprocal(matched: set[str]) -> bool:
+    """True when the match works in both directions: they offer something I asked for
+    AND I offer something they asked for. `matched` is the set of query names that
+    Elasticsearch reported for the hit, so this is evidence, not a guess."""
+    return {"asks_to_offers", "offers_to_asks"} <= matched
+
+
+def find_matches_detailed(
     client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
-) -> list[tuple[dict, float, str]]:
-    """Run the query for attendee `a`. Returns (other attendee, score, reason) tuples."""
+) -> list[tuple[dict, float, str, set[str]]]:
+    """Run the query for attendee `a`. Returns (other attendee, score, reason, matched)
+    tuples, where `matched` is the names of the queries that matched that person."""
     exclude = [a["id"], *edges.connected_ids(client, a["id"])]
     body = build_match_query(a, exclude, size, only_ids=only_ids)
     hits = client.search(index=es.ATTENDEES, body=body)["hits"]["hits"]
-    return [
-        (
-            h["_source"],
-            h["_score"] or 0.0,
-            explain_why(a, h["_source"], set(h.get("matched_queries", []))),
-        )
-        for h in hits
-    ]
+    found = []
+    for h in hits:
+        other = h["_source"]
+        matched = set(h.get("matched_queries", []))
+        found.append((other, h["_score"] or 0.0, explain_why(a, other, matched), matched))
+    return found
+
+
+def find_matches(
+    client: Elasticsearch, a: dict, size: int = 5, only_ids: list[str] | None = None
+) -> list[tuple[dict, float, str]]:
+    """Returns (other attendee, score, reason) tuples. Most callers unpack exactly these
+    three; the ones that need the matched query names call find_matches_detailed."""
+    detailed = find_matches_detailed(client, a, size, only_ids)
+    return [(other, score, reason) for other, score, reason, _matched in detailed]
