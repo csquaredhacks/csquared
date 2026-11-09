@@ -1,3 +1,9 @@
+import json
+
+from elastic_transport import ApiResponseMeta
+from elasticsearch import ApiError
+
+from hallway import es, matcher, matching
 from hallway.matching import build_match_query, default_icebreaker, explain_why
 
 ADA = {
@@ -61,3 +67,53 @@ def test_default_icebreaker_prefers_the_fun_fact():
         {"name": "Bob S", "fun_fact": "juggles", "working_on": "x"}
     )
     assert "Ask Bob" in default_icebreaker({"name": "Bob S", "fun_fact": "", "working_on": "x"})
+
+
+# ---- When Elasticsearch refuses the hybrid query, matching carries on with keywords ----
+
+
+class _RateLimited:
+    """Wraps the real client. Any search that contains a semantic query is refused the
+    way the ELSER trial quota refuses it; everything else goes to Elasticsearch."""
+
+    def __init__(self, real):
+        self.real = real
+        self.semantic_attempts = 0
+
+    def options(self, **_):
+        return self
+
+    def search(self, **kwargs):
+        if "semantic" in json.dumps(kwargs.get("body", {})):
+            self.semantic_attempts += 1
+            raise ApiError("rate limited", ApiResponseMeta(429, "1.1", {}, 0.1, None), {})
+        return self.real.search(**kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self.real, name)
+
+
+def test_a_refused_hybrid_query_falls_back_to_keywords(person, monkeypatch):
+    _, ana = person("Ana Fallback", asks="glorptastic help", working_on="glorptastic")
+    _, ben = person("Ben Fallback", offers="glorptastic help", working_on="glorptastic")
+    monkeypatch.setattr(matching.settings, "elser_id", ".elser-2-elastic")
+    monkeypatch.setattr(matching, "_semantic_paused_until", 0.0)
+    client = _RateLimited(es.get_client())
+
+    found = matching.find_matches(client, ana)
+    assert ben["id"] in [other["id"] for other, _score, _reason in found]
+    assert client.semantic_attempts == 1
+
+    # Within the pause the semantic half is not tried again: no slow failed call per person.
+    matching.find_matches(client, ana)
+    assert client.semantic_attempts == 1
+
+
+def test_the_scheduled_matcher_pass_never_uses_semantic_search(person, monkeypatch):
+    person("Ana Reconcile", asks="blorfing", working_on="blorfing")
+    person("Ben Reconcile", offers="blorfing", working_on="blorfing")
+    monkeypatch.setattr(matching.settings, "elser_id", ".elser-2-elastic")
+    monkeypatch.setattr(matching, "_semantic_paused_until", 0.0)
+    client = _RateLimited(es.get_client())
+    matcher.run_once(client, llm_budget=0)
+    assert client.semantic_attempts == 0

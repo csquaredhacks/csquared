@@ -20,10 +20,12 @@ log = logging.getLogger("hallway.matcher")
 MAX_ATTENDEES = 2000
 
 
-def suggest_for(client: Elasticsearch, a: dict, use_llm: bool = True) -> int:
+def suggest_for(
+    client: Elasticsearch, a: dict, use_llm: bool = True, semantic: bool | None = None
+) -> int:
     """Write a suggested edge to each of this attendee's top matches. Returns how many were new."""
     new = 0
-    for other, _score, reason in find_matches(client, a):
+    for other, _score, reason in find_matches(client, a, semantic=semantic):
         doc_id = edges.edge_id(a["id"], other["id"], "suggested")
         if client.exists(index=es.EDGES, id=doc_id):
             continue
@@ -65,10 +67,21 @@ def run_once(client: Elasticsearch, llm_budget: int = 30) -> int:
         hits = client.search(index=es.ATTENDEES, query={"match_all": {}}, size=MAX_ATTENDEES)
         attendees = [h["_source"] for h in hits["hits"]["hits"]]
         total = 0
+        failed = 0
         for a in attendees:
-            new = suggest_for(client, a, use_llm=llm_budget > 0)
+            try:
+                # Keywords only. This pass asks about everyone every two minutes; with the
+                # semantic half on, it used up the ELSER trial quota that a person's own
+                # "Your five" needs. People still get hybrid matching when they register,
+                # edit their profile, and open their five.
+                new = suggest_for(client, a, use_llm=llm_budget > 0, semantic=False)
+            except Exception as error:  # noqa: BLE001 - one person must not stop the pass
+                failed += 1
+                log.warning("matcher: skipped one attendee: %s", error)
+                continue
             llm_budget -= new
             total += new
+        span.set_attribute("matcher.failed", failed)
         span.set_attribute("matcher.attendees", len(attendees))
         span.set_attribute("matcher.new_pairs", total)
         log.info("matcher: %d attendees, %d new suggested pairs", len(attendees), total)

@@ -1,8 +1,9 @@
 """The two product gauges refresh themselves, so Dash0 has numbers even when nobody
 has the room map or the organizer board open."""
 
+from hallway import crowd as crowd_counts
 from hallway import telemetry
-from hallway.main import app  # noqa: F401 - importing the app registers the refreshers
+from hallway.main import _refresh_funnel, _refresh_rooms, app  # noqa: F401 - registers refreshers
 
 
 def _fresh(monkeypatch):
@@ -23,6 +24,36 @@ def test_room_gauge_reports_every_room_without_a_page_view(indices, monkeypatch)
     _fresh(monkeypatch)
     rooms = {o.attributes["room"] for o in telemetry._observe_rooms(None)}
     assert "Quiet Room" in rooms
+
+
+def test_funnel_refresh_uses_a_fast_counts_client(monkeypatch):
+    fast_client = object()
+    refreshed = []
+
+    class Client:
+        def options(self, **kwargs):
+            assert kwargs == {"request_timeout": 2, "max_retries": 0}
+            return fast_client
+
+    monkeypatch.setattr("hallway.main.es.get_client", lambda: Client())
+    monkeypatch.setattr(crowd_counts, "refresh_funnel", refreshed.append)
+    _refresh_funnel()
+    assert refreshed == [fast_client]
+
+
+def test_room_refresh_uses_the_same_fast_client(monkeypatch):
+    fast_client = object()
+    refreshed = []
+
+    class Client:
+        def options(self, **kwargs):
+            assert kwargs == {"request_timeout": 2, "max_retries": 0}
+            return fast_client
+
+    monkeypatch.setattr("hallway.main.es.get_client", lambda: Client())
+    monkeypatch.setattr("hallway.main.rooms.current_occupancy", refreshed.append)
+    _refresh_rooms()
+    assert refreshed == [fast_client]
 
 
 def test_refresh_runs_at_most_once_per_interval(monkeypatch):

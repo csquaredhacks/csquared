@@ -1,3 +1,4 @@
+from elasticsearch import Elasticsearch
 from fastapi import APIRouter, Depends, HTTPException
 
 from .. import es
@@ -12,9 +13,10 @@ router = APIRouter()
 RECENT = "now-3h"  # a check-in older than this no longer counts as "in the room"
 
 
-def current_occupancy() -> list[Room]:
-    """One check-in document per attendee (their latest room), grouped by room."""
-    hits = es.get_client().search(
+def current_occupancy(client: Elasticsearch | None = None) -> list[Room]:
+    """One check-in document per attendee (their latest room), grouped by room.
+    The gauge refresh passes its own fast-failing client; requests use the normal one."""
+    hits = (client or es.get_client()).search(
         index=es.CHECKINS, query={"range": {"at": {"gte": RECENT}}}, size=MAX_ATTENDEES
     )["hits"]["hits"]
     people: dict[str, list[PathStep]] = {room: [] for room in settings.rooms}
