@@ -101,7 +101,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Communities
+         * @description Browse existing communities. Public; a signed-in person also learns whether they joined.
+         */
+        get: operations["list_communities_api_communities_get"];
         put?: never;
         /** Create Community */
         post: operations["create_community_api_communities_post"];
@@ -1295,6 +1299,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Attendee"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_communities_api_communities_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"][];
                 };
             };
             /** @description Validation Error */

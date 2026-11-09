@@ -146,6 +146,7 @@ interface Crowd { registered: number;
 | GET | `/api/signin/pending` | | | `PendingSignin \| null` | |
 | DELETE | `/api/signin/pending` | | | 204 | |
 | POST | `/api/communities` | cookie | `CommunityIn` | 201 `Community` | 401, 422 |
+| GET | `/api/communities?q=&limit=` | optional cookie | | `Community[]` (newest first, limit 1-50, default 20) | 422 |
 | GET | `/api/communities/{id}` | | | `Community` | 404 |
 | GET | `/api/me` | cookie | | `Me` | 401 |
 | PATCH | `/api/me` | cookie | `MeUpdate` | `Me` (my own profile after the edit) | 401, 422 unknown field or invalid value |
