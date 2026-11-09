@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Hallway Orbit Graph</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: the orbit diagram on the left, one card of plain words on the right; stacked on a phone.
+   Tokens are Hallway's own (web/src/styles.css): warm paper page, dark graph box, one amber accent. */
+:root {
+  color-scheme: light;
+  --ink: #f6f2ea; --raised: #fffdf8; --line: rgba(34, 29, 22, 0.14); --field: #a89f8d;
+  --text: #221d16; --muted: #6b6257; --accent: #ffc233; --accent-deep: #8a5a00; --on-accent: #1b1500;
+  --good: #1d7a4d;
+  --night: #121117; --night-2: #221f30; --star: #f4f1ea; --star-dim: #b9b5c6; --mint: #6fe3b4;
+  --display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--ink); color: var(--text); font: 1.0625rem/1.5 var(--body); }
+.wrap {
+  max-width: 70rem; margin: 0 auto; padding-block: 1rem 3rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+:focus-visible { outline: 3px solid var(--accent-deep); outline-offset: 3px; border-radius: 6px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.wordmark { font: italic 700 1.4rem var(--display); margin: 0; }
+.preview-tag { margin: 0; padding: 0.2rem 0.75rem; font-size: 0.85rem; font-weight: 600; color: var(--accent-deep); border: 1px solid var(--accent-deep); border-radius: 999px; }
+h1 { font: 700 clamp(2rem, 7vw, 2.75rem)/1.1 var(--display); letter-spacing: -0.01em; margin: 1rem 0 0.5rem; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0 0 1rem; max-width: 40rem; }
+
+.cols { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 60rem) { .cols { grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 1fr); } }
+.cols > * { min-width: 0; }
+
+/* ---------- The stage ---------- */
+.stage {
+  position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 44rem; overflow: hidden;
+  border-radius: 24px; border: 1.5px solid var(--line);
+  background: radial-gradient(circle at 50% 50%, var(--night-2), var(--night) 72%);
+  user-select: none; -webkit-user-select: none;
+}
+.stage svg, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.stage canvas { pointer-events: none; }
+.stage svg text { font-family: var(--body); }
+.ring { fill: none; stroke: rgba(244, 241, 234, 0.13); stroke-width: 1; stroke-dasharray: 2 6; }
+.ring-name { fill: var(--star-dim); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; text-anchor: middle; paint-order: stroke; stroke: var(--night); stroke-width: 5px; stroke-linejoin: round; }
+.arc { fill: none; stroke-width: 3; stroke-linecap: round; transition: opacity 0.25s, stroke-width 0.2s; }
+.arc-hit { fill: none; stroke: transparent; stroke-width: 30; cursor: pointer; pointer-events: stroke; }
+.arc-name { font-size: 11px; font-weight: 600; letter-spacing: 0.03em; pointer-events: none; transition: opacity 0.25s; }
+.link { fill: none; }
+.link.met { stroke: rgba(244, 241, 234, 0.8); stroke-width: 2; }
+.link.planned { stroke: var(--mint); stroke-width: 1.75; stroke-dasharray: 8 5; }
+.link.invited { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 1 5; stroke-linecap: round; }
+.link.suggested { stroke: rgba(244, 241, 234, 0.3); stroke-width: 1; stroke-dasharray: 2 5; }
+.link.theirs { stroke: rgba(244, 241, 234, 0.28); stroke-width: 1; }
+.link.none { stroke: rgba(244, 241, 234, 0.35); stroke-width: 1; stroke-dasharray: 1 7; stroke-linecap: round; }
+.has-group .arc:not(.on), .has-group .arc-name:not(.on) { opacity: 0.25; }
+.arc.on { stroke-width: 5; }
+
+.node {
+  --s: 28px; --d: 9px; --c: #8a8798;
+  position: absolute; left: 0; top: 0; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; color: var(--star);
+  transition: transform 0.9s cubic-bezier(0.2, 0.9, 0.25, 1), opacity 0.3s;
+}
+.intro .node { transition-delay: calc(var(--i) * 9ms); }
+.node.orb { z-index: 2; }
+.node:hover, .node:focus-visible, .node.sel { z-index: 4; }
+.node:focus-visible { outline-color: var(--accent); }
+.node i {
+  position: absolute; left: 50%; top: 50%; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
+  border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--night); transition: transform 0.15s;
+}
+.node:hover i { transform: scale(1.45); }
+.node.met i { box-shadow: 0 0 0 2px var(--night), 0 0 0 4px var(--star); }
+.node.planned i { box-shadow: 0 0 0 2px var(--night), 0 0 0 4px var(--mint); }
+.node.invited i { box-shadow: 0 0 0 2px var(--night), 0 0 0 4px var(--accent); }
+.node.suggested i { background: var(--night); box-shadow: inset 0 0 0 2.5px var(--c); }
+.node.orb i { display: none; }
+.node.orb::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid var(--c); opacity: 0.55; transition: opacity 0.2s, inset 0.2s; }
+.node.orb:hover::after, .node.sel::after { opacity: 1; inset: -6px; }
+.node.me::after { border-color: var(--accent); }
+.node b {
+  position: absolute; left: 50%; top: calc(50% + var(--d) / 2 + 5px); transform: translateX(-50%);
+  font: 600 11px/1.2 var(--body); white-space: nowrap; pointer-events: none; opacity: 0;
+  padding: 1px 6px; border-radius: 999px; background: rgba(18, 17, 23, 0.82);
+}
+.node.orb b { top: calc(100% + 5px); }
+.node.me b { top: 50%; transform: translate(-50%, -50%); background: none; font-size: 12px; font-weight: 700; color: var(--accent); text-shadow: 0 0 4px var(--night), 0 0 8px var(--night); }
+.node.named b, .node:hover b, .node:focus-visible b, .node.sel b { opacity: 1; }
+.node.sel b { color: var(--accent); }
+.node em { position: absolute; right: -5px; top: -5px; width: 19px; height: 19px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent); font: 700 11px var(--mono); font-style: normal; }
+.has-group .node:not(.in-group):not(.me) { opacity: 0.16; }
+.has-sel .node:not(.lit) { opacity: 0.42; }
+.hint { margin: 0.6rem 0 0; min-height: 1.5em; color: var(--muted); font-size: 0.95rem; font-weight: 600; }
+
+/* ---------- Under the stage ---------- */
+.tools { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: 0.4rem 1.1rem;
+  font: 700 0.95rem var(--body); color: var(--on-accent); background: var(--accent); border: 2px solid var(--accent); border-radius: 999px; cursor: pointer;
+}
+.btn:hover { background: #ffd66e; }
+.btn.quiet { color: var(--text); background: var(--raised); border: 1.5px solid var(--field); font-weight: 600; }
+.btn.quiet:hover { border-color: var(--accent-deep); }
+.chips { list-style: none; display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0; padding: 0; }
+.chip { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.4rem; padding: 0 0.85rem; font: 600 0.88rem var(--body); color: var(--text); background: var(--raised); border: 1px solid var(--line); border-radius: 999px; cursor: pointer; }
+.chip::before { content: ""; width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--c); }
+.chip[aria-pressed="true"] { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.chip span { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.label { font-size: 0.9rem; font-weight: 600; color: var(--muted); margin: 0.9rem 0 0.45rem; }
+
+/* ---------- The words ---------- */
+.panel h2 { font: 700 1.5rem/1.2 var(--display); margin: 0 0 0.2rem; }
+.panel > p { margin: 0 0 0.9rem; color: var(--muted); }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.75rem; }
+.card { position: relative; padding: 1rem 1.1rem; background: var(--raised); border: 1px solid var(--line); border-radius: 18px; }
+.card.picked { border-color: var(--accent-deep); box-shadow: 0 0 0 1px var(--accent-deep); }
+.card h3 { margin: 0; font: 700 1.2rem/1.25 var(--display); padding-right: 2.4rem; }
+.card h3 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: var(--field); text-underline-offset: 0.2em; }
+.card h3 button:hover { text-decoration-color: var(--accent-deep); }
+.rank { position: absolute; top: 0.9rem; right: 0.9rem; width: 1.9rem; height: 1.9rem; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: var(--on-accent); font: 700 0.95rem var(--mono); }
+.groups { margin: 0.1rem 0 0.5rem; color: var(--muted); font-size: 0.88rem; }
+.why { margin: 0.4rem 0; }
+.badge { display: inline-block; margin: 0.15rem 0 0.3rem; padding: 0.1rem 0.6rem; font-size: 0.82rem; font-weight: 600; color: var(--good); border: 1px solid var(--good); border-radius: 999px; background: rgba(29, 122, 77, 0.08); }
+/* How two people are connected, as a little chain: pill, line, pill. */
+.chain { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; margin: 0.6rem 0; padding: 0; list-style: none; font-size: 0.88rem; }
+.chain .who { padding: 0.15rem 0.65rem; border-radius: 999px; background: var(--night); color: var(--star); font-weight: 600; }
+.chain .who.you { color: var(--accent); }
+.chain .tie { display: inline-flex; align-items: center; gap: 0.35rem; color: var(--muted); }
+.chain .tie::before, .chain .tie::after { content: ""; width: 1.1rem; border-top: 2px solid var(--text); }
+.chain .tie.planned::before, .chain .tie.planned::after { border-top: 2px dashed var(--good); }
+.chain .tie.invited::before, .chain .tie.invited::after { border-top: 2px dotted var(--accent-deep); }
+.chain .tie.suggested::before, .chain .tie.suggested::after, .chain .tie.none::before, .chain .tie.none::after { border-top: 2px dotted var(--field); }
+.card .btn { margin-top: 0.5rem; }
+.done { margin: 0.5rem 0 0; color: var(--good); font-weight: 600; }
+
+.meter { display: flex; align-items: center; gap: 0.6rem; margin: 0.7rem 0 0.2rem; }
+.pips { display: flex; gap: 0.3rem; }
+.pips i { width: 1.7rem; height: 0.55rem; border-radius: 999px; background: rgba(34, 29, 22, 0.13); }
+.pips i.on { background: var(--accent); box-shadow: inset 0 0 0 1px var(--accent-deep); }
+.meter strong { font: 700 1.15rem var(--display); }
+.scale { margin: 0 0 0.6rem; color: var(--muted); font-size: 0.85rem; }
+.facts { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+.facts li { margin: 0.25rem 0; }
+.work { margin: 0.2rem 0 0.4rem; color: var(--muted); font-size: 0.95rem; }
+.foot { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.92rem; max-width: 46rem; }
+.foot li { margin: 0.3rem 0; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="wordmark">Hallway</p>
+    <p class="preview-tag">Design preview · fictional seed people</p>
+  </header>
+  <h1>Your graph</h1>
+  <p class="lede">You are in the middle. The closer someone sits to you, the closer you are. Tap anyone to see how you are connected.</p>
+
+  <div class="cols">
+    <div>
+      <div class="stage intro" id="stage">
+        <svg id="svg" aria-hidden="true"></svg>
+        <canvas id="fx" aria-hidden="true"></canvas>
+        <div id="nodes"></div>
+      </div>
+      <p class="hint" id="hint" role="status"></p>
+      <div class="tools">
+        <button class="btn" id="random" type="button">Pick someone at random</button>
+        <button class="btn quiet" id="pause" type="button" aria-pressed="false">Pause motion</button>
+      </div>
+      <p class="label" id="chips-label">Communities. Tap one to light up its people.</p>
+      <ul class="chips" id="chips" aria-labelledby="chips-label"></ul>
+    </div>
+    <section class="panel" id="panel" aria-live="polite"></section>
+  </div>
+
+  <div class="foot">
+    <p><strong>What this preview shows.</strong> The redesigned <code>/graph</code> page for a signed-in person, drawn with the thinking-orbs engine. Everything here is example data from Hallway's fictional seed set.</p>
+    <ul>
+      <li>Rings are relationships: met, then planned or invited, then suggested. Everyone else sits on the rim, grouped by community.</li>
+      <li>The three numbered orbs are your top suggestions, each with the true reason from the matcher.</li>
+      <li>The lists under the graph (accept, decline, invite) and the venue big-screen graph stay as they are.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+/* thinking-orbs engine 0.3.1, MIT (c) 2026 Jakub Antalik. https://github.com/Jakubantalik/thinking-orbs */
+const ENGINE = (() => {
+function U(n, s, t) {
+  return n + (s - n) * t;
+}
+function nt(n) {
+  return n - Math.floor(n);
+}
+function G(n, s) {
+  const t = Math.floor(n), r = Math.floor(s);
+  let a = n - t, o = s - r;
+  a = a * a * (3 - 2 * a), o = o * o * (3 - 2 * o);
+  const c = E(t, r), M = E(t + 1, r), h = E(t, r + 1), m = E(t + 1, r + 1);
+  return c + (M - c) * a + (h - c) * o + (c - M - h + m) * a * o;
+}
+function E(n, s) {
+  const t = Math.sin(n * 12.9898 + s * 78.233) * 43758.5453;
+  return t - Math.floor(t);
+}
+function J(n, s) {
+  const t = Math.PI * (3 - Math.sqrt(5)), r = 1 - 2 * (n + 0.5) / s, a = Math.sqrt(1 - r * r), o = n * t;
+  return [a * Math.cos(o), r, a * Math.sin(o)];
+}
+function et(n, s) {
+  return Math.atan2(Math.sin(n - s), Math.cos(n - s));
+}
+function _(n, s, t, r, a) {
+  const o = Math.sin(s), c = Math.cos(s), M = Math.sin(n), h = Math.cos(n);
+  return (m, D, p) => {
+    const e = m * h + p * M, l = -m * M + p * h, R = D * c - l * o, w = D * o + l * c;
+    return [t + e * a, r - R * a, w];
+  };
+}
+function rt(n, s, t, r = 0.3) {
+  for (const a of s) {
+    const o = a.a ?? 1, c = Math.min(1, Math.max(0, a.white)), M = Math.round((t ? 1 - c : c) * 255);
+    n.fillStyle = `rgba(${M},${M},${M},${o})`, n.beginPath(), n.arc(a.x, a.y, a.r, 0, Math.PI * 2), n.fill();
+  }
+}
+function it(n, s, t) {
+  for (const r of s) {
+    const a = r.a ?? 1, o = Math.min(1, Math.max(0, r.white)), c = Math.round((t ? 1 - o : o) * 255);
+    n.strokeStyle = `rgba(${c},${c},${c},${a})`, n.lineWidth = r.w, n.beginPath(), n.moveTo(r.x1, r.y1), n.lineTo(r.x2, r.y2), n.stroke();
+  }
+}
+function L(n, s, t = 0.3) {
+  const r = [];
+  for (const a of n)
+    (a.a ?? 1) < 0.02 || (a.r = Math.max(t, a.r), r.push(a));
+  return r.sort((a, o) => a.z - o.z), { dots: r, lines: s.filter((a) => (a.a ?? 1) >= 0.02) };
+}
+function ht(n, s, t) {
+  s.lines.length && it(n, s.lines, t), rt(n, s.dots, t);
+}
+function $(n, s) {
+  return (n / 300) ** s;
+}
+const Mt = (n, s, t) => {
+  const r = n / 2, a = n / 2, o = n / 2 * 0.76, c = _(s * 0.4, 0.3, r, a, 1), M = $(n, t.rsPow ?? 0.6), h = [], m = t.ghostN ?? 150;
+  for (let e = 0; e < m; e++) {
+    const l = J(e, m), [R, w, i] = c(l[0] * o, l[1] * o, l[2] * o), u = (i / o + 1) / 2;
+    h.push({ x: R, y: w, z: i, r: 0.8 * M, white: 0.78, a: 0.1 + 0.22 * u });
+  }
+  const D = t.strandN ?? 52, p = t.turns ?? 3;
+  for (let e = 0; e < 3; e++) {
+    const l = e / 3 * 2 * Math.PI;
+    for (let R = 0; R < D; R++) {
+      const w = (nt(R / D + s * 0.045) * 2 - 1) * 0.96, i = Math.sqrt(Math.max(0, 1 - w * w)), u = Math.min(1, (1 - Math.abs(w)) / 0.1), y = w * Math.PI * p + l, b = 1 + 0.075 * Math.sin(w * Math.PI * p * 2 + l * 2 + s * 0.8), f = i * o * b, [P, x, g] = c(Math.cos(y) * f, w * o * b, Math.sin(y) * f), d = (g / o + 1) / 2;
+      h.push({
+        x: P,
+        y: x,
+        z: g,
+        r: ((t.rBase ?? 1.2) + (t.rDepth ?? 1.8) * d) * M,
+        white: 0.55 - 0.45 * d,
+        a: u * (0.45 + 0.55 * d)
+      });
+    }
+  }
+  return L(h, [], t.rMin);
+};
+function lt(n, s, t, r) {
+  const a = 2 * s * t + r, o = n % a, c = new Array(s).fill(0);
+  let M = -1;
+  if (o < 2 * s * t) {
+    const h = Math.floor(o / t), m = (o - h * t) / t, p = 1 - (1 - Math.min(1, m / 0.7)) ** 3;
+    if (h < s) {
+      for (let e = 0; e < h; e++) c[e] = 1;
+      c[h] = p, M = h;
+    } else {
+      const e = 2 * s - 1 - h;
+      for (let l = 0; l < e; l++) c[l] = 1;
+      c[e] = 1 - p, M = e;
+    }
+  }
+  return { amount: c, active: M };
+}
+function pt(n, s, t) {
+  let [r, a, o] = n, c = !1;
+  for (let M = 0; M < s.length; M++) {
+    if (t.amount[M] <= 0) continue;
+    const h = s[M], m = h.axis === 0 ? r : h.axis === 1 ? a : o;
+    if (m < h.lo || m >= h.hi) continue;
+    M === t.active && (c = !0);
+    const D = h.ang * t.amount[M], p = Math.cos(D), e = Math.sin(D);
+    if (h.axis === 0) {
+      const l = a * p - o * e;
+      o = a * e + o * p, a = l;
+    } else if (h.axis === 1) {
+      const l = r * p + o * e;
+      o = -r * e + o * p, r = l;
+    } else {
+      const l = r * p - a * e;
+      a = r * e + a * p, r = l;
+    }
+  }
+  return [r, a, o, c];
+}
+function ut(n) {
+  const s = [];
+  for (let t = 0; t < n; t++) {
+    const r = Math.min(2, Math.floor(E(t, 2.3) * 3)), a = -1 + 0.5 * Math.min(3, Math.floor(E(t, 5.9) * 4)), o = E(t, 7.7) < 0.5 ? 1 : -1;
+    s.push({ axis: r, lo: a, hi: a + 0.5, ang: o * Math.PI / 2 });
+  }
+  return s;
+}
+const ft = (n, s, t) => {
+  const a = n / 2, o = n / 2, c = n / 2 * 0.82, M = 0.4 + 0.06 * Math.sin(s * 0.35), h = _(s * 0.5, M, a, o, c), m = s * (0.5 + (1.7 - 0.5) * (t.scanMul ?? 1)), D = $(n, t.rsPow ?? 0.6), p = t.dimBase ?? 1, e = [], l = t.latRings ?? 17, R = t.lonDensity ?? 44;
+  for (let w = 0; w <= l; w++) {
+    const i = -Math.PI / 2 + w / l * Math.PI, u = Math.cos(i), y = Math.sin(i), b = Math.max(1, Math.round(Math.abs(u) * R));
+    for (let f = 0; f < b; f++) {
+      const P = f / b * 2 * Math.PI, [x, g, d] = h(u * Math.cos(P), y, u * Math.sin(P)), v = (d + 1) / 2, k = et(P + s * 0.5, m), N = Math.exp(-(k * k) / 0.18) * Math.max(0, d);
+      e.push({
+        x,
+        y: g,
+        z: d,
+        r: ((t.rBase ?? 0.6) + (t.rDepth ?? 1.7) * v + (t.rBoost ?? 1) * N) * D,
+        white: (t.inkFar ?? 0.62) - (t.inkSpan ?? 0.54) * v,
+        // dimBase < 1 fades un-scanned dots so the meridian reads clearly
+        a: p + (1 - p) * Math.min(1, N)
+      });
+    }
+  }
+  return L(e, [], t.rMin);
+}, dt = (n, s, t) => {
+  const r = n / 2, a = n / 2, o = n / 2 * 0.82, c = _(s * 0.55, 0.35 + 0.1 * Math.sin(s * 0.9), r, a, o), M = $(n, t.rsPow ?? 0.6), h = t.moveCount ?? 14, m = ut(h), D = lt(s, h, 0.42, 1.2), p = [], e = t.latRings ?? 15, l = t.lonDensity ?? 40;
+  for (let R = 0; R <= e; R++) {
+    const w = -Math.PI / 2 + R / e * Math.PI, i = Math.cos(w), u = Math.sin(w), y = Math.max(1, Math.round(Math.abs(i) * l));
+    for (let b = 0; b < y; b++) {
+      const f = b / y * 2 * Math.PI, [P, x, g, d] = pt([i * Math.cos(f), u, i * Math.sin(f)], m, D), [v, k, N] = c(P, x, g), z = (N + 1) / 2;
+      p.push({
+        x: v,
+        y: k,
+        z: N,
+        r: ((t.rBase ?? 0.6) + (t.rDepth ?? 1.7) * z + (d ? t.rActive ?? 0.3 : 0)) * M,
+        white: (t.inkFar ?? 0.62) - (t.inkSpan ?? 0.54) * z - (d ? 0.14 : 0)
+      });
+    }
+  }
+  return L(p, [], t.rMin);
+}, bt = (n, s, t) => {
+  const r = n / 2, a = n / 2, o = n / 2 * 0.874, c = _(s * 0.18, 0.38, r, a, 1), M = $(n, t.rsPow ?? 0.6), h = [], m = t.rings ?? 15, D = t.lonDensity ?? 40;
+  for (let p = 0; p <= m; p++) {
+    const e = -Math.PI / 2 + p / m * Math.PI, l = Math.cos(e), R = Math.sin(e), w = 0.62 * Math.sin(s * 2.1 - p * 0.52) + 0.38 * Math.sin(s * 1.27 + p * 0.83), i = o * (0.88 + 0.105 * w), u = Math.max(1, Math.round(Math.abs(l) * D));
+    for (let y = 0; y < u; y++) {
+      const b = y / u * 2 * Math.PI, [f, P, x] = c(l * Math.cos(b) * i, R * i, l * Math.sin(b) * i), g = (x / o + 1) / 2, d = Math.max(0, w);
+      h.push({
+        x: f,
+        y: P,
+        z: x,
+        r: ((t.rBase ?? 0.6) + (t.rDepth ?? 1.7) * g) * (1 + 0.4 * d) * M,
+        white: 0.66 - 0.56 * g - 0.1 * d
+      });
+    }
+  }
+  return L(h, [], t.rMin);
+};
+function xt(n) {
+  return n * n * (3 - 2 * n);
+}
+function st(n) {
+  const s = n.length, t = [];
+  let r = 0;
+  for (let a = 0; a < s; a++) {
+    const o = n[a], c = n[(a + 1) % s], M = Math.hypot(c[0] - o[0], c[1] - o[1]);
+    t.push(M), r += M;
+  }
+  return (a) => {
+    let o = a * r, c = 0;
+    for (; o > t[c] && c < s - 1; )
+      o -= t[c], c++;
+    const M = n[c], h = n[(c + 1) % s], m = t[c] ? Math.min(1, o / t[c]) : 0;
+    return [M[0] + (h[0] - M[0]) * m, M[1] + (h[1] - M[1]) * m];
+  };
+}
+const yt = (n) => {
+  const s = -Math.PI / 2 + n * 2 * Math.PI;
+  return [Math.cos(s) * 0.24, Math.sin(s) * 0.24];
+}, gt = st([
+  [0, -0.26],
+  [0.24, 0.16],
+  [-0.24, 0.16]
+]), mt = st([
+  [0, -0.2],
+  [0.2, -0.2],
+  [0.2, 0.2],
+  [-0.2, 0.2],
+  [-0.2, -0.2]
+]), H = [yt, gt, mt];
+function wt(n) {
+  return Math.max(6, Math.round(34 * n));
+}
+const V = 1.4, ot = 0.9, Q = V + ot, Pt = (n, s, t) => {
+  const r = H.length, a = s % (Q * r), o = Math.floor(a / Q), c = a - o * Q, M = c > V ? xt((c - V) / ot) : 0, h = t.spread ?? 1, m = H[o], D = H[(o + 1) % r], p = 160, e = [];
+  for (let x = 0; x < p; x++) {
+    const g = x / p, d = m(g), v = D(g);
+    e.push([(d[0] + (v[0] - d[0]) * M) * h, (d[1] + (v[1] - d[1]) * M) * h]);
+  }
+  const l = [];
+  let R = 0;
+  for (let x = 0; x < p; x++) {
+    const g = e[x], d = e[(x + 1) % p], v = Math.hypot(d[0] - g[0], d[1] - g[1]);
+    l.push(v), R += v;
+  }
+  const w = wt(t.iconD ?? 1), i = (t.rDot ?? 0.021) * 1.35 * h, u = 1 + 0.02 * Math.sin(c * 3.1), y = [], b = n / 2;
+  let f = 0, P = 0;
+  for (let x = 0; x < w; x++) {
+    const g = x / w * R;
+    for (; P + l[f] < g && f < p - 1; )
+      P += l[f], f++;
+    const d = e[f], v = e[(f + 1) % p], k = l[f] ? Math.min(1, (g - P) / l[f]) : 0, N = (d[0] + (v[0] - d[0]) * k) * u, z = (d[1] + (v[1] - d[1]) * k) * u;
+    y.push({
+      x: b + N * n,
+      y: b + z * n,
+      z: 0,
+      r: Math.max(0.35, i * n),
+      white: 0.1
+    });
+  }
+  return L(y, [], t.rMin);
+}, Rt = (n, s, t) => {
+  const r = n / 2, a = n / 2, o = n / 2 * 0.82, c = _(s * 0.12, 0.3, r, a, 1), M = $(n, t.rsPow ?? 0.6), h = [], m = t.orbitN ?? 12, D = t.ghostN ?? 40, p = t.particles ?? 3;
+  for (let e = 0; e < m; e++) {
+    const l = E(e, 1.7), R = E(e, 5.2), w = E(e, 8.9), i = o * (0.45 + 0.52 * l), u = l * 2 * Math.PI, y = Math.acos(2 * R - 1), b = Math.sin(y) * Math.cos(u), f = Math.cos(y), P = Math.sin(y) * Math.sin(u);
+    let x = -f, g = b;
+    const d = 0, v = Math.max(1e-6, Math.sqrt(x * x + g * g));
+    x /= v, g /= v;
+    const k = f * d - P * g, N = P * x - b * d, z = b * g - f * x, O = (0.25 + 0.55 * w) * (w > 0.5 ? 1 : -1);
+    for (let B = 0; B < D; B++) {
+      const I = B / D * 2 * Math.PI, [S, A, T] = c(
+        (x * Math.cos(I) + k * Math.sin(I)) * i,
+        (g * Math.cos(I) + N * Math.sin(I)) * i,
+        (d * Math.cos(I) + z * Math.sin(I)) * i
+      ), C = (T / i + 1) / 2;
+      h.push({
+        x: S,
+        y: A,
+        z: T,
+        r: (t.ghostR ?? 0.9) * M,
+        white: 0.72,
+        a: (t.ghostA ?? 0.5) * (0.4 + 0.6 * C)
+      });
+    }
+    for (let B = 0; B < p; B++) {
+      const I = s * O + B / p * 2 * Math.PI + R * 6, [S, A, T] = c(
+        (x * Math.cos(I) + k * Math.sin(I)) * i,
+        (g * Math.cos(I) + N * Math.sin(I)) * i,
+        (d * Math.cos(I) + z * Math.sin(I)) * i
+      ), C = (T / i + 1) / 2;
+      h.push({
+        x: S,
+        y: A,
+        z: T,
+        r: ((t.partR ?? 1.2) + (t.partRDepth ?? 1.6) * C) * M,
+        white: 0.3 - 0.22 * C
+      });
+    }
+  }
+  return L(h, [], t.rMin);
+}, Z = (n, s, t) => {
+  const r = n / 2, a = n / 2, o = n / 2 * 0.78, c = t.spin ?? 1, M = 0.3, h = _(s * 0.1 * c, M, r, a, 1), m = $(n, t.rsPow ?? 0.6), D = [], p = t.ghostN ?? 150;
+  for (let z = 0; z < p; z++) {
+    const O = J(z, p), [B, I, S] = h(O[0] * o, O[1] * o, O[2] * o), A = (S / o + 1) / 2;
+    D.push({ x: B, y: I, z: S, r: 0.8 * m, white: 0.78, a: 0.1 + 0.22 * A });
+  }
+  const e = s * 0.24 * c, l = t.faceOn ? -M : 0.55 + 0.3 * Math.sin(s * 0.18) * c, R = Math.cos(e), w = 0, i = Math.sin(e), u = -i * Math.sin(l), y = Math.cos(l), b = R * Math.sin(l), f = w * b - i * y, P = i * u - R * b, x = R * y - w * u, g = 0.23 * (t.wobMul ?? 1), d = t.faceOn ? o / (1 + 0.85 * g) : o, v = t.lanes ?? 5, k = t.segs ?? 88, N = Math.max(1, Math.round(v * (t.bandMul ?? 1)));
+  for (let z = 0; z < N; z++) {
+    const O = (z - (N - 1) / 2) * 0.075, B = Math.abs(z - (N - 1) / 2) / Math.max(1, (N - 1) / 2);
+    for (let I = 0; I < k; I++) {
+      const S = I / k * 2 * Math.PI, A = (0.16 * Math.sin(S * 3 - s * 1.7 + z * 0.22) + 0.07 * Math.sin(S * 5 + s * 1.1)) * (t.wobMul ?? 1), T = t.faceOn ? 1 + A : 1, C = t.faceOn ? O : O + A, q = R * Math.cos(S) + u * Math.sin(S) + f * C, F = w * Math.cos(S) + y * Math.sin(S) + P * C, j = i * Math.cos(S) + b * Math.sin(S) + x * C, W = Math.sqrt(q * q + F * F + j * j), Y = d * T, [ct, at, X] = h(q / W * Y, F / W * Y, j / W * Y), K = (X / o + 1) / 2;
+      D.push({
+        x: ct,
+        y: at,
+        z: X,
+        r: ((t.rBase ?? 1.1) + (t.rDepth ?? 1.7) * K) * (1 - 0.25 * B) * m,
+        white: 0.52 - 0.44 * K + 0.18 * B,
+        a: 0.4 + 0.6 * K
+      });
+    }
+  }
+  return L(D, [], t.rMin);
+}, Dt = (n, s, t) => {
+  const r = n / 2, a = n / 2, o = n / 2 * 0.8 * (t.spread ?? 1), c = _(s * 0.12, 0.32, r, a, o), M = $(n, t.rsPow ?? 0.6), h = t.nodeN ?? 30, m = t.thr ?? 0.72, D = t.nodeR ?? 1.4, p = t.nodeRDepth ?? 1.8, e = [];
+  for (let i = 0; i < h; i++) {
+    const u = J(i, h), y = u[0] + 0.3 * (G(i * 0.31 + 9, s * 0.24) - 0.5) * 2, b = u[1] + 0.3 * (G(i * 0.53 + 27, s * 0.21) - 0.5) * 2, f = u[2] + 0.3 * (G(i * 0.77 + 55, s * 0.27) - 0.5) * 2, P = Math.sqrt(y * y + b * b + f * f);
+    e.push([y / P, b / P, f / P]);
+  }
+  const l = [], R = [];
+  for (let i = 0; i < h; i++)
+    for (let u = i + 1; u < h; u++) {
+      const y = e[i][0] - e[u][0], b = e[i][1] - e[u][1], f = e[i][2] - e[u][2], P = Math.sqrt(y * y + b * b + f * f);
+      if (P >= m) continue;
+      const [x, g, d] = c(e[i][0], e[i][1], e[i][2]), [v, k, N] = c(e[u][0], e[u][1], e[u][2]), z = ((d + N) / 2 + 1) / 2;
+      l.push({
+        x1: x,
+        y1: g,
+        x2: v,
+        y2: k,
+        white: 0.42,
+        a: (1 - P / m) * (0.3 + 0.55 * z),
+        w: Math.max(0.6, (t.lineW ?? 0.8) * M)
+      });
+    }
+  for (let i = 0; i < h; i++) {
+    const [u, y, b] = c(e[i][0], e[i][1], e[i][2]), f = (b + 1) / 2, P = 1 + 0.25 * Math.sin(s * 1.4 + i * 2.7);
+    R.push({
+      x: u,
+      y,
+      z: b,
+      r: (D + p * f) * P * M,
+      white: 0.55 - 0.45 * f
+    });
+  }
+  const w = t.signals ?? 5;
+  for (let i = 0; i < w; i++) {
+    const u = Math.floor(s * 0.55 + i * 7.31), y = Math.floor(E(u, i * 3.1 + 1.7) * h), b = Math.floor(E(u, i * 5.7 + 4.2) * h);
+    if (y === b) continue;
+    const f = nt(s * 0.55 + i * 7.31), P = U(e[y][0], e[b][0], f), x = U(e[y][1], e[b][1], f), g = U(e[y][2], e[b][2], f), d = Math.max(1e-6, Math.sqrt(P * P + x * x + g * g)), [v, k, N] = c(P / d, x / d, g / d), z = (N + 1) / 2;
+    R.push({
+      x: v,
+      y: k,
+      z: N,
+      r: (D * 1.5 + p * z) * M,
+      white: 0.05,
+      a: 0.5 + 0.5 * z
+    });
+  }
+  return L(R, l, t.rMin);
+}, vt = {
+  orbits: Rt,
+  globe: ft,
+  rubik: dt,
+  wave: bt,
+  web: Dt,
+  braid: Mt,
+  ribbon: Z,
+  // ring shares ribbon's geometry — the `faceOn` profile flag switches it
+  ring: Z,
+  morph: Pt
+}, Ct = Object.fromEntries(
+  Object.entries(vt).map(([n, s]) => [
+    n,
+    (t, r, a, o, c) => ht(t, s(r, a, c), o)
+  ])
+), zt = [
+  ["latRings", "lonDensity"],
+  ["rings", "lonDensity"],
+  ["lanes", "segs"]
+], Nt = ["orbitN", "ghostN", "nodeN", "strandN", "signals"], It = ["iconD"], kt = [
+  "rBase",
+  "rDepth",
+  "rActive",
+  "rDot",
+  "ghostR",
+  "partR",
+  "partRDepth",
+  "nodeR",
+  "nodeRDepth"
+];
+function St(n, s) {
+  const t = { ...n }, r = /* @__PURE__ */ new Set(), a = Math.sqrt(s);
+  for (const [o, c] of zt) {
+    const M = t[o], h = t[c];
+    M != null && h != null && !r.has(o) && !r.has(c) && (t[o] = Math.max(2, Math.round(M * a)), t[c] = Math.max(2, Math.round(h * a)), r.add(o), r.add(c));
+  }
+  for (const o of Nt) {
+    const c = t[o];
+    c != null && c !== 0 && !r.has(o) && (t[o] = Math.max(1, Math.round(c * s)));
+  }
+  for (const o of It) {
+    const c = t[o];
+    c != null && (t[o] = Math.max(0.02, c * s));
+  }
+  return t;
+}
+function Bt(n, s) {
+  const t = { ...n };
+  for (const r of kt) {
+    const a = t[r];
+    a != null && (t[r] = a * s);
+  }
+  return t.rSizeMul = (t.rSizeMul ?? 1) * s, t;
+}
+const Et = {
+  globe: {
+    latRings: 17,
+    lonDensity: 44,
+    rBase: 0.6,
+    rDepth: 1.7,
+    rBoost: 1,
+    inkFar: 0.62,
+    inkSpan: 0.54,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  orbits: {
+    orbitN: 12,
+    ghostN: 40,
+    ghostR: 0.9,
+    ghostA: 0.5,
+    particles: 3,
+    partR: 1.2,
+    partRDepth: 1.6,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  rubik: {
+    latRings: 15,
+    lonDensity: 40,
+    moveCount: 14,
+    rBase: 0.6,
+    rDepth: 1.7,
+    rActive: 0.3,
+    inkFar: 0.62,
+    inkSpan: 0.54,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  wave: {
+    rings: 15,
+    lonDensity: 40,
+    rBase: 0.6,
+    rDepth: 1.7,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  web: {
+    nodeN: 30,
+    thr: 0.72,
+    signals: 5,
+    nodeR: 1.4,
+    nodeRDepth: 1.8,
+    lineW: 0.8,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  braid: {
+    strandN: 52,
+    turns: 3,
+    ghostN: 150,
+    rBase: 1.2,
+    rDepth: 1.8,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  ribbon: {
+    lanes: 5,
+    segs: 88,
+    ghostN: 150,
+    rBase: 1.1,
+    rDepth: 1.7,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  // ring shares ribbon's painter; faceOn cancels the camera tilt and moves
+  // the undulation onto the radius, and there is no ghost sphere behind it
+  ring: {
+    lanes: 5,
+    segs: 88,
+    ghostN: 0,
+    faceOn: 1,
+    rBase: 1.1,
+    rDepth: 1.7,
+    rsPow: 0.6,
+    rMin: 0.3
+  },
+  morph: {
+    rDot: 0.021,
+    iconD: 1,
+    rMin: 0.25
+  }
+}, Ot = {
+  working: "orbits",
+  searching: "globe",
+  solving: "rubik",
+  listening: "wave",
+  connecting: "web",
+  weaving: "braid",
+  composing: "ribbon",
+  breathing: "ring",
+  shaping: "morph"
+}, At = {
+  orbits: {
+    64: { speed: 1.885, count: 1, size: 1 },
+    20: { speed: 3.9, count: 0.238, size: 2.4 }
+  },
+  globe: {
+    64: { speed: 2.015, count: 0.42, size: 1.15, extra: { scanMul: 4.08, dimBase: 0.45 } },
+    20: { speed: 2.665, count: 0.105, size: 1.75, extra: { scanMul: 4.335, dimBase: 0.45 } }
+  },
+  rubik: {
+    64: { speed: 1.82, count: 0.35, size: 1.05 },
+    20: { speed: 1.95, count: 0.088, size: 1.9 }
+  },
+  wave: {
+    64: { speed: 4.388, count: 0.341, size: 1 },
+    20: { speed: 3.998, count: 0.105, size: 1.6 }
+  },
+  web: {
+    64: { speed: 3.315, count: 1.35, size: 0.95 },
+    20: { speed: 6.63, count: 0.25, size: 1.52 }
+  },
+  braid: {
+    64: { speed: 1.625, count: 0.5, size: 1 },
+    20: { speed: 2.75, count: 0.1125, size: 1.36 }
+  },
+  ribbon: {
+    64: { speed: 2.34, count: 0.25, size: 0.85, extra: { spin: 0, bandMul: 3.9, wobMul: 1 } },
+    20: { speed: 3.12, count: 0.051, size: 1.073, extra: { spin: 0, bandMul: 4.94, wobMul: 1 } }
+  },
+  ring: {
+    64: { speed: 3.24, count: 0.25, size: 0.956, extra: { spin: 0, bandMul: 3.627, wobMul: 0.368 } },
+    20: { speed: 3.78, count: 0.028, size: 1.622, extra: { spin: 0, bandMul: 3.968, wobMul: 0.565 } }
+  },
+  morph: {
+    64: { speed: 2.405, count: 0.702, size: 0.395, extra: { spread: 1.45 } },
+    20: { speed: 2.08, count: 0.53, size: 1.011, extra: { spread: 1.45 } }
+  }
+}, tt = /* @__PURE__ */ new Map();
+function Lt(n, s) {
+  const t = `${n}-${s}`, r = tt.get(t);
+  if (r) return r;
+  const a = Ot[n], o = At[a][s];
+  let c = { ...Et[a] };
+  o.count !== 1 && (c = St(c, o.count)), o.size !== 1 && (c = Bt(c, o.size)), o.extra && (c = { ...c, ...o.extra });
+  const M = { mode: a, speed: o.speed, opts: c };
+  return tt.set(t, M), M;
+}
+return {MODE_DRAWS: Ct, MODE_FRAMES: vt, STATE_TO_MODE: Ot, finalizeFrame: L, makeProj: _, paint: rt, paintFrame: ht, paintLines: it, radiusScale: $, resolvePreset: Lt};
+})();
+const SEED = {"people": [{"id": 0, "name": "Dalia Namespace", "groups": ["Platform Engineering", "First-time attendees"], "tags": ["kubernetes", "java", "migration", "capacity"], "working_on": "Moving a 40-service Java backend onto our first production Kubernetes cluster at a regional logistics company.", "asks": "Our pods keep getting evicted under memory pressure and I can't tell which workloads are to blame or why some get killed before others.", "offers": "JVM tuning in containers: heap sizing, GC choice and the flags that stopped our services from ballooning."}, {"id": 1, "name": "Goran Cgroup", "groups": ["SRE", "Maintainers"], "tags": ["kubelet", "cgroups", "linux", "nodes"], "working_on": "Node reliability for a multi-tenant cluster fleet; I review kubelet resource-management pull requests in my spare time.", "asks": "Looking for people running cgroup v2 memory throttling in production: did it help or hurt? Also comparing notes on JVM heap sizing and GC flags inside containers, since our Java services keep ballooning.", "offers": "Happy to walk through requests, limits and QoS classes with your manifests open, and how the kubelet picks what to kill first. I can also show how evicted pods and memory pressure point back to the workloads that get killed first."}, {"id": 2, "name": "Ines Cardinality", "groups": ["Observability", "SRE"], "tags": ["tracing", "cost", "metrics", "opentelemetry"], "working_on": "Running the telemetry pipeline for a payments API: 300 services sending traces and metrics through a central gateway.", "asks": "Our tracing bill tripled this quarter. I need a way to keep the slow and failed requests without paying to store every healthy one.", "offers": "Hard-won lessons on taming metric cardinality: which labels to drop, and how to find the team that added user_id."}, {"id": 3, "name": "Soren Sampler", "groups": ["Observability", "Maintainers"], "tags": ["opentelemetry", "collector", "sampling", "ottl"], "working_on": "Contributor to the OpenTelemetry Collector contrib processors; day job is the observability platform at a retailer.", "asks": "Want real-world stories of OTTL transform rules that got out of hand, for a talk I'm drafting. Also: which labels do you drop before metric cardinality eats the budget? We keep finding user_id on everything.", "offers": "I can whiteboard tail-based sampling policies in the OpenTelemetry Collector, including the load-balancing exporter you need in front of it. The point is you keep the slow and failed requests and stop paying to store every healthy one, so the tracing bill stops tripling."}, {"id": 4, "name": "Wren Syllabus", "groups": ["Students", "First-time attendees"], "tags": ["go", "containers", "student", "linux"], "working_on": "Final-year CS student; my capstone is a tiny container runtime written in Go to understand namespaces and cgroups.", "asks": "I've never contributed to open source. I don't know how to pick something to work on or who it's okay to ask without looking clueless.", "offers": "Fresh eyes on your docs: I'll tell you exactly where a beginner gets lost. Also decent at Go table tests."}, {"id": 5, "name": "Mireille Backport", "groups": ["Maintainers"], "tags": ["community", "mentoring", "releases", "governance"], "working_on": "Maintainer of a mid-sized CNCF sandbox project for config validation; I run our contributor ladder and release team.", "asks": "How do other small projects keep reviewers from burning out? Looking for rotation or triage models that actually stuck. And I will trade you: read our contributor docs with fresh eyes and tell me exactly where a beginner gets lost.", "offers": "I pair with newcomers on good-first-issues and will sit with you through your first pull request, from fork to merge. Especially if you have never contributed to open source and do not know how to pick something to work on."}, {"id": 6, "name": "Yusuf Ledger", "groups": ["Security", "Platform Engineering"], "tags": ["compliance", "fintech", "ci", "audit"], "working_on": "Platform lead at a fintech; getting our build and deploy pipeline ready for a SOC 2 and PCI audit.", "asks": "Auditors want proof of where our container images came from and that nobody tampered with them between build and deploy.", "offers": "Translating audit controls into things engineers can automate; I have templates for evidence collection."}, {"id": 7, "name": "Zofia Provenance", "groups": ["Security", "Maintainers"], "tags": ["supply-chain", "signing", "slsa", "admission"], "working_on": "Supply-chain security tooling; contributor to a policy controller that verifies signatures at admission.", "asks": "Looking for teams doing keyless signing in air-gapped or private-CA environments: how do you handle the transparency log? Also, how do you automate evidence collection for an audit, with templates engineers actually reuse?", "offers": "Can show how to sign artifacts with cosign and attach SLSA provenance in GitHub Actions, then enforce it at admission. And how to prove where container images came from, and that nobody tampered with them between build and deploy."}, {"id": 8, "name": "Kavya Tensor", "groups": ["AI/ML infra"], "tags": ["gpu", "training", "pytorch", "mlops"], "working_on": "ML platform for a computer-vision startup: 12 teams sharing 60 GPUs on Kubernetes.", "asks": "Our GPU nodes sit idle half the day while training jobs wait in line. Teams grab whole nodes and nobody shares fairly.", "offers": "Packaging PyTorch training images that don't take 20 minutes to pull: lazy loading and layer ordering."}, {"id": 9, "name": "Oskar Quorum", "groups": ["AI/ML infra", "Platform Engineering"], "tags": ["batch", "scheduling", "kueue", "gpu"], "working_on": "Batch scheduling for a research lab's shared cluster; migrated from a homegrown queue to Kubernetes-native job queueing.", "asks": "Anyone doing fractional GPU sharing with Dynamic Resource Allocation yet? I want to hear what broke. Also swapping notes on packaging PyTorch training images: lazy loading and layer ordering, so pulls stop taking 20 minutes.", "offers": "I set up Kueue quotas, cohort borrowing and bin-packing for a shared accelerator cluster and can share the configs that worked. The goal is GPU nodes that stop sitting idle while training jobs wait in line, because teams share fairly instead of grabbing whole nodes."}, {"id": 10, "name": "Bao Kubelet", "groups": ["Platform Engineering"], "tags": ["backstage", "crossplane", "idp", "templates"], "working_on": "Building an internal developer platform with Backstage templates on top of Crossplane compositions.", "asks": "How do you version golden-path templates without breaking the 200 repos already scaffolded from the old ones?", "offers": "Crossplane composition functions: how we replaced 2,000 lines of patch-and-transform with a small Go function."}, {"id": 11, "name": "Chidi Rollout", "groups": ["Platform Engineering", "SRE"], "tags": ["gitops", "argo", "canary", "delivery"], "working_on": "Progressive delivery for 150 services using Argo Rollouts with metric-based analysis.", "asks": "Need better canary analysis queries: ours pass when traffic is too low to mean anything.", "offers": "GitOps repo layouts for many clusters: app-of-apps versus ApplicationSets, and what we regret."}, {"id": 12, "name": "Emeka Ingress", "groups": ["Platform Engineering"], "tags": ["gateway-api", "ingress", "networking", "migration"], "working_on": "Moving 400 Ingress objects to Gateway API across three clusters before our controller is retired.", "asks": "Has anyone migrated regex path rewrites and auth annotations to HTTPRoute filters without downtime?", "offers": "Can explain Gateway API roles (GatewayClass, Gateway, Route) at a whiteboard and how to split ownership between teams."}, {"id": 13, "name": "Farah Histogram", "groups": ["Observability"], "tags": ["prometheus", "promql", "histograms", "dashboards"], "working_on": "Migrating dashboards from classic Prometheus histograms to native histograms.", "asks": "Looking for anyone who has sent native histograms through remote write to a hosted backend.", "offers": "PromQL office hours: bring a slow or confusing query and we'll fix it together."}, {"id": 14, "name": "Hana Runbook", "groups": ["SRE"], "tags": ["on-call", "incidents", "postmortems", "culture"], "working_on": "Rebuilding on-call for a 30-person engineering org after two people left the rotation.", "asks": "How do small teams in a single timezone run a humane on-call?", "offers": "Blameless incident review facilitation; I have a template and a 30-minute format that people actually attend."}, {"id": 15, "name": "Jomo Tracer", "groups": ["Observability", "First-time attendees"], "tags": ["opentelemetry", "django", "python", "tracing"], "working_on": "Adding OpenTelemetry auto-instrumentation to a Django monolith at a health-tech startup.", "asks": "Our traces break at the Celery queue boundary; how do I propagate context through async tasks?", "offers": "Django performance profiling; I've found N+1 queries in every codebase I've touched."}, {"id": 16, "name": "Lior Cipher", "groups": ["Security"], "tags": ["spiffe", "identity", "mtls", "zero-trust"], "working_on": "Rolling out workload identity with SPIFFE and SPIRE so services stop sharing long-lived API keys.", "asks": "How do you bootstrap trust for workloads running outside the cluster, on VMs and in CI runners?", "offers": "mTLS without a service mesh: what you get from SPIRE alone and where it stops."}, {"id": 17, "name": "Nilufar Epoch", "groups": ["AI/ML infra", "First-time attendees"], "tags": ["llm", "inference", "vllm", "autoscaling"], "working_on": "Serving open-weight LLMs with vLLM behind an internal gateway; autoscaling on queue depth.", "asks": "Cold starts take six minutes because of model weight downloads; how are people caching weights on nodes?", "offers": "Benchmarks comparing vLLM, TGI and Triton for our workloads, with the raw numbers and scripts."}, {"id": 18, "name": "Priya Finalizer", "groups": ["Maintainers", "Platform Engineering"], "tags": ["operators", "postgres", "controller-runtime", "crds"], "working_on": "Maintainer of a Kubernetes operator for Postgres; working on safe major-version upgrades.", "asks": "Seeking war stories about finalizers stuck during namespace deletion; I'm writing a guide.", "offers": "Controller-runtime deep dives: reconcile loops, caching, and why your operator is hammering the API server."}, {"id": 19, "name": "Quentin Pager", "groups": ["SRE"], "tags": ["slo", "alerting", "reliability", "multi-tenant"], "working_on": "Defining SLOs for a B2B API where every customer has a different idea of 'down'.", "asks": "How do you do per-tenant SLOs without exploding the number of time series?", "offers": "Multi-window burn-rate alerts explained simply, plus the alert rules we run."}, {"id": 20, "name": "Rosalind Overlay", "groups": ["Platform Engineering", "Security"], "tags": ["cilium", "ebpf", "network-policy", "hubble"], "working_on": "Network policy rollout with Cilium across 25 clusters; default-deny by the end of the year.", "asks": "How do you discover what talks to what before turning on default-deny without breaking production?", "offers": "eBPF basics for people who are scared of it: reading Hubble flows and tracking down drops."}, {"id": 21, "name": "Tamsin Freshman", "groups": ["Students", "First-time attendees"], "tags": ["homelab", "k3s", "student", "career"], "working_on": "Second-year student running a homelab k3s cluster on three old laptops; it hosts my club's website.", "asks": "What should I learn after 'I can deploy an app'? Looking for an honest roadmap toward an SRE internship.", "offers": "I can explain Kubernetes to beginners because I was one two months ago. Also happy to take photos of your talk."}, {"id": 22, "name": "Ulises Shard", "groups": ["SRE", "Observability"], "tags": ["elasticsearch", "logs", "storage", "search"], "working_on": "Operating self-managed search clusters for log search, 40 TB hot.", "asks": "Thinking about moving logs to object-storage-backed systems; has anyone compared cost at this scale?", "offers": "Shard sizing and index lifecycle tuning; I can look at your _cat output and tell you what hurts."}, {"id": 23, "name": "Vesna Webhook", "groups": ["Platform Engineering", "Security"], "tags": ["admission", "cel", "policy", "kyverno"], "working_on": "Replacing 60 custom admission webhooks with ValidatingAdmissionPolicy and CEL.", "asks": "How do you test CEL policies in CI before they block a deploy at 2 a.m.?", "offers": "Kyverno to CEL migration notes: which policies translate cleanly and which don't."}, {"id": 24, "name": "Xiomara Gradient", "groups": ["AI/ML infra"], "tags": ["ray", "data-pipelines", "spot", "training"], "working_on": "Feature store and training data pipelines on Kubernetes with Ray; 2,000 nodes at peak.", "asks": "Our Ray head node keeps dying under object-store pressure; how do others size and isolate it?", "offers": "Spot-instance strategies for training: checkpointing patterns that survive preemption."}, {"id": 25, "name": "Anselm Changelog", "groups": ["Maintainers"], "tags": ["releases", "cli", "automation", "backports"], "working_on": "Release manager for an open-source CLI; automating changelogs and signed releases.", "asks": "How do you handle security backports across four supported minor versions with two maintainers?", "offers": "Release automation with GoReleaser and conventional commits; I can review your release workflow."}, {"id": 26, "name": "Birgit Latency", "groups": ["SRE", "Observability"], "tags": ["profiling", "grpc", "performance", "ebpf"], "working_on": "Chasing p99 latency in a gRPC mesh; currently bisecting between proxy config and kernel settings.", "asks": "Need a second brain on tail latency: is it connection pooling, retries, or noisy neighbours?", "offers": "Reading flame graphs and continuous profiling output; bring a profile and I'll help interpret it."}, {"id": 27, "name": "Caspian Monorepo", "groups": ["Platform Engineering"], "tags": ["ci", "bazel", "build-cache", "runners"], "working_on": "CI for a 900-engineer monorepo; build caching and ephemeral runners on Kubernetes.", "asks": "Autoscaled CI runners take 90 seconds to become ready; how are people keeping warm pools cheap?", "offers": "Bazel remote cache and remote execution setup, including the cache-poisoning mistakes."}, {"id": 28, "name": "Delphine Keyring", "groups": ["Security"], "tags": ["secrets", "kms", "rotation", "threat-modelling"], "working_on": "Migrating secrets from encrypted files in Git to External Secrets backed by a cloud KMS.", "asks": "How do you rotate database credentials without restarting every pod that mounted the old one?", "offers": "Threat-modelling sessions for Kubernetes clusters: a one-hour format you can run with your own team."}, {"id": 29, "name": "Eitan Syscall", "groups": ["Security", "Maintainers"], "tags": ["falco", "tetragon", "runtime-security", "detection"], "working_on": "Runtime threat detection rules with Falco and Tetragon; contributor to community rule sets.", "asks": "Too many false positives from package managers in init containers; how do others tune their rules?", "offers": "Writing your first eBPF-based detection rule and testing it against a replayed attack."}, {"id": 30, "name": "Fumiko Gauge", "groups": ["Observability", "Platform Engineering"], "tags": ["dashboards-as-code", "jsonnet", "perses", "self-service"], "working_on": "Self-service observability: every new service gets dashboards, alerts and SLOs from a template.", "asks": "How do you stop generated dashboards rotting once teams start hand-editing them?", "offers": "Dashboards-as-code with Jsonnet and Perses; a starter library you can fork."}, {"id": 31, "name": "Gideon Failover", "groups": ["SRE"], "tags": ["multi-region", "chaos-engineering", "stateful", "game-days"], "working_on": "Multi-region failover for a stateful ticketing system; we run quarterly game days.", "asks": "How do you rehearse a region evacuation without customers noticing?", "offers": "Chaos engineering starter kit: five safe experiments for a team that has never run one."}, {"id": 32, "name": "Hyun Embedding", "groups": ["AI/ML infra", "Observability"], "tags": ["llm-observability", "agents", "vector-search", "evaluation"], "working_on": "Tracing LLM agent workflows: token counts, tool calls and retries as spans.", "asks": "Which GenAI semantic conventions are stable enough to build dashboards on?", "offers": "Vector search relevance tuning: hybrid retrieval, reranking and evaluating results with a small labelled set."}, {"id": 33, "name": "Idris Taint", "groups": ["Platform Engineering", "SRE"], "tags": ["karpenter", "autoscaling", "spot", "cost"], "working_on": "Node autoscaling with Karpenter for mixed on-demand and spot fleets.", "asks": "Consolidation keeps disrupting long-running batch pods; what disruption budgets do people use?", "offers": "Right-sizing workshops: using usage data and VPA recommendations to cut a cluster bill by a third."}, {"id": 34, "name": "Jacinta Triage", "groups": ["Maintainers", "First-time attendees"], "tags": ["docs", "community", "maintainers", "boundaries"], "working_on": "Community manager turned maintainer for a docs-heavy observability project; first time at this conference.", "asks": "How do maintainers say no to feature requests kindly? I end up saying yes to everything.", "offers": "Docs information architecture: I can review your getting-started page and cut it in half."}, {"id": 35, "name": "Kwame Registry", "groups": ["Platform Engineering", "Security"], "tags": ["harbor", "registry", "images", "vulnerabilities"], "working_on": "Running an internal Harbor registry with replication across four regions and vulnerability gates.", "asks": "Image pulls stall during node scale-up storms; who has tried peer-to-peer distribution or pull-through caches at scale?", "offers": "Vulnerability triage that doesn't drown developers: scoping by reachability and base-image ownership."}, {"id": 36, "name": "Linnea Bisect", "groups": ["Students"], "tags": ["benchmarking", "statistics", "ci", "research"], "working_on": "Master's thesis on detecting performance regressions in CI with statistical change-point detection.", "asks": "I need real benchmark time series from open-source projects, and someone to tell me if my approach is naive.", "offers": "Statistics for engineers: I can sanity-check your A/B test or benchmark methodology."}, {"id": 37, "name": "Mateus Daemon", "groups": ["SRE", "First-time attendees"], "tags": ["linux", "ansible", "upgrades", "sysadmin"], "working_on": "Sysadmin moving from VMs and Ansible to Kubernetes at a university IT department.", "asks": "What replaces my Ansible patching routine for nodes? How do people upgrade clusters without a maintenance window?", "offers": "Linux fundamentals: systemd, networking and storage debugging from 15 years of being paged."}, {"id": 38, "name": "Noor Inference", "groups": ["AI/ML infra", "Security"], "tags": ["llm-security", "guardrails", "dlp", "red-teaming"], "working_on": "Guardrails and data-loss prevention in front of internal LLM endpoints.", "asks": "How are you keeping secrets and customer data out of prompts and traces?", "offers": "Red-teaming playbook for LLM apps: prompt-injection test cases you can run in CI."}, {"id": 39, "name": "Olumide Manifest", "groups": ["Platform Engineering"], "tags": ["helm", "cue", "kcl", "configuration"], "working_on": "Replacing 1,500 hand-written Helm values files with a typed configuration language.", "asks": "KCL, CUE or just better Helm? I'd love to hear from someone who regretted their choice.", "offers": "Helm chart testing: unit tests, schema validation and diffing rendered output in pull requests."}, {"id": 40, "name": "Paloma Uptime", "groups": ["SRE", "Students"], "tags": ["status-page", "react", "intern", "prometheus"], "working_on": "Part-time SRE intern and student; building a status page that reads from Prometheus.", "asks": "How do you decide what counts as an outage on a public status page versus an internal blip?", "offers": "Frontend help: I can make your internal tool not look like 2009. React and accessibility basics."}, {"id": 41, "name": "Rafiq Exemplar", "groups": ["Observability"], "tags": ["logging", "correlation", "exemplars", "streaming"], "working_on": "Correlating metrics, logs and traces for a video streaming platform; exemplars everywhere.", "asks": "Half our services log without trace IDs; what's the least painful way to retrofit them?", "offers": "Structured logging conventions and a log-to-metric pipeline that cut our log volume by 60 percent."}, {"id": 42, "name": "Saoirse Canary", "groups": ["Platform Engineering", "First-time attendees"], "tags": ["feature-flags", "openfeature", "startup", "releases"], "working_on": "Feature flags and safe releases at a 20-person startup; we just adopted OpenFeature.", "asks": "When do feature flags replace canary deploys, and when do you need both?", "offers": "Startup platform on a budget: what to build, what to buy, and what to skip until you have 50 engineers."}, {"id": 43, "name": "Tobias Kernel", "groups": ["Maintainers", "SRE"], "tags": ["bare-metal", "immutable-os", "upgrades", "bgp"], "working_on": "Maintaining an immutable Linux distribution for Kubernetes nodes; working on faster boot and upgrades.", "asks": "Looking for users with bare-metal fleets to test our new A/B upgrade path.", "offers": "Bare-metal Kubernetes: PXE boot, BGP load balancing and what to do when a disk dies."}, {"id": 44, "name": "Uma Vector", "groups": ["AI/ML infra", "Students"], "tags": ["research", "scheduling", "inference", "simulation"], "working_on": "PhD student researching scheduling for inference workloads with latency SLOs.", "asks": "I need production traces of inference request patterns, even anonymised, to validate my simulator.", "offers": "Reading-group style explanations of recent scheduling papers; I can summarise what matters for practitioners."}, {"id": 45, "name": "Viktor Mutex", "groups": ["Maintainers"], "tags": ["etcd", "raft", "distributed-systems", "testing"], "working_on": "Core contributor to a distributed key-value store; currently fixing a rare leader-election bug.", "asks": "Looking for anyone with Jepsen-style testing experience to review our linearizability test harness.", "offers": "Raft explained with paper cut-outs, and how to debug a slow etcd: disk latency, defrag and compaction."}, {"id": 46, "name": "Wanjiru Scraper", "groups": ["Observability", "Students"], "tags": ["prometheus", "exporters", "iot", "edge"], "working_on": "Bootcamp graduate building a Prometheus exporter for a solar-powered sensor network.", "asks": "How do I monitor devices that are offline most of the day? Pull-based scraping doesn't fit.", "offers": "IoT and low-bandwidth networking experience; also Swahili and French if you want to practise."}, {"id": 47, "name": "Xavi Toleration", "groups": ["Platform Engineering", "AI/ML infra"], "tags": ["cluster-api", "bare-metal", "heterogeneous-hardware", "robotics"], "working_on": "Multi-cluster platform for robotics simulation workloads; a mix of CPU, GPU and FPGA nodes.", "asks": "How do you expose unusual hardware to users without making them learn taints and node selectors?", "offers": "Cluster API on bare metal and how we template node pools for odd hardware."}, {"id": 48, "name": "Yara Nonce", "groups": ["Security", "First-time attendees"], "tags": ["rbac", "appsec", "oidc", "audit"], "working_on": "Application security engineer new to Kubernetes; just inherited RBAC for 30 clusters.", "asks": "Our RBAC is a mess of copy-pasted ClusterRoleBindings; where do I even start auditing who can do what?", "offers": "Web app security reviews and OAuth/OIDC flows; I can spot broken token validation quickly."}, {"id": 49, "name": "Zane Reconcile", "groups": ["Platform Engineering", "Maintainers"], "tags": ["flux", "edge", "fleet", "gitops"], "working_on": "Flux-based fleet management for 300 edge clusters in retail stores.", "asks": "How do you roll out config changes to hundreds of clusters in waves and stop automatically on failure?", "offers": "Edge Kubernetes operations: flaky networks, tiny nodes and remote debugging without SSH."}, {"id": 50, "name": "Amaru Backoff", "groups": ["SRE"], "tags": ["resilience", "retries", "load-shedding", "mesh"], "working_on": "Reducing retry storms in a microservice mesh after a cascading failure last quarter.", "asks": "What are good defaults for retry budgets and circuit breakers that don't need per-service tuning?", "offers": "Load-shedding and backpressure patterns, with a small demo app that shows metastable failure."}, {"id": 51, "name": "Bodhi Tarball", "groups": ["Students", "First-time attendees"], "tags": ["webassembly", "rust", "student", "plugins"], "working_on": "Undergrad building a WebAssembly plugin system for a class project; curious about WASM on Kubernetes.", "asks": "Is server-side WebAssembly actually used in production? I'd love to see a real use case.", "offers": "Rust basics and enthusiasm; happy to test your project's onboarding as a genuine first-time user."}, {"id": 52, "name": "Cleo Digest", "groups": ["Security", "Platform Engineering"], "tags": ["sbom", "vulnerabilities", "distroless", "base-images"], "working_on": "SBOM generation and vulnerability SLAs for 2,000 container images.", "asks": "How do you get developers to act on SBOM findings rather than ignore the report?", "offers": "Distroless and minimal base image migration: how we cut CVE counts by 80 percent without breaking debugging."}, {"id": 53, "name": "Dmitri Semaphore", "groups": ["Platform Engineering"], "tags": ["multi-tenancy", "vcluster", "quotas", "isolation"], "working_on": "Multi-tenancy with virtual clusters for 80 internal teams sharing one large fleet.", "asks": "Where does namespace-per-team stop being enough? Looking for the tipping point others hit.", "offers": "Tenant isolation checklist: quotas, priority classes, network policy and the API-server fairness settings people forget."}, {"id": 54, "name": "Esme Baggage", "groups": ["Observability", "SRE"], "tags": ["opentelemetry", "collector", "daemonset", "migration"], "working_on": "Migrating from a vendor agent to OpenTelemetry Collectors as DaemonSets across 500 nodes.", "asks": "How do you roll out Collector config changes safely? One bad pipeline took out all our logs.", "offers": "Collector deployment patterns: agent versus gateway, memory limiter settings and sizing rules of thumb."}, {"id": 55, "name": "Felix Checksum", "groups": ["SRE", "Maintainers"], "tags": ["backup", "disaster-recovery", "storage", "databases"], "working_on": "Backup and disaster recovery for stateful workloads; contributor to a volume snapshot tool.", "asks": "Who actually tests restores? I want to compare restore-drill automation.", "offers": "Running databases on Kubernetes without fear: storage classes, PodDisruptionBudgets and the upgrade order that works."}, {"id": 56, "name": "Greta Prompt", "groups": ["AI/ML infra", "First-time attendees"], "tags": ["llm", "self-hosting", "evaluation", "coding-assistant"], "working_on": "Building an internal coding assistant on a self-hosted model; first time running anything on Kubernetes.", "asks": "Should a five-person team run its own inference at all, or is that a trap? I want an honest cost comparison.", "offers": "Prompt evaluation harnesses and how to build a regression suite for LLM outputs."}, {"id": 57, "name": "Hakan Linter", "groups": ["Platform Engineering", "Maintainers"], "tags": ["linting", "deprecations", "upgrades", "manifests"], "working_on": "Maintainer of a Kubernetes manifest linter; adding rules for deprecated APIs.", "asks": "Which deprecated API migrations bit you hardest in the last two upgrades? I'm prioritising rules.", "offers": "Upgrade readiness reviews: I can scan your manifests for removed APIs and risky defaults."}, {"id": 58, "name": "Isolde Rebase", "groups": ["Students", "Maintainers"], "tags": ["docs", "mentorship", "internships", "open-source"], "working_on": "Student and new reviewer in a CNCF project's docs group, after a summer mentorship programme.", "asks": "How do I move from docs contributions to code when nobody has seen me write any?", "offers": "How to apply for open-source mentorship programmes and write a proposal that gets accepted."}, {"id": 59, "name": "Pilar Cronjob", "groups": ["Platform Engineering", "First-time attendees"], "tags": ["airflow", "data-engineering", "batch", "dbt"], "working_on": "Data engineer moving 300 nightly Airflow jobs onto Kubernetes.", "asks": "Jobs silently overlap when one runs long; what's the right way to prevent double runs and get alerted on misses?", "offers": "SQL and data pipeline debugging; dbt project structure for teams that are just starting."}]};
+</script>
+<script>
+// ---------- Example data: Hallway's fictional seed people, with a made-up set of relationships ----------
+const people = SEED.people;
+const byId = new Map(people.map((p) => [p.id, p]));
+const me = people[0];
+const idOf = (name) => people.find((p) => p.name === name).id;
+const short = (s, n = 90) => (s.length <= n ? s : s.slice(0, n - 1).trimEnd() + "…");
+const first = (p) => p.name.split(" ")[0];
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const goran = byId.get(idOf("Goran Cgroup"));
+const caspian = byId.get(idOf("Caspian Monorepo"));
+const emeka = byId.get(idOf("Emeka Ingress"));
+const chidi = byId.get(idOf("Chidi Rollout"));
+
+// What each person is to me. kind: met | planned | invited_you | you_invited | suggested
+const rel = new Map([
+  [goran.id, { kind: "suggested", reason: `They offer what you asked for: “${short(goran.offers)}”`, both: true }],
+  [caspian.id, { kind: "suggested", reason: `You can help them: they need “${short(caspian.asks)}”` }],
+  [emeka.id, { kind: "suggested", reason: "You both care about migration" }],
+  [chidi.id, { kind: "met", reason: "" }],
+  [idOf("Wren Syllabus"), { kind: "met", reason: "" }],
+  [people[20].id, { kind: "met", reason: "" }],
+  [people[33].id, { kind: "met", reason: "" }],
+  [idOf("Oskar Quorum"), { kind: "planned", reason: "You both chose to meet" }],
+  [idOf("Ines Cardinality"), { kind: "planned", reason: "You both chose to meet" }],
+  [idOf("Esme Baggage"), { kind: "invited_you", reason: "You both care about migration" }],
+  [idOf("Vesna Webhook"), { kind: "you_invited", reason: "You are both in Platform Engineering" }],
+  [idOf("Cleo Digest"), { kind: "suggested", reason: "You are both in Platform Engineering" }],
+  [idOf("Hakan Linter"), { kind: "suggested", reason: "You are both in Platform Engineering" }],
+]);
+const top3 = [goran.id, caspian.id, emeka.id];
+
+// Who has met whom (public). Mine, two planted introductions, and a deterministic scatter of others.
+const met = new Map();
+function addMet(a, b) {
+  if (a === b) return;
+  if (!met.has(a)) met.set(a, new Set());
+  if (!met.has(b)) met.set(b, new Set());
+  met.get(a).add(b); met.get(b).add(a);
+}
+for (const [id, r] of rel) if (r.kind === "met") addMet(me.id, id);
+addMet(chidi.id, caspian.id);
+addMet(idOf("Wren Syllabus"), idOf("Mireille Backport"));
+let seed = 7;
+const rand = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+for (let i = 0; i < 34; i++) addMet(people[1 + Math.floor(rand() * 59)].id, people[1 + Math.floor(rand() * 59)].id);
+[goran.id, emeka.id].forEach((id) => met.get(id)?.forEach((o) => { met.get(o).delete(id); }) || met.delete(id)); // keep two of the three without an introducer
+
+// ---------- Communities: one colour and one slice of the rim each ----------
+const COLORS = ["#3987e5", "#d95926", "#199e70", "#d55181", "#9085e9", "#e66767", "#35b6c9", "#b8a53a"];
+const primary = (p) => p.groups[0] ?? "";
+const counts = new Map();
+for (const p of people) if (p !== me) counts.set(primary(p), (counts.get(primary(p)) ?? 0) + 1);
+const GROUPS = [...counts].sort((a, b) => b[1] - a[1]).map(([name, n], i) => ({ name, n, color: COLORS[i] ?? "#8a8798" }));
+const membersOf = (name) => people.filter((p) => p !== me && (name ? p.groups.includes(name) : p.groups.length === 0)).length;
+const colorOf = (p) => GROUPS.find((g) => g.name === primary(p))?.color ?? "#8a8798";
+
+// ---------- Closeness: four honest steps, each one a fact ----------
+const TIER = { met: 0, planned: 1, invited_you: 1, you_invited: 1, suggested: 2 };
+const tierOf = (id) => TIER[rel.get(id)?.kind] ?? 3;
+
+/** Shortest chain of people who have met, from me to them. [] if there is none. */
+function chainTo(goal) {
+  const from = new Map([[me.id, null]]);
+  const queue = [me.id];
+  while (queue.length) {
+    const at = queue.shift();
+    if (at === goal) {
+      const path = [];
+      for (let x = at; x !== null; x = from.get(x)) path.unshift(x);
+      return path;
+    }
+    for (const next of met.get(at) ?? []) if (!from.has(next)) { from.set(next, at); queue.push(next); }
+  }
+  return [];
+}
+
+function closeness(id) {
+  const p = byId.get(id);
+  const r = rel.get(id);
+  const chain = chainTo(id);
+  const introducers = chain.length >= 3 && chain.length <= 4 ? chain.slice(1, -1).map((x) => byId.get(x)) : [];
+  const groups = p.groups.filter((g) => me.groups.includes(g));
+  const tags = p.tags.filter((t) => me.tags.includes(t));
+  const facts = [];
+  let level = 0, title = "No link yet", tie = { cls: "none", text: "no link yet" };
+
+  if (r?.kind === "met") { level = 4; title = "You have met"; tie = { cls: "met", text: "met" }; }
+  else if (r?.kind === "planned") { level = 3; title = "You plan to meet"; tie = { cls: "planned", text: "plan to meet" }; facts.push("You both agreed to meet."); }
+  else if (r?.kind === "invited_you") { level = 3; title = `${first(p)} invited you`; tie = { cls: "invited", text: "invited you" }; facts.push(`${first(p)} asked to meet you. Only the two of you can see that.`); }
+  else if (r?.kind === "you_invited") { level = 3; title = "Invitation waiting"; tie = { cls: "invited", text: "you invited" }; facts.push(`You asked to meet. Only ${first(p)} can see that.`); }
+  else if (r?.kind === "suggested") { level = 2; title = "Suggested for you"; tie = { cls: "suggested", text: groups[0] ? `both in ${groups[0]}` : "suggested" }; }
+  else if (introducers.length) { level = 1; title = introducers.length === 1 ? "One introduction away" : "Two introductions away"; }
+  else if (groups.length || tags.length) { level = 1; title = "Common ground"; tie = { cls: "none", text: groups[0] ? `both in ${groups[0]}` : `both into ${tags[0]}` }; }
+
+  if (r?.reason && r.kind !== "planned") facts.push(r.reason + ".");
+  if (r?.both) facts.push("It works both ways: you can help each other.");
+  if (introducers.length && r?.kind !== "met") facts.push(`${introducers.map((x) => x.name).join(", then ")}, who you have met, can introduce you.`);
+  if (groups.length) facts.push(`You are both in ${groups.join(" and ")}.`);
+  if (tags.length) facts.push(`You both listed ${tags.join(", ")}.`);
+  if (!facts.length) facts.push(level === 4 ? "You scanned each other's code." : "Nothing links you yet. An invitation would be the first link.");
+  return { level, title, tie, facts, introducers, chain };
+}
+
+/** The little chain of pills: You, the tie, (an introducer), Them. */
+function chainHtml(id) {
+  const p = byId.get(id);
+  const c = closeness(id);
+  const pill = (text, you) => `<li class="who${you ? " you" : ""}">${esc(text)}</li>`;
+  const tie = (cls, text) => `<li class="tie ${cls}">${esc(text)}</li>`;
+  if (c.introducers.length && c.level < 3) {
+    return `<ul class="chain" aria-label="How you are connected">${pill("You", true)}${c.introducers.map((x) => tie("met", "met") + pill(x.name)).join("")}${tie("met", "met")}${pill(p.name)}</ul>`;
+  }
+  return `<ul class="chain" aria-label="How you are connected">${pill("You", true)}${tie(c.tie.cls, c.tie.text)}${pill(p.name)}</ul>`;
+}
+
+// ---------- Layout: rings for relationships, the rim for everyone else ----------
+const stage = document.getElementById("stage");
+const svg = document.getElementById("svg");
+const fx = document.getElementById("fx");
+const nodesEl = document.getElementById("nodes");
+const hint = document.getElementById("hint");
+const panel = document.getElementById("panel");
+const g = fx.getContext("2d");
+const DPR = Math.min(2, window.devicePixelRatio || 1);
+const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let W = 0, H = 0, small = false, R = {}, sectors = [];
+let sel = null, group = null, paused = false, placed = false;
+const target = new Map(); // id -> { x, y }
+const now = new Map(); // id -> { x, y, wait } where the node is drawn right now
+const els = new Map();
+
+const size = (id) => {
+  if (id === me.id) return small ? 58 : 84;
+  if (top3.includes(id)) return small ? 40 : 52;
+  if (id === sel) return small ? 34 : 42;
+  return tierOf(id) < 3 ? 26 : 22;
+};
+const isOrb = (id) => id === me.id || top3.includes(id) || id === sel;
+const dotSize = (id) => (tierOf(id) < 3 ? (small ? 12 : 14) : small ? 8 : 9.5);
+
+/** Push neighbours on one ring apart until nothing overlaps. Each item is `w` pixels wide
+    (its dot or orb plus its name); a `fixed` item (the ring's own name) never moves. */
+function spread(items, r) {
+  const n = items.length;
+  if (n < 2) return;
+  const total = items.reduce((sum, it) => sum + it.w, 0);
+  const k = Math.min(1, (2 * Math.PI * r) / total) / r; // pixels to radians, squeezed if the ring is full
+  items.sort((a, b) => a.angle - b.angle);
+  for (let pass = 0; pass < 60; pass++) {
+    for (let i = 0; i < n; i++) {
+      const a = items[i], b = items[(i + 1) % n];
+      const d = b.angle - a.angle + (i === n - 1 ? 2 * Math.PI : 0);
+      const push = ((a.w + b.w) / 2) * k - d;
+      if (push <= 0) continue;
+      if (a.fixed) b.angle += push; else if (b.fixed) a.angle -= push; else { a.angle -= push / 2; b.angle += push / 2; }
+    }
+  }
+}
+
+function layout() {
+  const cx = W / 2, cy = H / 2, S = Math.min(W, H) / 2 - 4;
+  R = { cx, cy, rings: [0.27 * S, 0.43 * S, 0.6 * S], bandIn: 0.75 * S, bandOut: 0.885 * S, arc: 0.93 * S, name: 0.968 * S };
+  const others = people.filter((p) => p !== me);
+  const gap = 0.05;
+  let at = -Math.PI / 2 + gap / 2;
+  sectors = GROUPS.map((grp) => {
+    const span = ((2 * Math.PI - gap * GROUPS.length) * grp.n) / others.length;
+    const s = { ...grp, a0: at, a1: at + span, span };
+    at += span + gap;
+    return s;
+  });
+
+  target.clear();
+  target.set(me.id, { x: cx, y: cy });
+  const rings = [[], [], []];
+  for (const s of sectors) {
+    const members = others.filter((p) => primary(p) === s.name);
+    // The rim: one to three rows, filled like seats in a theatre.
+    const rim = members.filter((p) => tierOf(p.id) === 3);
+    const rows = Math.max(1, Math.min(3, Math.ceil((rim.length * (small ? 15 : 19)) / (s.span * R.bandIn))));
+    const cols = Math.ceil(rim.length / rows);
+    rim.forEach((p, i) => {
+      const row = i % rows, col = Math.floor(i / rows);
+      const r = rows === 1 ? (R.bandIn + R.bandOut) / 2 : R.bandIn + ((R.bandOut - R.bandIn) * row) / (rows - 1);
+      const a = s.a0 + ((col + 0.5 + (rows > 1 ? (row % 2 ? 0.22 : -0.22) : 0)) / cols) * s.span;
+      target.set(p.id, { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) });
+    });
+    // The rings: each person starts inside their own community's slice.
+    for (let t = 0; t < 3; t++) {
+      const inRing = members.filter((p) => tierOf(p.id) === t);
+      inRing.forEach((p, j) => rings[t].push({ id: p.id, angle: s.a0 + (s.span * (j + 1)) / (inRing.length + 1) }));
+    }
+  }
+  rings.forEach((items, t) => {
+    for (const it of items) it.w = Math.max(isOrb(it.id) ? size(it.id) : dotSize(it.id), small ? 30 : 58) + 12;
+    spread([{ angle: -Math.PI / 2, w: small ? 74 : 86, fixed: true }, ...items], R.rings[t]);
+    for (const it of items) target.set(it.id, { x: cx + R.rings[t] * Math.cos(it.angle), y: cy + R.rings[t] * Math.sin(it.angle) });
+  });
+}
+
+// ---------- Drawing ----------
+const pt = (r, a) => `${(R.cx + r * Math.cos(a)).toFixed(1)} ${(R.cy + r * Math.sin(a)).toFixed(1)}`;
+const arc = (r, a0, a1) => `M ${pt(r, a0)} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${pt(r, a1)}`;
+const arcBack = (r, a0, a1) => `M ${pt(r, a1)} A ${r.toFixed(1)} ${r.toFixed(1)} 0 ${a1 - a0 > Math.PI ? 1 : 0} 0 ${pt(r, a0)}`;
+
+/** A straight line between two people, stopping short of both so it never runs through a dot. */
+function segment(a, b, cls) {
+  const A = target.get(a), B = target.get(b);
+  const d = Math.hypot(B.x - A.x, B.y - A.y) || 1;
+  const ra = (isOrb(a) ? size(a) : dotSize(a)) / 2 + 5, rb = (isOrb(b) ? size(b) : dotSize(b)) / 2 + 5;
+  if (d < ra + rb) return "";
+  const ux = (B.x - A.x) / d, uy = (B.y - A.y) / d;
+  return `<line class="link ${cls}" x1="${(A.x + ux * ra).toFixed(1)}" y1="${(A.y + uy * ra).toFixed(1)}" x2="${(B.x - ux * rb).toFixed(1)}" y2="${(B.y - uy * rb).toFixed(1)}"/>`;
+}
+
+function drawSvg() {
+  const names = ["met", "planned", "suggested"];
+  let out = "";
+  R.rings.forEach((r, i) => {
+    out += `<circle class="ring" cx="${R.cx}" cy="${R.cy}" r="${r.toFixed(1)}"/><text class="ring-name" x="${R.cx}" y="${(R.cy - r + 3.5).toFixed(1)}">${names[i]}</text>`;
+  });
+  sectors.forEach((s, i) => {
+    const on = group === s.name ? " on" : "";
+    const room = Math.floor((s.span * R.name - 8) / 6.4);
+    const full = s.name || "No community shown";
+    const label = full.length <= room ? full : room > 4 ? full.slice(0, room - 1) + "…" : "";
+    const bottom = Math.sin((s.a0 + s.a1) / 2) > 0;
+    out += `<path class="arc${on}" stroke="${s.color}" d="${arc(R.arc, s.a0, s.a1)}"/>`;
+    out += `<path id="lp${i}" fill="none" d="${bottom ? arcBack(R.name + 4.5, s.a0, s.a1) : arc(R.name - 3.5, s.a0, s.a1)}"/>`;
+    out += `<text class="arc-name${on}" fill="${s.color}"><textPath href="#lp${i}" startOffset="50%" text-anchor="middle">${esc(label)}</textPath></text>`;
+    out += `<path class="arc-hit" data-group="${esc(s.name)}" d="${arc(R.arc, s.a0, s.a1)}"><title>${esc(full)}</title></path>`;
+  });
+  // My own relationships. The three suggestions get their beams on the canvas instead.
+  for (const [id, r] of rel) {
+    if (top3.includes(id) && r.kind === "suggested") continue;
+    out += segment(me.id, id, r.kind === "met" ? "met" : r.kind === "planned" ? "planned" : r.kind === "suggested" ? "suggested" : "invited");
+  }
+  if (sel !== null && sel !== me.id) {
+    for (const other of met.get(sel) ?? []) if (other !== me.id) out += segment(sel, other, "theirs");
+    if (!rel.has(sel) && closeness(sel).chain.length < 2) out += segment(me.id, sel, "none");
+  }
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  svg.innerHTML = out;
+}
+
+function drawNodes() {
+  const lit = new Set([me.id]);
+  if (sel !== null) { lit.add(sel); closeness(sel).chain.forEach((x) => lit.add(x)); (met.get(sel) ?? []).forEach((x) => lit.add(x)); }
+  people.forEach((p, i) => {
+    let el = els.get(p.id);
+    if (!el) {
+      el = document.createElement("button");
+      el.type = "button";
+      el.innerHTML = "<i></i><b></b>";
+      el.dataset.id = p.id;
+      el.style.setProperty("--i", i);
+      nodesEl.append(el);
+      els.set(p.id, el);
+      now.set(p.id, { x: W / 2, y: H / 2, wait: performance.now() + 250 + i * 9 });
+    }
+    const kind = rel.get(p.id)?.kind;
+    const relClass = kind === "met" ? "met" : kind === "planned" ? "planned" : kind === "suggested" ? "suggested" : kind ? "invited" : "";
+    const isMe = p === me;
+    const named = isMe || top3.includes(p.id) || (!small && tierOf(p.id) < 3);
+    el.className = ["node", relClass, isOrb(p.id) && "orb", isMe && "me", p.id === sel && "sel", named && "named",
+      lit.has(p.id) && "lit", group !== null && p.groups.includes(group) && "in-group"].filter(Boolean).join(" ");
+    el.style.setProperty("--c", isMe ? "#ffc233" : colorOf(p));
+    el.style.setProperty("--s", size(p.id) + "px");
+    el.style.setProperty("--d", dotSize(p.id) + "px");
+    el.querySelector("b").textContent = isMe ? "You" : small && p.id !== sel ? first(p) : `${first(p)} ${p.name.split(" ")[1]?.[0] ?? ""}.`;
+    const rank = top3.indexOf(p.id);
+    if (rank >= 0 && !el.querySelector("em")) el.insertAdjacentHTML("beforeend", `<em aria-hidden="true">${rank + 1}</em>`);
+    el.setAttribute("aria-label", isMe ? "You" : `${p.name}. ${closeness(p.id).title}.`);
+    el.setAttribute("aria-pressed", String(p.id === sel));
+  });
+  stage.classList.toggle("has-sel", sel !== null);
+  stage.classList.toggle("has-group", group !== null);
+}
+
+const rgb = (hex) => { const n = parseInt(hex.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+const AMBER = [255, 194, 51];
+
+/** One thinking-orb, drawn from the engine's dots in our own colour. */
+function paintOrb(state, x, y, px, t, tint) {
+  const preset = px >= 48 ? 64 : 20; // the library ships two tuned designs; pick the nearer one
+  const [r, gr, b] = tint.map((c) => Math.round(c + (255 - c) * 0.3));
+  const p = ENGINE.resolvePreset(state, preset);
+  const frame = ENGINE.MODE_FRAMES[p.mode](preset, t * p.speed, p.opts);
+  const k = px / preset;
+  g.save();
+  g.translate(x - px / 2, y - px / 2);
+  g.scale(k, k);
+  for (const l of frame.lines) {
+    g.strokeStyle = `rgba(${r},${gr},${b},${(l.a ?? 1) * (0.4 + 0.6 * (1 - l.white))})`;
+    g.lineWidth = l.w;
+    g.beginPath(); g.moveTo(l.x1, l.y1); g.lineTo(l.x2, l.y2); g.stroke();
+  }
+  for (const d of frame.dots) {
+    g.fillStyle = `rgba(${r},${gr},${b},${(d.a ?? 1) * (0.45 + 0.55 * (1 - Math.min(1, Math.max(0, d.white))))})`;
+    g.beginPath(); g.arc(d.x, d.y, d.r, 0, 6.2832); g.fill();
+  }
+  g.restore();
+}
+
+/** A glowing line from one person to the next, with sparks travelling along it. */
+function beam(a, b, t, strong, phase) {
+  const A = now.get(a), B = now.get(b);
+  const d = Math.hypot(B.x - A.x, B.y - A.y);
+  const ra = size(a) / 2 + 6, rb = (isOrb(b) ? size(b) : dotSize(b)) / 2 + 6;
+  if (d < ra + rb + 2) return;
+  const ux = (B.x - A.x) / d, uy = (B.y - A.y) / d;
+  const x1 = A.x + ux * ra, y1 = A.y + uy * ra, x2 = B.x - ux * rb, y2 = B.y - uy * rb;
+  if (strong) { g.strokeStyle = "rgba(255,194,51,0.22)"; g.lineWidth = 7; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
+  g.strokeStyle = strong ? "rgba(255,194,51,0.95)" : "rgba(255,194,51,0.5)";
+  g.lineWidth = strong ? 2.25 : 1.25;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  if (calm || paused) return;
+  for (let i = 0; i < 2; i++) {
+    const f = (t * 0.33 + phase + i / 2) % 1;
+    const x = x1 + (x2 - x1) * f, y = y1 + (y2 - y1) * f;
+    g.fillStyle = "rgba(255,194,51,0.25)"; g.beginPath(); g.arc(x, y, 5, 0, 6.2832); g.fill();
+    g.fillStyle = "#fff3cf"; g.beginPath(); g.arc(x, y, 1.8, 0, 6.2832); g.fill();
+  }
+}
+
+function paint(t) {
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.clearRect(0, 0, W, H);
+  const path = sel !== null && sel !== me.id ? closeness(sel).chain : [];
+  const direct = path.length < 2 && sel !== null && rel.has(sel) ? [me.id, sel] : path;
+  top3.forEach((id, i) => { if (rel.get(id).kind === "suggested" && !(direct.length === 2 && direct[1] === id)) beam(me.id, id, t, false, i * 0.31); });
+  for (let i = 0; i + 1 < direct.length; i++) beam(direct[i], direct[i + 1], t, true, i * 0.2);
+
+  const at = now.get(me.id);
+  paintOrb("connecting", at.x, at.y, size(me.id), t, AMBER);
+  for (const id of new Set([...top3, ...(sel !== null && sel !== me.id ? [sel] : [])])) {
+    const n = now.get(id);
+    paintOrb(top3.includes(id) ? "searching" : "working", n.x, n.y, size(id), t + id, rgb(colorOf(byId.get(id))));
+  }
+}
+
+/** Move every node a step towards where it belongs. Returns true while anything is still moving. */
+function step(time) {
+  let moving = false;
+  for (const [id, n] of now) {
+    const to = placed ? target.get(id) : { x: W / 2, y: H / 2 };
+    if (calm || paused) { n.x = to.x; n.y = to.y; }
+    else if (time >= n.wait) {
+      n.x += (to.x - n.x) * 0.13; n.y += (to.y - n.y) * 0.13;
+      if (Math.abs(to.x - n.x) + Math.abs(to.y - n.y) < 0.3) { n.x = to.x; n.y = to.y; } else moving = true;
+    } else moving = true;
+    els.get(id).style.transform = `translate(${n.x.toFixed(1)}px, ${n.y.toFixed(1)}px)`;
+  }
+  return moving;
+}
+
+function tick(time) {
+  step(time);
+  paint(calm ? 0.6 : time / 1000);
+  if (!calm && !paused && document.visibilityState !== "hidden") requestAnimationFrame(tick);
+}
+const kick = () => requestAnimationFrame(tick);
+
+// ---------- The words ----------
+function hintText() {
+  if (group !== null) {
+    const s = GROUPS.find((x) => x.name === group);
+    return `${s.name} · ${membersOf(group)} people${me.groups.includes(group) ? " · you are in it" : ""}`;
+  }
+  if (sel !== null && sel !== me.id) { const c = closeness(sel); return `${byId.get(sel).name} · ${c.title} · ${c.level} of 4`; }
+  return "Nearer the middle means closer to you. Tap anyone.";
+}
+
+function action(id) {
+  const p = byId.get(id), kind = rel.get(id)?.kind;
+  if (kind === "met") return "";
+  if (kind === "planned") return `<p class="done">You both plan to meet.</p>`;
+  if (kind === "you_invited") return `<p class="done">Invitation sent. Only ${esc(first(p))} can see it.</p>`;
+  if (kind === "invited_you") return `<button class="btn" type="button" data-accept="${id}">Accept ${esc(first(p))}'s invitation</button>`;
+  return `<button class="btn" type="button" data-invite="${id}">Invite ${esc(first(p))} to meet</button>`;
+}
+
+function drawPanel() {
+  if (sel === null || sel === me.id) {
+    panel.innerHTML = `<h2>Three people to meet</h2><p>Your best matches right now, and how each one connects to you.</p><ol class="cards">${top3.map((id, i) => {
+      const p = byId.get(id), r = rel.get(id), c = closeness(id);
+      return `<li class="card"><span class="rank" aria-hidden="true">${i + 1}</span>
+        <h3><button type="button" data-sel="${id}">${esc(p.name)}</button></h3>
+        <p class="groups">${esc(p.groups.join(" · "))}</p>
+        <p class="why">${esc(r.reason)}.</p>
+        ${r.both ? `<span class="badge">Works both ways</span>` : ""}
+        ${chainHtml(id)}
+        ${c.introducers.length ? `<p class="why">${esc(c.introducers[0].name)}, who you have met, can introduce you.</p>` : ""}
+        ${action(id)}</li>`;
+    }).join("")}</ol>`;
+    return;
+  }
+  const p = byId.get(sel), c = closeness(sel);
+  const ringName = ["on your closest ring", "on your second ring", "on your third ring", "out on the rim"][tierOf(sel)];
+  panel.innerHTML = `<h2>How close are you?</h2><p>Every line below is a fact from your profiles and the people you have met.</p>
+    <article class="card picked">
+      <h3>${esc(p.name)}</h3>
+      <p class="groups">${esc(p.groups.join(" · "))}</p>
+      <p class="work">${esc(short(p.working_on, 120))}</p>
+      <div class="meter"><span class="pips" role="img" aria-label="Closeness ${c.level} of 4">${[1, 2, 3, 4].map((n) => `<i class="${n <= c.level ? "on" : ""}"></i>`).join("")}</span><strong>${esc(c.title)}</strong></div>
+      <p class="scale">Closeness ${c.level} of 4 · ${ringName}</p>
+      ${chainHtml(sel)}
+      <ul class="facts">${c.facts.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>
+      ${action(sel)}
+    </article>
+    <div class="tools"><button class="btn quiet" type="button" data-clear>Back to your three</button></div>`;
+}
+
+function drawChips() {
+  document.getElementById("chips").innerHTML = GROUPS.map((s) =>
+    `<li><button class="chip" type="button" style="--c:${s.color}" aria-pressed="${group === s.name}" data-group="${esc(s.name)}">${esc(s.name || "No community shown")} <span>${membersOf(s.name)}</span></button></li>`).join("");
+}
+
+function render() {
+  layout();
+  drawSvg();
+  drawNodes();
+  drawPanel();
+  drawChips();
+  hint.textContent = hintText();
+  kick();
+}
+
+// ---------- Input ----------
+function select(id) { sel = id === sel || id === me.id ? null : id; group = null; render(); }
+function toggleGroup(name) { group = group === name ? null : name; sel = null; render(); }
+
+nodesEl.addEventListener("click", (e) => { const el = e.target.closest(".node"); if (el) select(Number(el.dataset.id)); });
+svg.addEventListener("click", (e) => {
+  const hit = e.target.closest("[data-group]");
+  if (hit) toggleGroup(hit.dataset.group);
+  else if (sel !== null || group !== null) { sel = null; group = null; render(); }
+});
+document.getElementById("chips").addEventListener("click", (e) => { const el = e.target.closest("[data-group]"); if (el) toggleGroup(el.dataset.group); });
+document.getElementById("random").addEventListener("click", () => {
+  const pool = people.filter((p) => p !== me && p.id !== sel);
+  select(pool[Math.floor(Math.random() * pool.length)].id);
+  if (small) panel.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "nearest" });
+});
+document.getElementById("pause").addEventListener("click", (e) => {
+  paused = !paused;
+  e.currentTarget.setAttribute("aria-pressed", String(paused));
+  e.currentTarget.textContent = paused ? "Resume motion" : "Pause motion";
+  kick();
+});
+panel.addEventListener("click", (e) => {
+  const t = e.target.closest("button");
+  if (!t) return;
+  if (t.dataset.sel) select(Number(t.dataset.sel));
+  else if (t.dataset.invite) { const id = Number(t.dataset.invite); rel.set(id, { ...(rel.get(id) ?? { reason: "" }), kind: "you_invited" }); render(); }
+  else if (t.dataset.accept) { const id = Number(t.dataset.accept); rel.set(id, { ...rel.get(id), kind: "planned" }); render(); }
+  else if ("clear" in t.dataset) { sel = null; render(); }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && (sel !== null || group !== null)) { sel = null; group = null; render(); } });
+document.addEventListener("visibilitychange", kick);
+
+new ResizeObserver(() => {
+  W = stage.clientWidth; H = stage.clientHeight; small = W < 520;
+  fx.width = Math.round(W * DPR); fx.height = Math.round(H * DPR);
+  render();
+}).observe(stage);
+setTimeout(() => { placed = true; kick(); }, 80);
+
+</script>
+
+</body>
+</html>
