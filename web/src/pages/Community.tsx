@@ -55,7 +55,11 @@ export function CommunityPage() {
     getCommunity(id).then(setCommunity).catch((err: unknown) => setError(errorMessage(err)));
   }, [id]);
 
-  if (error) return <ErrorNote message={error} />;
+  if (error) return <>
+    <h1>Something went wrong</h1>
+    <ErrorNote message={error} />
+    <p><Link to="/">Back to Hallway</Link></p>
+  </>;
   if (!community) return <p role="status">Loading invitation…</p>;
   return <>
     <h1>{community.name}</h1>

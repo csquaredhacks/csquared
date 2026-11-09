@@ -1,6 +1,7 @@
 """Request and response shapes. Changing anything here means running `make types`
 so web/src/api/schema.d.ts stays in sync (CI checks this)."""
 
+import re
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -75,14 +76,18 @@ class CommunityIn(BaseModel):
     @classmethod
     def valid_luma_url(cls, value: str) -> str:
         value = value.strip()
+        # Reject whitespace and control characters inside the URL.
+        if re.search(r"[\s\x00-\x1f]", value):
+            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma")
         try:
             url = urlsplit(value)
             if (
                 url.scheme != "https"
-                or url.hostname not in {"luma.com", "lu.ma"}
+                or url.hostname not in {"luma.com", "www.luma.com", "lu.ma"}
                 or url.username
                 or url.password
                 or not url.path.strip("/")
+                or (url.port is not None and url.port != 443)
             ):
                 raise ValueError
         except ValueError as error:

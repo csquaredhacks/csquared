@@ -42,6 +42,32 @@ def test_community_rejects_misleading_luma_links():
     for url in (
         "javascript:alert(1)", "https://luma.com.example.com/event",
         "http://luma.com/event", "https://luma.com/",
+        # user:pass credentials in the URL
+        "https://user:pass@luma.com/event",
+        # whitespace and control characters
+        "https://luma.com/e\nX", "https://luma.com/ e", "https://luma.com/e\t1",
+        # invalid or non-443 ports
+        "https://luma.com:8443/event", "https://luma.com:abc/event",
     ):
         with pytest.raises(ValidationError):
             CommunityIn(name="Community", luma_url=url)
+
+
+def test_community_accepts_valid_luma_links():
+    from hallway.models import CommunityIn
+
+    # Standard luma.com
+    c = CommunityIn(name="Community", luma_url="https://luma.com/event")
+    assert c.luma_url == "https://luma.com/event"
+
+    # www.luma.com should also be allowed
+    c = CommunityIn(name="Community", luma_url="https://www.luma.com/event")
+    assert c.luma_url == "https://www.luma.com/event"
+
+    # lu.ma
+    c = CommunityIn(name="Community", luma_url="https://lu.ma/event")
+    assert c.luma_url == "https://lu.ma/event"
+
+    # Explicit port 443 is fine
+    c = CommunityIn(name="Community", luma_url="https://luma.com:443/event")
+    assert c.luma_url == "https://luma.com:443/event"
