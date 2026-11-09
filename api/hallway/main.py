@@ -26,14 +26,19 @@ from .routes import (
 
 logging.basicConfig(level=logging.INFO)
 
+_indices_ready = threading.Event()
+
+
+def _initialize_indices() -> None:
+    if es.ensure_indices_with_retry(es.get_client(), seconds=None):
+        _indices_ready.set()
+
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     # Create indices in the background so the pod starts (and /healthz answers)
     # even if Elasticsearch is slow or unreachable for the first minute.
-    threading.Thread(
-        target=es.ensure_indices_with_retry, args=(es.get_client(),), daemon=True
-    ).start()
+    threading.Thread(target=_initialize_indices, daemon=True).start()
     yield
 
 
@@ -46,12 +51,15 @@ for module in (
 
 @app.get("/healthz")
 def healthz() -> Health:
-    """Always 200 while the process is alive; `es` says whether the datastore is reachable."""
+    """Always 200 while alive; `es` is green when ES responds and the required indices exist."""
     try:
-        reachable = es.get_client().ping()
+        client = es.get_client()
+        ready = _indices_ready.is_set() and client.ping() and client.indices.exists(
+            index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.CREWS, es.COMMUNITIES]
+        )
     except Exception:  # noqa: BLE001
-        reachable = False
-    return Health(ok=True, es="green" if reachable else "red")
+        ready = False
+    return Health(ok=True, es="green" if ready else "red")
 
 
 # --- the web app (built by Vite into web/dist) ---------------------------------------

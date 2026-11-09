@@ -127,16 +127,15 @@ def ensure_indices(client: Elasticsearch) -> None:
     client.indices.put_mapping(index=CREWS, properties={"left": {"type": "keyword"}})
 
 
-def ensure_indices_with_retry(client: Elasticsearch, seconds: int = 60) -> bool:
-    """Elasticsearch may not be reachable the moment the pod starts. Keep trying for a
-    minute instead of crash-looping; /healthz reports es:"red" in the meantime."""
-    deadline = time.monotonic() + seconds
+def ensure_indices_with_retry(client: Elasticsearch, seconds: int | None = 60) -> bool:
+    """Retry index setup until it succeeds or the optional deadline expires."""
+    deadline = None if seconds is None else time.monotonic() + seconds
     while True:
         try:
             ensure_indices(client)
             return True
         except Exception as error:  # noqa: BLE001 - any failure here means "try again"
-            if time.monotonic() > deadline:
+            if deadline is not None and time.monotonic() > deadline:
                 log.error("giving up creating indices: %s", error)
                 return False
             log.warning("elasticsearch not ready (%s), retrying", error)

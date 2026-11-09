@@ -90,7 +90,7 @@ The 2 PM panel costs time. Decide now who keeps building through it.
 
 | Symptom | Do this |
 |---|---|
-| Matches are empty | `curl <url>/healthz`. If `es` is `red`, check `ES_URL` and the API key. If green, reseed. |
+| Matches are empty | `curl <url>/healthz`. If `es` is `red`, index setup may still be retrying; if it stays red, check `ES_URL` and the API key. If green, reseed. |
 | ELSER errors on register | Set `ELSER_ID` to empty, delete the `hallway-*` indices, redeploy, reseed. |
 | Nobody has a crew after B merges | The mapping is stale. Delete the `hallway-*` indices, reseed, then `make matcher-now`. |
 | CI `types` job fails | `make types`, commit `web/src/api/schema.d.ts`. Or let Gitar do it and screenshot it. |
