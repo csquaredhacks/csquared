@@ -1,13 +1,8 @@
-from fastapi.testclient import TestClient
-
-from hallway import es
-from hallway.main import app
+from hallway import es, main
 
 
 def test_health_reports_missing_indices(monkeypatch):
     class Client:
-        indices = None
-
         def ping(self):
             return True
 
@@ -18,7 +13,36 @@ def test_health_reports_missing_indices(monkeypatch):
     client = Client()
     client.indices = Indices()
     monkeypatch.setattr(es, "get_client", lambda: client)
-    assert TestClient(app).get("/healthz").json() == {"ok": True, "es": "red"}
+    assert main.healthz().model_dump() == {"ok": True, "es": "red"}
+
+
+def test_health_stays_red_until_index_setup_completes(monkeypatch):
+    class Indices:
+        def exists(self, index):
+            return True
+
+    class Client:
+        indices = Indices()
+
+        def ping(self):
+            return True
+
+    client = Client()
+    monkeypatch.setattr(es, "get_client", lambda: client)
+    main._indices_ready.clear()
+
+    def ensure_indices(_client, seconds):
+        assert seconds is None
+        assert not main._indices_ready.is_set()
+        return True
+
+    monkeypatch.setattr(es, "ensure_indices_with_retry", ensure_indices)
+    try:
+        assert main.healthz().es == "red"
+        main._initialize_indices()
+        assert main.healthz().es == "green"
+    finally:
+        main._indices_ready.clear()
 
 
 def test_unbounded_index_retry_recovers(monkeypatch):
