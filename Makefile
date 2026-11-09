@@ -13,10 +13,10 @@ PLATFORM ?= linux/amd64
 export
 
 .DEFAULT_GOAL := help
-.PHONY: help dev test lint types seed seed-before seed-live image image-ttl secrets deploy url logs matcher-now oom-demo oom-fix
+.PHONY: help dash0 dev test lint types seed seed-before seed-live image image-ttl secrets deploy url logs matcher-now oom-demo oom-fix
 
 help: ## List the targets
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
+	@grep -E '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  make %-12s %s\n", $$1, $$2}'
 
 # ---- Local development ----
 
@@ -75,6 +75,11 @@ logs: ## Follow the API logs
 
 matcher-now: ## Run the matcher once, right now, instead of waiting for the schedule
 	kubectl -n $(NS) create job hallway-matcher-now-$$(date +%s) --from=cronjob/hallway-matcher
+
+# ---- Dash0 ----
+
+dash0: ## Put the Hallway dashboard, check rules and SLO into Dash0 (needs DASH0_API_URL in .env)
+	deploy/dash0/apply.sh
 
 # ---- Planned incident for the Radar demo ----
 # --reuse-values keeps whatever image the release is already running.

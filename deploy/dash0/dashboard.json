@@ -1,0 +1,783 @@
+{
+  "kind": "Dashboard",
+  "metadata": {
+    "name": "hallway",
+    "dash0Extensions": {
+      "id": "hallway"
+    }
+  },
+  "spec": {
+    "display": {
+      "name": "Hallway",
+      "description": "The product funnel, the rooms, and whether the API is fast and working."
+    },
+    "duration": "1h",
+    "refreshInterval": "30s",
+    "panels": {
+      "registered": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Registered",
+            "description": "Profiles created. Stage `registered` of the hallway.funnel gauge."
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "last-number",
+              "format": {
+                "unit": "decimal"
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max({otel_metric_name=\"hallway.funnel\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", stage=\"registered\"})",
+                    "minStep": "2m"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "in_group": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "In an arrival group",
+            "description": "People who accepted an arrival group. Stage `in_group`."
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "last-number",
+              "format": {
+                "unit": "decimal"
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max({otel_metric_name=\"hallway.funnel\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", stage=\"in_group\"})",
+                    "minStep": "2m"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "planned": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Plans to meet",
+            "description": "Pairs who both agreed to meet. Stage `planned`."
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "last-number",
+              "format": {
+                "unit": "decimal"
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max({otel_metric_name=\"hallway.funnel\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", stage=\"planned\"})",
+                    "minStep": "2m"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "met": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Met in person",
+            "description": "Pairs who scanned each other's code. Stage `met`."
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "last-number",
+              "format": {
+                "unit": "decimal"
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max({otel_metric_name=\"hallway.funnel\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", stage=\"met\"})",
+                    "minStep": "2m"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "checked_in": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Checked in to a room",
+            "description": "People with a room check-in. This is Hallway's own room map, not event attendance. Stage `checked_in`."
+          },
+          "plugin": {
+            "kind": "StatChart",
+            "spec": {
+              "calculation": "last-number",
+              "format": {
+                "unit": "decimal"
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max({otel_metric_name=\"hallway.funnel\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", stage=\"checked_in\"})",
+                    "minStep": "2m"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "funnel_over_time": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "The funnel over time",
+            "description": "The same five numbers the organizer board at /crowd shows, read from Elasticsearch as counts only."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max by (stage) ({otel_metric_name=\"hallway.funnel\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\"})",
+                    "minStep": "2m",
+                    "seriesNameFormat": "{{stage}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "about": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "How to read this"
+          },
+          "plugin": {
+            "kind": "Markdown",
+            "spec": {
+              "text": "**Hallway: nobody at a conference goes solo.**\n\n- **Top row:** the product as five numbers. They come from the `hallway.funnel` gauge, which the API fills from Elasticsearch counts. No attendee id or free text is ever a label.\n- **Middle row:** what is happening now: rooms filling up, people agreeing to meet, arrival groups forming, the matcher suggesting pairs.\n- **Bottom row:** is it fast and is it working. The dashed line is our target: 95% of `GET /api/matches` under 800 ms.\n\nEvery panel reads `deployment.environment.name = hackathon`, which is `otel.environment` in the Helm values.\n\nSource: `deploy/dash0/dashboard.json`. Apply with `make dash0`."
+            }
+          }
+        }
+      },
+      "rooms": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "People in each room",
+            "description": "hallway.room.occupancy: the numbers behind the room map at /rooms."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "max by (room) ({otel_metric_name=\"hallway.room.occupancy\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\"})",
+                    "minStep": "2m",
+                    "seriesNameFormat": "{{room}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "edges": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "New relationships per minute",
+            "description": "hallway.edges.total by kind: suggested (matcher), invited, planned (both agreed), connected (met)."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum by (kind) (rate({otel_metric_name=\"hallway.edges.total\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\"}[$__interval])) * 60",
+                    "minStep": "2m",
+                    "seriesNameFormat": "{{kind}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "crew_joins": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "People joining arrival groups",
+            "description": "hallway.crew.joins: accepted arrival groups in each interval."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum(increase({otel_metric_name=\"hallway.crew.joins\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\"}[$__interval]))",
+                    "minStep": "2m",
+                    "seriesNameFormat": "joined"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "matcher": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Matcher: new suggested pairs",
+            "description": "hallway.matcher.pairs from the API (on registration) and the hallway-matcher CronJob."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "sum by (service_name) (increase({otel_metric_name=\"hallway.matcher.pairs\", deployment_environment_name=\"hackathon\"}[$__interval]))",
+                    "minStep": "2m",
+                    "seriesNameFormat": "{{service_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "matches_p95": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "GET /api/matches: p95 latency",
+            "description": "From span durations. Target: under 800 ms. Chaos mode `slow` adds 1.5 s inside the match.query span, and this is where it shows."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "milliseconds"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              },
+              "thresholds": {
+                "steps": [
+                  {
+                    "value": 800,
+                    "name": "target 800 ms",
+                    "color": "#e5484d"
+                  }
+                ]
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "histogram_quantile(0.95, sum by (le) (rate({otel_metric_name=\"dash0.spans.duration\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", dash0_operation_name=\"GET /api/matches\"}[$__interval]))) * 1000",
+                    "minStep": "2m",
+                    "seriesNameFormat": "p95"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "requests": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Requests per minute, by endpoint",
+            "description": "Server spans of the API, ten busiest endpoints. Health probes are left out."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "topk(10, sum by (dash0_operation_name) (rate({otel_metric_name=\"dash0.spans\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", otel_span_kind=\"SERVER\", dash0_operation_name!=\"GET /healthz\"}[$__interval])) * 60)",
+                    "minStep": "2m",
+                    "seriesNameFormat": "{{dash0_operation_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "errors": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "Server errors",
+            "description": "Share of API responses with a 5xx status. Chaos mode `error` shows up here."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "percent-decimal"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "(sum(rate({otel_metric_name=\"http.server.request.duration\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", http_status_code=~\"5..\"}[$__interval])) or vector(0)) / sum(rate({otel_metric_name=\"http.server.request.duration\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\"}[$__interval]))",
+                    "minStep": "2m",
+                    "seriesNameFormat": "5xx share"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "p95_by_endpoint": {
+        "kind": "Panel",
+        "spec": {
+          "display": {
+            "name": "p95 latency, by endpoint",
+            "description": "Slowest five endpoints. Useful when one route drags the rest."
+          },
+          "plugin": {
+            "kind": "TimeSeriesChart",
+            "spec": {
+              "legend": {
+                "position": "bottom",
+                "mode": "list"
+              },
+              "yAxis": {
+                "min": 0,
+                "format": {
+                  "unit": "milliseconds"
+                }
+              },
+              "visual": {
+                "display": "line",
+                "lineWidth": 1.5,
+                "areaOpacity": 0.15,
+                "connectNulls": true
+              }
+            }
+          },
+          "queries": [
+            {
+              "kind": "TimeSeriesQuery",
+              "spec": {
+                "plugin": {
+                  "kind": "PrometheusTimeSeriesQuery",
+                  "spec": {
+                    "query": "topk(5, histogram_quantile(0.95, sum by (le, dash0_operation_name) (rate({otel_metric_name=\"dash0.spans.duration\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", otel_span_kind=\"SERVER\", dash0_operation_name!=\"GET /healthz\"}[$__interval]))) * 1000)",
+                    "minStep": "2m",
+                    "seriesNameFormat": "{{dash0_operation_name}}"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "layouts": [
+      {
+        "kind": "Grid",
+        "spec": {
+          "display": {
+            "title": "The product in five numbers",
+            "collapse": {
+              "open": true
+            }
+          },
+          "items": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "content": {
+                "$ref": "#/spec/panels/registered"
+              }
+            },
+            {
+              "x": 5,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "content": {
+                "$ref": "#/spec/panels/in_group"
+              }
+            },
+            {
+              "x": 10,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "content": {
+                "$ref": "#/spec/panels/planned"
+              }
+            },
+            {
+              "x": 15,
+              "y": 0,
+              "width": 5,
+              "height": 4,
+              "content": {
+                "$ref": "#/spec/panels/met"
+              }
+            },
+            {
+              "x": 20,
+              "y": 0,
+              "width": 4,
+              "height": 4,
+              "content": {
+                "$ref": "#/spec/panels/checked_in"
+              }
+            },
+            {
+              "x": 0,
+              "y": 4,
+              "width": 16,
+              "height": 8,
+              "content": {
+                "$ref": "#/spec/panels/funnel_over_time"
+              }
+            },
+            {
+              "x": 16,
+              "y": 4,
+              "width": 8,
+              "height": 8,
+              "content": {
+                "$ref": "#/spec/panels/about"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "kind": "Grid",
+        "spec": {
+          "display": {
+            "title": "What is happening now",
+            "collapse": {
+              "open": true
+            }
+          },
+          "items": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 7,
+              "content": {
+                "$ref": "#/spec/panels/rooms"
+              }
+            },
+            {
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 7,
+              "content": {
+                "$ref": "#/spec/panels/edges"
+              }
+            },
+            {
+              "x": 0,
+              "y": 7,
+              "width": 12,
+              "height": 6,
+              "content": {
+                "$ref": "#/spec/panels/crew_joins"
+              }
+            },
+            {
+              "x": 12,
+              "y": 7,
+              "width": 12,
+              "height": 6,
+              "content": {
+                "$ref": "#/spec/panels/matcher"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "kind": "Grid",
+        "spec": {
+          "display": {
+            "title": "Is it fast, and is it working",
+            "collapse": {
+              "open": true
+            }
+          },
+          "items": [
+            {
+              "x": 0,
+              "y": 0,
+              "width": 12,
+              "height": 7,
+              "content": {
+                "$ref": "#/spec/panels/matches_p95"
+              }
+            },
+            {
+              "x": 12,
+              "y": 0,
+              "width": 12,
+              "height": 7,
+              "content": {
+                "$ref": "#/spec/panels/errors"
+              }
+            },
+            {
+              "x": 0,
+              "y": 7,
+              "width": 12,
+              "height": 7,
+              "content": {
+                "$ref": "#/spec/panels/requests"
+              }
+            },
+            {
+              "x": 12,
+              "y": 7,
+              "width": 12,
+              "height": 7,
+              "content": {
+                "$ref": "#/spec/panels/p95_by_endpoint"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
