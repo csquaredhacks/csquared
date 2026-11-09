@@ -29,17 +29,39 @@ from . import es
 from .matching import find_matches
 from .telemetry import crew_joins
 
-# Keys the crew id. Set CREW_ID_SALT to keep ids stable across restarts or replicas;
-# without it, a fresh salt per process still deduplicates within the one API replica.
-_SALT = (os.getenv("CREW_ID_SALT") or secrets.token_hex(16)).encode()
+_PAIR_ID_SALT_DOC = "_crew-pair-id-salt"
 
 
-def pair_crew_id(a: str, b: str) -> str:
+def _pair_id_salt(client: Elasticsearch) -> bytes:
+    """Use a configured key, or load and persist one shared by all API replicas."""
+    configured_salt = os.getenv("CREW_ID_SALT")
+    if configured_salt:
+        return configured_salt.encode()
+    try:
+        doc = client.get(index=es.CREWS, id=_PAIR_ID_SALT_DOC)
+    except NotFoundError:
+        salt = os.getenv("CREW_ID_SALT") or secrets.token_hex(32)
+        try:
+            client.index(
+                index=es.CREWS,
+                id=_PAIR_ID_SALT_DOC,
+                document={"pair_id_salt": salt},
+                op_type="create",
+                refresh=True,
+            )
+        except ConflictError:
+            # Another replica initialized the key first. Use its persisted value.
+            pass
+        doc = client.get(index=es.CREWS, id=_PAIR_ID_SALT_DOC)
+    return doc["_source"]["pair_id_salt"].encode()
+
+
+def pair_crew_id(a: str, b: str, salt: bytes) -> str:
     """Same id whichever of the two starts the crew, so concurrent suggestions collapse
     into one document. Keyed and hashed, because attendee ids are public (they are in
     QR codes) and a readable id would reveal who else was suggested or declined."""
     pair = ":".join(sorted([a, b])).encode()
-    return hmac.new(_SALT, pair, hashlib.sha256).hexdigest()[:16]
+    return hmac.new(salt, pair, hashlib.sha256).hexdigest()[:16]
 
 
 # A crew's limit is the smallest limit among its members (and the person joining).
@@ -73,6 +95,18 @@ def _search(client: Elasticsearch, field: str, attendee_id: str) -> list[dict]:
         seq_no_primary_term=True,
     )["hits"]["hits"]
     return [h["_source"] for h in hits]
+
+
+def _declined_partners(client: Elasticsearch, attendee_id: str) -> set[str]:
+    """Pairs already declined remain blocked even if their crew id predates key storage."""
+    partners: set[str] = set()
+    for crew in _search(client, "declined", attendee_id):
+        if attendee_id in crew.get("declined", []):
+            partners.update(crew.get("members", []))
+            partners.update(crew.get("invited", []))
+            partners.update(crew.get("declined", []))
+    partners.discard(attendee_id)
+    return partners
 
 
 def crew_of(client: Elasticsearch, attendee_id: str) -> dict | None:
@@ -150,11 +184,19 @@ def suggest(client: Elasticsearch, me: dict) -> dict | None:
         if crew and me["id"] not in crew.get("declined", []) and has_room(client, crew, me):
             return _update(client, crew["id"], lambda c: _invite(c, me["id"]))
 
+    declined_partners = _declined_partners(client, me["id"])
+    pair_salt = None
     for other in matches:
-        if crew_of(client, other["id"]) or pending_for(client, other["id"]):
+        if (
+            other["id"] in declined_partners
+            or crew_of(client, other["id"])
+            or pending_for(client, other["id"])
+        ):
             continue
+        if pair_salt is None:
+            pair_salt = _pair_id_salt(client)
         crew = {
-            "id": pair_crew_id(me["id"], other["id"]),
+            "id": pair_crew_id(me["id"], other["id"], pair_salt),
             "members": [],
             "companions": [],
             "invited": [me["id"], other["id"]],

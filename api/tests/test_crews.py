@@ -2,6 +2,7 @@
 Each test uses its own made-up topic words so people from other tests don't match."""
 
 from concurrent.futures import ThreadPoolExecutor
+from importlib import reload
 from threading import Barrier
 
 from hallway import crews, es
@@ -72,12 +73,13 @@ def test_suggestion_create_conflict_returns_existing_crew(monkeypatch):
     me = {"id": "z-person"}
     other = {"id": "a-person"}
     existing = {
-        "id": crews.pair_crew_id("a-person", "z-person"),
+        "id": crews.pair_crew_id("a-person", "z-person", b"test-salt"),
         "members": [],
         "invited": ["a-person", "z-person"],
         "declined": [],
     }
     monkeypatch.setattr(crews, "ConflictError", CreateConflict)
+    monkeypatch.setattr(crews, "_pair_id_salt", lambda _client: b"test-salt")
     monkeypatch.setattr(crews, "find_matches", lambda *_args, **_kwargs: [(other, 1, "match")])
     monkeypatch.setattr(crews, "_get", lambda _client, _crew_id: (existing, 0, 1))
 
@@ -90,18 +92,47 @@ def test_suggestion_create_conflict_returns_existing_crew(monkeypatch):
 
 
 def test_pair_crew_id_is_stable_and_reveals_no_attendee_id():
-    first = crews.pair_crew_id("aaa111", "bbb222")
-    assert first == crews.pair_crew_id("bbb222", "aaa111")
+    salt = b"unit-test-salt"
+    first = crews.pair_crew_id("aaa111", "bbb222", salt)
+    assert first == crews.pair_crew_id("bbb222", "aaa111", salt)
     assert "aaa111" not in first and "bbb222" not in first
 
 
-def test_a_declined_pair_crew_is_not_suggested_again(person):
+def test_a_declined_pair_crew_is_not_suggested_again(person, monkeypatch):
+    monkeypatch.delenv("CREW_ID_SALT", raising=False)
     (ana, _), (ben, _) = _pair(person, "wobblequince")
     ana.post("/api/crew/suggest")
     ana.post("/api/crew/decline")
     ben.post("/api/crew/decline")
+
+    # A fresh module instance models a process restart without CREW_ID_SALT.
+    reload(crews)
     out = ana.post("/api/crew/suggest").json()
     assert out["status"] == "none"  # the old pair crew was not handed back
+
+
+def test_legacy_declined_pair_is_not_suggested_again(person):
+    (ana, ana_me), (ben, ben_me) = _pair(person, "legacydecline")
+    client = es.get_client()
+    legacy_crew = {
+        "id": "old-random-pair-id",
+        "members": [],
+        "companions": [],
+        "invited": [],
+        "declined": [ana_me["id"], ben_me["id"]],
+        "meeting": None,
+        "created_at": es.now(),
+    }
+    client.index(
+        index=es.CREWS,
+        id=legacy_crew["id"],
+        document=legacy_crew,
+        refresh=True,
+    )
+
+    out = ana.post("/api/crew/suggest").json()
+
+    assert out["status"] == "none"
 
 
 def test_a_second_person_joins_the_first_persons_crew(person):
