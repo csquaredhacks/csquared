@@ -6,6 +6,21 @@ from hallway.auth import COOKIE
 from hallway.main import app
 
 
+def test_community_invitation_is_public_but_creation_requires_session(person):
+    anonymous = TestClient(app)
+    data = {"name": "Community", "description": "Meet together", "luma_url": "https://luma.com/event"}
+    assert anonymous.post("/api/communities", json=data).status_code == 401
+    client, _ = person("Organizer")
+    created = client.post("/api/communities", json=data)
+    assert created.status_code == 201
+    invitation = anonymous.get(f"/api/communities/{created.json()['id']}")
+    assert invitation.status_code == 200
+    assert invitation.json() == {"id": created.json()["id"], **data}
+    assert anonymous.get("/api/communities/missing").status_code == 404
+    for url in ("javascript:alert(1)", "https://luma.com.example.com/event", "http://luma.com/event"):
+        assert client.post("/api/communities", json=data | {"luma_url": url}).status_code == 422
+
+
 def test_register_then_me_and_secrets_stay_private(person):
     client, me = person("Ada Example", tags=[" Go ", "go", "K8s"])
     assert me["tags"] == ["go", "k8s"]

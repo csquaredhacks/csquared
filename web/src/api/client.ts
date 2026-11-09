@@ -2,6 +2,10 @@ import type {
   Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, Graph, Health,
   Match, Me, Path, Recap, Room,
 } from "./types";
+import type { components } from "./schema";
+
+type Community = components["schemas"]["Community"];
+type CommunityIn = components["schemas"]["CommunityIn"];
 
 /** Thrown for every non-2xx response. `detail` is the server's message. */
 export class ApiError extends Error {
@@ -45,6 +49,8 @@ async function request<T>(method: string, path: string, body?: unknown, headers?
 
 export const getHealth = () => request<Health>("GET", "/healthz");
 export const getConfig = () => request<Config>("GET", "/api/config");
+export const createCommunity = (body: CommunityIn) => request<Community>("POST", "/api/communities", body);
+export const getCommunity = (id: string) => request<Community>("GET", `/api/communities/${encodeURIComponent(id)}`);
 export const createAttendee = (body: AttendeeIn) => request<Me>("POST", "/api/attendees", body);
 export const getMe = () => request<Me>("GET", "/api/me");
 export const recover = (code: string) => request<Me>("POST", "/api/recover", { code });
