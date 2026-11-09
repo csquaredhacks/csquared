@@ -1,6 +1,9 @@
 """Custom spans and metrics. Auto-instrumentation (HTTP, Elasticsearch, logs) comes from
 running the process under `opentelemetry-instrument`; without it these calls are no-ops."""
 
+import time
+from collections.abc import Callable
+
 from opentelemetry import metrics, trace
 from opentelemetry.metrics import CallbackOptions, Observation
 
@@ -17,6 +20,28 @@ crew_joins = meter.create_counter(
     "hallway.crew.joins", description="People who accepted an arrival group"
 )
 
+# The two gauges below are filled when someone opens the room map or the organizer board.
+# So that Dash0 still gets numbers when nobody has those pages open (and right after a
+# restart), main.py registers a function per gauge that recomputes it from Elasticsearch.
+# It runs at most every REFRESH_SECONDS, just before the gauge is exported.
+REFRESH_SECONDS = 30
+refreshers: dict[str, Callable[[], object]] = {}
+_refreshed_at: dict[str, float] = {}
+
+
+def _refresh(name: str) -> None:
+    recompute = refreshers.get(name)
+    if recompute is None or time.monotonic() - _refreshed_at.get(name, -REFRESH_SECONDS) < (
+        REFRESH_SECONDS
+    ):
+        return
+    _refreshed_at[name] = time.monotonic()
+    try:
+        recompute()
+    except Exception:  # noqa: BLE001 - a metric must never break; keep the last values
+        pass
+
+
 _room_occupancy: dict[str, int] = {}
 
 
@@ -27,6 +52,7 @@ def set_room_occupancy(values: dict[str, int]) -> None:
 
 
 def _observe_rooms(_: CallbackOptions):
+    _refresh("rooms")
     return [Observation(count, {"room": room}) for room, count in _room_occupancy.items()]
 
 
@@ -45,6 +71,7 @@ def set_funnel(values: dict[str, int]) -> None:
 
 
 def _observe_funnel(_: CallbackOptions):
+    _refresh("funnel")
     return [Observation(count, {"stage": stage}) for stage, count in _funnel.items()]
 
 

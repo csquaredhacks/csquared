@@ -140,6 +140,7 @@ The API tests run against a real Elasticsearch at `ES_URL` and skip themselves i
 | `docs/REVIEW.md` | What was wrong with our first plan and how we fixed it. |
 | `docs/DEMO.md` | The three-minute demo script and the planned incidents. |
 | `docs/GITAR_RULES.md` | The review rules we gave Gitar. |
+| `docs/DASH0.md` | What we send to Dash0, and the dashboard, check rules and SLO kept as code in `deploy/dash0/`. |
 | `docs/investigations/` | Write-ups of real incidents found with Radar, Dash0 and Gitar. |
 
 ## Privacy

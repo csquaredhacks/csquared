@@ -1,0 +1,53 @@
+{
+  "apiVersion": "openslo/v1",
+  "kind": "SLO",
+  "metadata": {
+    "name": "hallway-api-availability",
+    "annotations": {
+      "dash0.com/display-name": "Hallway API answers without errors"
+    }
+  },
+  "spec": {
+    "description": "99% of API requests finish without a server error, over 28 days.",
+    "service": "hallway-api",
+    "budgetingMethod": "Occurrences",
+    "indicator": {
+      "metadata": {
+        "name": "hallway-api-success-ratio"
+      },
+      "spec": {
+        "ratioMetric": {
+          "counter": true,
+          "bad": {
+            "metricSource": {
+              "type": "Prometheus",
+              "spec": {
+                "query": "{otel_metric_name=\"dash0.spans\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", otel_span_kind=\"SERVER\", otel_span_status_code=\"ERROR\"}"
+              }
+            }
+          },
+          "total": {
+            "metricSource": {
+              "type": "Prometheus",
+              "spec": {
+                "query": "{otel_metric_name=\"dash0.spans\", service_name=\"hallway-api\", deployment_environment_name=\"hackathon\", otel_span_kind=\"SERVER\"}"
+              }
+            }
+          }
+        }
+      }
+    },
+    "timeWindow": [
+      {
+        "duration": "28d",
+        "isRolling": true
+      }
+    ],
+    "objectives": [
+      {
+        "displayName": "No server error",
+        "target": 0.99
+      }
+    ]
+  }
+}
