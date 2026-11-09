@@ -1,9 +1,9 @@
 import secrets
 
 from elasticsearch import NotFoundError
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 
-from .. import es, matcher
+from .. import es, matcher, signin
 from ..auth import current_attendee, set_session
 from ..config import settings
 from ..models import Attendee, AttendeeIn, Config, Me, MeUpdate, RecoverIn, Rum
@@ -22,11 +22,18 @@ def config() -> Config:
     rum = None
     if settings.rum_url and settings.rum_token:
         rum = Rum(url=settings.rum_url, token=settings.rum_token)
-    return Config(rooms=settings.rooms, chaos_enabled=settings.chaos_enabled, rum=rum)
+    return Config(
+        rooms=settings.rooms,
+        chaos_enabled=settings.chaos_enabled,
+        rum=rum,
+        signin=signin.configured(),
+    )
 
 
 @router.post("/api/attendees", status_code=201)
-def register(body: AttendeeIn, response: Response, background: BackgroundTasks) -> Me:
+def register(
+    body: AttendeeIn, request: Request, response: Response, background: BackgroundTasks
+) -> Me:
     client = es.get_client()
     doc = body.model_dump() | {
         "id": secrets.token_hex(6),
@@ -34,6 +41,14 @@ def register(body: AttendeeIn, response: Response, background: BackgroundTasks) 
         "recovery_code": "".join(secrets.choice(CODE_ALPHABET) for _ in range(6)),
         "created_at": es.now(),
     }
+    # Did this browser just sign in with Google or LinkedIn? Then the new profile belongs
+    # to that account, and the next sign in with it opens this profile.
+    identity = signin.pending(request)
+    if identity:
+        if signin.find_attendee(client, identity["provider"], identity["sub"]):
+            raise HTTPException(409, "That account already has a profile. Sign in again to open it")
+        doc |= {"signin_provider": identity["provider"], "signin_sub": identity["sub"]}
+        response.delete_cookie(signin.PENDING_COOKIE)  # used once
     # refresh=True: the new person is searchable immediately, so they can be matched
     # and recovered right away. Fine at conference write volumes.
     client.index(index=es.ATTENDEES, id=doc["id"], document=doc, refresh=True)

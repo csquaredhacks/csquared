@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { createAttendee, errorMessage, getMe } from "../api/client";
-import type { Comfort } from "../api/types";
+import { createAttendee, errorMessage, forgetPendingSignin, getConfig, getMe, getPendingSignin } from "../api/client";
+import type { Comfort, SigninProvider } from "../api/types";
 import { hasPendingCommunity, hasPendingConnect, nextPath } from "../pending";
-import { ErrorNote, ResumeIngest, TagChips } from "../ui";
+import { ErrorNote, PROVIDER_NAMES, ProviderButtons, ProviderMark, ResumeIngest, TagChips } from "../ui";
 import type { ResumeData } from "../ui";
+
+/** The API sends people back to /?signin_error=<key> when a sign in did not finish. */
+const SIGNIN_ERRORS: Record<string, string> = {
+  cancelled: "Sign in was cancelled. Try again, or fill in the form below.",
+  failed: "Sign in did not work. Try again, or fill in the form below.",
+};
 
 export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
   { value: "open", label: "Open to anyone" },
@@ -23,17 +29,51 @@ export default function Register() {
   const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // The sign in buttons this server has set up. None: the form is the only way in.
+  const [providers, setProviders] = useState<SigninProvider[]>([]);
+  // Set when the person has just signed in and only the form is left.
+  const [signedInWith, setSignedInWith] = useState<SigninProvider | null>(null);
+  const [signinError, setSigninError] = useState("");
   const [form, setForm] = useState({
     name: "", working_on: "", asks: "", offers: "",
     fun_fact: "", tags: "", groups: "", comfort: "open" as Comfort, on_graph: false, show_groups: false,
   });
 
-  // Already registered on this phone? Skip the form.
+  // Already registered on this phone, or just signed in to an existing profile? Skip the form.
   useEffect(() => {
+    // Back from a sign in that did not finish: say so once, then tidy the address.
+    const problem = new URLSearchParams(window.location.search).get("signin_error");
+    if (problem) {
+      setSigninError(SIGNIN_ERRORS[problem] ?? SIGNIN_ERRORS.failed);
+      navigate("/", { replace: true });
+    }
     getMe()
       .then(() => navigate(nextPath(), { replace: true }))
-      .catch(() => setChecking(false));
+      .catch(async () => {
+        try {
+          const [config, pending] = await Promise.all([getConfig(), getPendingSignin()]);
+          setProviders(config.signin);
+          if (pending) {
+            // Signed in, but new to Hallway: the provider gave us the name, the form asks the rest.
+            setSignedInWith(pending.provider);
+            setForm((prev) => ({ ...prev, name: prev.name || pending.name }));
+          }
+        } catch {
+          // The form works without the buttons.
+        }
+        setChecking(false);
+      });
   }, [navigate]);
+
+  /** "Change": forget the sign in and show the buttons again. */
+  async function forgetSignin() {
+    try {
+      await forgetPendingSignin();
+      setSignedInWith(null);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
 
   /** One tap takes the person to the short form, which is the only step. */
   function startForm() {
@@ -100,17 +140,39 @@ export default function Register() {
 
       <section className="signin-card" aria-labelledby="join-title">
         <h2 id="join-title">Join Hallway</h2>
-        <p>One short form and you are in. No password, no account, and no sign-in with another service.</p>
+        <p>
+          {signedInWith
+            ? "You are signed in. Tell us a little about you and you are done."
+            : providers.length > 0
+            ? "Sign in with one tap, or fill in one short form. No password."
+            : "One short form and you are in. No password, no account, and no sign-in with another service."}
+        </p>
 
         <ResumeIngest onFill={fillFromResume} />
 
-        <button type="button" className="provider-btn" onClick={startForm}>
-          Get started
-        </button>
+        {/* Only buttons that really work are shown: a provider is listed once the server has
+            its client id and secret. With none, there is one Get started button. */}
+        {!signedInWith && (providers.length > 0 ? (
+          <>
+            <ProviderButtons providers={providers} />
+            <ErrorNote message={signinError} />
+          </>
+        ) : (
+          <button type="button" className="provider-btn" onClick={startForm}>
+            Get started
+          </button>
+        ))}
 
-        <h3 className="divider">Tell us about you</h3>
+        {!signedInWith && <h3 className="divider">{providers.length > 0 ? "Or tell us about you" : "Tell us about you"}</h3>}
 
         <form onSubmit={submit} className="form" id="join-form">
+          {signedInWith && (
+            <p className="provider-chip">
+              <ProviderMark provider={signedInWith} />
+              Signed in with {PROVIDER_NAMES[signedInWith]}
+              <button type="button" onClick={forgetSignin}>Change</button>
+            </p>
+          )}
 
           <label htmlFor="name">Your name</label>
           <input id="name" required maxLength={80} autoComplete="name" value={form.name}
@@ -184,7 +246,11 @@ export default function Register() {
         </form>
       </section>
 
-      <p className="muted center">Been here before? <Link to="/recover">Use your recovery code</Link></p>
+      <p className="muted center">
+        Been here before?{" "}
+        {providers.length > 0 && "Sign in the same way as last time, or "}
+        <Link to="/recover">{providers.length > 0 ? "use your recovery code" : "Use your recovery code"}</Link>
+      </p>
       <p className="muted center">Organizing a community? Register first, then <Link to="/communities/new">create an event invitation</Link>.{" "}
         <Link to="/crowd">See what the crowd needs</Link>.</p>
     </>

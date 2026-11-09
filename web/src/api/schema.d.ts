@@ -560,6 +560,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/signin/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pending Signin
+         * @description Who just signed in and still has to send the profile form. null when nobody did.
+         */
+        get: operations["pending_signin_api_signin_pending_get"];
+        put?: never;
+        post?: never;
+        /**
+         * Forget Pending Signin
+         * @description "Change": go back to the plain form, as if the button was never pressed.
+         */
+        delete: operations["forget_pending_signin_api_signin_pending_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/healthz": {
         parameters: {
             query?: never;
@@ -730,6 +754,8 @@ export interface components {
             /** Chaos Enabled */
             chaos_enabled: boolean;
             rum: components["schemas"]["Rum"] | null;
+            /** Signin */
+            signin: ("linkedin" | "google")[];
         };
         /** ConnectResult */
         ConnectResult: {
@@ -954,6 +980,8 @@ export interface components {
              * @default false
              */
             show_groups: boolean;
+            /** Signin Provider */
+            signin_provider?: ("linkedin" | "google") | null;
         };
         /**
          * MeUpdate
@@ -1020,6 +1048,19 @@ export interface components {
         PathStep: {
             /** Id */
             id: string;
+            /** Name */
+            name: string;
+        };
+        /**
+         * PendingSignin
+         * @description Someone signed in and has not sent the profile form yet. The name fills the form.
+         */
+        PendingSignin: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "linkedin" | "google";
             /** Name */
             name: string;
         };
@@ -2029,6 +2070,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    pending_signin_api_signin_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingSignin"] | null;
+                };
+            };
+        };
+    };
+    forget_pending_signin_api_signin_pending_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

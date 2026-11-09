@@ -21,6 +21,7 @@ EdgeKind = Literal["connected", "planned", "suggested"]
 # How one person relates to me, in my own private view of the graph.
 RelationKind = Literal["met", "planned", "invited_you", "you_invited", "suggested"]
 ChaosMode = Literal["off", "slow", "error"]
+SigninProvider = Literal["linkedin", "google"]
 
 
 class ProfileText(BaseModel):
@@ -82,6 +83,8 @@ class Me(Attendee):
     recovery_code: str
     on_graph: bool
     show_groups: bool = False
+    # How I joined, if I used a sign in button. Only I am told.
+    signin_provider: SigninProvider | None = None
 
 
 class MeUpdate(ProfileText):
@@ -103,6 +106,13 @@ class MeUpdate(ProfileText):
 
 class RecoverIn(BaseModel):
     code: str = Field(min_length=6, max_length=6)
+
+
+class PendingSignin(BaseModel):
+    """Someone signed in and has not sent the profile form yet. The name fills the form."""
+
+    provider: SigninProvider
+    name: str
 
 
 def strip_text(value):
@@ -383,6 +393,7 @@ class Config(BaseModel):
     rooms: list[str]
     chaos_enabled: bool
     rum: Rum | None
+    signin: list[SigninProvider]  # the sign in buttons that are set up on this server
 
 
 class Chaos(BaseModel):
