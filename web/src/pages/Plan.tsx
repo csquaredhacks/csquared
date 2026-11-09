@@ -201,7 +201,8 @@ function CrewSection() {
         </div>
       )}
 
-      {notice && <p className="muted" role="status">{notice}</p>}
+      {/* Always mounted: a live region that appears together with its text is not announced. */}
+      <p className="muted" role="status">{notice}</p>
       <ErrorNote message={error} />
     </section>
   );
