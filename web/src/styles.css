@@ -268,7 +268,12 @@ fieldset { border: 0; padding: 0; margin: 0; }
   background: radial-gradient(circle at 50% 45%, #221f30, #121117 75%);
 }
 .graph-tools { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
-.legend { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; color: var(--muted); font-size: 0.95rem; }
+.legend {
+  list-style: none; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem;
+  margin: 0; padding: 0.5rem 0.9rem; border-radius: 14px;
+  background: #1d1c25; color: #b9b5c6; font-size: 0.95rem;
+  --text: #f4f1ea; --good: #6fe3b4; --muted: #b9b5c6; --field: #858296;
+}
 .legend li { display: flex; align-items: center; gap: 0.5rem; }
 .button.small { display: inline-flex; width: auto; min-height: 2.75rem; margin-top: 0; padding: 0.4rem 1rem; font-size: 0.95rem; }
 .relations { list-style: none; padding: 0; margin: 0 0 1.25rem; }

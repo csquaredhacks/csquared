@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { ApiError, errorMessage, getMe, updateMe } from "../api/client";
 import type { Me } from "../api/types";
-import { ErrorNote, ProviderMark, getSigninProvider } from "../ui";
+import { ErrorNote } from "../ui";
 import { COMFORT_OPTIONS, splitList } from "./Register";
 
 export default function Profile() {
@@ -32,14 +32,9 @@ export default function Profile() {
   // The QR is a plain link, so any phone camera can scan it. No app needed.
   const connectUrl = `${window.location.origin}/connect/${me.id}`;
 
-  const provider = getSigninProvider();
-
   return (
     <>
       <h1>{me.name}</h1>
-      {provider && (
-        <p className="provider-badge"><ProviderMark provider={provider} /> Signed in with {provider}</p>
-      )}
       <p className="lede">Let someone point their phone camera at this to connect with you.</p>
 
       <div className="qr">
