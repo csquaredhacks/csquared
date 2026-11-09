@@ -1,8 +1,8 @@
 """The organizer board: what the crowd needs, in counts only.
 
 Everything here is an aggregate. No name, id, free text or affiliation leaves this
-module, and a number that describes fewer than MIN_PEOPLE people is left out, so a
-small group cannot be picked out of the totals.
+module. Counts only: no names. A topic or preference row appears only when at least
+three people are behind it.
 """
 
 from elasticsearch import Elasticsearch
