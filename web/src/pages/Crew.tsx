@@ -34,7 +34,7 @@ export default function Crew() {
   const navigate = useNavigate();
   const [state, setState] = useState<CrewOut | null>(null); // null = loading
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"" | "join" | "decline" | "other">("");
   const [companion, setCompanion] = useState(false);
   const [place, setPlace] = useState("");
   const [when, setWhen] = useState("");
@@ -44,8 +44,8 @@ export default function Crew() {
     else setError(errorMessage(err));
   }
 
-  async function run(action: () => Promise<CrewOut>) {
-    setBusy(true);
+  async function run(kind: "join" | "decline" | "other", action: () => Promise<CrewOut>) {
+    setBusy(kind);
     setError("");
     try {
       setState(await action());
@@ -66,7 +66,7 @@ export default function Crew() {
   function saveMeeting(event: FormEvent) {
     event.preventDefault();
     if (!place.trim() || !when) return;
-    run(() => setCrewMeeting({ place: place.trim(), starts_at: withOffset(when), timezone: LOCAL_ZONE }));
+    run("other", () => setCrewMeeting({ place: place.trim(), starts_at: withOffset(when), timezone: LOCAL_ZONE }));
   }
 
   const crew = state?.crew ?? null;
@@ -85,8 +85,8 @@ export default function Crew() {
         <div className="empty">
           <h2>No crew yet</h2>
           <p>We suggest a small group from your best matches. Group size follows your comfort setting.</p>
-          <button type="button" className="button" disabled={busy} onClick={() => run(suggestCrew)}>
-            {busy ? "Looking…" : "Suggest a crew"}
+          <button type="button" className="button" disabled={!!busy} onClick={() => run("other", suggestCrew)}>
+            {busy === "other" ? "Looking…" : "Suggest a crew"}
           </button>
         </div>
       )}
@@ -128,12 +128,12 @@ export default function Crew() {
                 <input type="checkbox" checked={companion} onChange={(e) => setCompanion(e.target.checked)} />
                 I'm bringing a friend or companion (they take a place too)
               </label>
-              <button type="button" className="button" disabled={busy}
-                onClick={() => run(() => acceptCrew({ companion }))}>
-                {busy ? "Joining…" : "Join this crew"}
+              <button type="button" className="button" disabled={!!busy}
+                onClick={() => run("join", () => acceptCrew({ companion }))}>
+                {busy === "join" ? "Joining…" : "Join this crew"}
               </button>
-              <button type="button" className="button secondary" disabled={busy} onClick={() => run(declineCrew)}>
-                No thanks
+              <button type="button" className="button secondary" disabled={!!busy} onClick={() => run("decline", declineCrew)}>
+                {busy === "decline" ? "Declining…" : "No thanks"}
               </button>
             </>
           )}
@@ -148,9 +148,9 @@ export default function Crew() {
                 <label htmlFor="meeting-when">Date and time ({LOCAL_ZONE})</label>
                 <input id="meeting-when" type="datetime-local" value={when} required
                   onChange={(e) => setWhen(e.target.value)} />
-                <button type="submit" className="button" disabled={busy}>Save the plan</button>
+                <button type="submit" className="button" disabled={!!busy}>Save the plan</button>
               </form>
-              <button type="button" className="button secondary" disabled={busy} onClick={() => run(leaveCrew)}>
+              <button type="button" className="button secondary" disabled={!!busy} onClick={() => run("other", leaveCrew)}>
                 Leave this crew
               </button>
             </>
