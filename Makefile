@@ -39,7 +39,7 @@ types: ## Regenerate web/src/api/schema.d.ts from the API models (CI fails if it
 seed: ## Load 60 synthetic attendees, plans, meetings and check-ins (API=<url>)
 	python seed/seed.py --api $(API) --checkins
 
-seed-before: ## Act one, the week before: 60 attendees, invitations and plans. Nobody has met.
+seed-before: ## Act one, the week before: 60 attendees, invitations, plans and arrival groups. Nobody has met.
 	python seed/seed.py --api $(API) --phase before
 
 seed-live: ## Act two, the day itself: plans become meetings, plus check-ins (run seed-before first)
