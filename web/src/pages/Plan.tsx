@@ -85,8 +85,10 @@ function Five() {
     setError("");
     getMatches().then(setMatches).catch((err) => setError(errorMessage(err)));
     // My invitations and plans, so a card can show where things stand. If this
-    // fails the matches still work; the section below just stays empty.
-    getMyGraph().then((g) => setRelations(g.relationships)).catch(() => setRelations([]));
+    // fails the matches still work; invitation actions stay unavailable.
+    getMyGraph()
+      .then((g) => setRelations(g.relationships))
+      .catch((err) => setError(`Could not load your invitations: ${errorMessage(err)}`));
   }
   useEffect(load, []);
 
@@ -158,7 +160,7 @@ function Five() {
                     </div>
                   </>
                 )}
-                {(kind === undefined || kind === "suggested") && (
+                {relations !== null && (kind === undefined || kind === "suggested") && (
                   <div className="actions">
                     <button type="button" className="button" disabled={busy}
                       onClick={() => act(id, () => invite(id))}>
