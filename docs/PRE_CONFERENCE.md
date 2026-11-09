@@ -145,7 +145,7 @@ the order of the navigation, and the kiosk headline. In `before` the kiosk shows
 |---|---|
 | Elasticsearch | The match query now also builds crews. The crowd board is aggregations over the same index. Search, graph and analytics from one datastore. |
 | Dash0 | A funnel panel: registered, waved, mutual, met in person. New counters: `hallway.edges.total{kind="wave"}`, `hallway.crew.joins`, `hallway.planned.met`. This is product observability, not just latency. |
-| Gitar | Three to five more small PRs to review, and a new rule: private intent stays private. See rule 8 in `docs/GITAR_RULES.md`. |
+| Gitar | Three to five more small PRs to review, and a new rule to add to `docs/GITAR_RULES.md` in the waves PR: private intent stays private. A one-sided wave is visible only to the two people involved, and `/api/crowd` returns counts only. |
 | Radar | Nothing new. The cluster story is unchanged. |
 | Merge Forward | Crews respect comfort. Waves carry no text. One-sided interest is never public. |
 

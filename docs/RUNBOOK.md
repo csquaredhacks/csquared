@@ -9,8 +9,9 @@ pre-conference work: [`PRE_CONFERENCE.md`](PRE_CONFERENCE.md). Times are Mountai
 | Part | State |
 |---|---|
 | API | Done. 21 tests pass against a real Elasticsearch 9.2. |
-| Web app | Written and compiles. Not yet clicked through against the real API. |
-| Dockerfile, Helm chart, CI | Written. Never built, installed or run. |
+| Web app | Written. Builds and type-checks in CI. Not yet clicked through against the real API. |
+| Dockerfile, Helm chart | Written. The chart passes lint in CI. Never built into an image or installed on a cluster. |
+| Gitar | Installed and reviewing pull requests. Rules live in `.gitar/` and `docs/GITAR_RULES.md`. |
 | Pre-conference features B to E | Designed, not built. |
 
 So the first job is to run what exists. Nothing below matters if the app is not up.
@@ -24,16 +25,15 @@ So the first job is to run what exists. Nothing below matters if the app is not 
 
 If two of these compete for the same person, the lower number wins.
 
-## Do first, together (15 minutes)
+## Do first, together (10 minutes)
 
-1. Open a pull request from `claude/pensive-darwin-dn6p59` into `main`. Do not squash away history.
-2. Install the Gitar GitHub App on the repo (app.gitar.ai) **before** merging, so the first
-   PR gets a review. Paste the rules from `docs/GITAR_RULES.md` where the Gitar dashboard asks
-   for repository rules. Turn on auto-apply for CI fixes.
-3. Change the image name in `Makefile` and `deploy/chart/hallway/values.yaml` from
-   `ghcr.io/biancaravago/hallway` to `ghcr.io/csquaredhacks/hallway`.
-4. `cp .env.example .env` on one laptop. Share the filled file over a private channel, never
+1. Every change goes through a pull request to `main`, with `gitar auto-apply:on` as the
+   first comment. See `docs/GITAR_SETUP.md`. Do not push to `main` directly: it breaks
+   other people's open pull requests.
+2. `cp .env.example .env` on one laptop. Share the filled file over a private channel, never
    through the repo.
+3. Read the product brief in pull request 4 for the direction, and
+   [`PRE_CONFERENCE.md`](PRE_CONFERENCE.md) for what to build today.
 
 ## Lanes
 
