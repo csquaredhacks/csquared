@@ -15,7 +15,7 @@ WORKDIR /welcome
 COPY welcome/package.json welcome/package-lock.json ./
 RUN npm ci
 COPY welcome/ ./
-RUN npm run build && mkdir -p /web/dist/welcome && cp -a .output/public/. /web/dist/welcome/
+RUN npm run build && test -s .output/public/index.html && mkdir -p /web/dist/welcome && cp -a .output/public/. /web/dist/welcome/
 
 # ---- Stage 2: the runtime image ----
 FROM python:3.12-slim

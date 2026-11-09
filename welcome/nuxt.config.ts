@@ -2,7 +2,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-03-20',
   devtools: { enabled: false },
   app: {
-    baseURL: '/welcome/',
+    baseURL: process.env.NUXT_APP_BASE_URL || '/welcome/',
     head: {
       title: 'Hallway | Find your people',
       meta: [{ name: 'description', content: 'Find people to meet and a group to arrive with before the conference.' }],

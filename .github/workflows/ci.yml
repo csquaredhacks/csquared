@@ -64,6 +64,7 @@ jobs:
         run: |
           npm ci
           npm run build
+          test -s .output/public/index.html
 
   # Deliberate check: the web app's TypeScript types are generated from the API models,
   # so a PR that changes the models without regenerating them fails here.

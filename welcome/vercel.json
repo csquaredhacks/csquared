@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nuxtjs",
   "installCommand": "npm ci",
-  "buildCommand": "npm run build",
+  "buildCommand": "NITRO_PRESET=static npm run build",
   "outputDirectory": ".output/public"
 }
