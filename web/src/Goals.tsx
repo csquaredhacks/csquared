@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { errorMessage, getGoals, setGoals } from "./api/client";
 import type { Goal } from "./api/types";
@@ -26,19 +26,47 @@ export function GoalBoard({ readOnly = false }: { readOnly?: boolean }) {
     getGoals().then((out) => setLocal(out.goals)).catch((err) => setError(errorMessage(err)));
   }, []);
 
-  /** Shows the change at once, saves it, and puts the old list back if saving fails. */
-  async function save(next: Goal[], message: string) {
-    const before = goals;
-    setLocal(next);
-    setError("");
+  // One save at a time. The whole list is sent each time, so two saves in flight could
+  // reach the server in the wrong order and the older list would win. While one is in
+  // flight, only the newest wanted list is kept, and it is sent when the first returns.
+  const inFlight = useRef(false);
+  const queued = useRef<{ goals: Goal[]; message: string } | null>(null);
+  const saved = useRef<Goal[]>([]); // what the server last confirmed
+
+  useEffect(() => {
+    if (goals !== null && !inFlight.current && queued.current === null) saved.current = goals;
+  }, [goals]);
+
+  async function send(next: Goal[], message: string) {
+    inFlight.current = true;
     try {
-      setLocal((await setGoals(next)).goals);
-      setStatus(message);
+      const confirmed = (await setGoals(next)).goals;
+      saved.current = confirmed;
+      if (queued.current === null) {
+        setLocal(confirmed);
+        setStatus(message);
+      }
     } catch (err) {
-      setLocal(before);
+      queued.current = null;
+      setLocal(saved.current); // show what is really stored
       setStatus("");
       setError(errorMessage(err));
+    } finally {
+      inFlight.current = false;
     }
+    const waiting = queued.current;
+    if (waiting) {
+      queued.current = null;
+      await send(waiting.goals, waiting.message);
+    }
+  }
+
+  /** Shows the change at once and saves it. */
+  function save(next: Goal[], message: string) {
+    setLocal(next);
+    setError("");
+    if (inFlight.current) queued.current = { goals: next, message };
+    else void send(next, message);
   }
 
   function add(event: FormEvent) {
