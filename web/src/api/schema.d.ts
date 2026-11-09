@@ -476,7 +476,7 @@ export interface paths {
         };
         /**
          * Healthz
-         * @description Always 200 while the process is alive; `es` says whether the datastore is reachable.
+         * @description Always 200 while alive; `es` is green only when ES responds and the required indices exist.
          */
         get: operations["healthz_healthz_get"];
         put?: never;
