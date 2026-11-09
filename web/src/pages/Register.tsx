@@ -4,8 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { createAttendee, errorMessage, getMe } from "../api/client";
 import type { Comfort } from "../api/types";
 import { hasPendingCommunity, hasPendingConnect, nextPath } from "../pending";
-import { ErrorNote, ProviderButtons, ProviderMark, ResumeIngest, TagChips, getSigninProvider, setSigninProvider } from "../ui";
-import type { ResumeData, SigninProvider } from "../ui";
+import { ErrorNote, ResumeIngest, TagChips } from "../ui";
+import type { ResumeData } from "../ui";
 
 export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
   { value: "open", label: "Open to anyone" },
@@ -23,7 +23,6 @@ export default function Register() {
   const [checking, setChecking] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [provider, setProvider] = useState<SigninProvider | null>(() => getSigninProvider());
   const [form, setForm] = useState({
     name: "", working_on: "", asks: "", offers: "",
     fun_fact: "", tags: "", groups: "", comfort: "open" as Comfort, on_graph: false, show_groups: false,
@@ -36,17 +35,10 @@ export default function Register() {
       .catch(() => setChecking(false));
   }, [navigate]);
 
-  /** One tap picks how you join, then the short form finishes it. */
-  function pickProvider(next: SigninProvider) {
-    setProvider(next);
-    setSigninProvider(next);
+  /** One tap takes the person to the short form, which is the only step. */
+  function startForm() {
     document.getElementById("join-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("name")?.focus({ preventScroll: true });
-  }
-
-  function clearProvider() {
-    setProvider(null);
-    setSigninProvider(null);
   }
 
   /** A resume fills the fields it can. Anything it could not read stays blank. */
@@ -108,22 +100,17 @@ export default function Register() {
 
       <section className="signin-card" aria-labelledby="join-title">
         <h2 id="join-title">Join Hallway</h2>
-        <p>Pick how you sign in, then tell us a little about you. No password, no account.</p>
+        <p>One short form and you are in. No password, no account, and no sign-in with another service.</p>
 
         <ResumeIngest onFill={fillFromResume} />
 
-        <ProviderButtons picked={provider} onPick={pickProvider} />
+        <button type="button" className="provider-btn" onClick={startForm}>
+          Get started
+        </button>
 
-        <p className="divider" role="separator">or tell us about you</p>
+        <h3 className="divider">Tell us about you</h3>
 
         <form onSubmit={submit} className="form" id="join-form">
-          {provider && (
-            <p className="provider-chip">
-              <ProviderMark provider={provider} />
-              Joining with {provider}
-              <button type="button" onClick={clearProvider}>Change</button>
-            </p>
-          )}
 
           <label htmlFor="name">Your name</label>
           <input id="name" required maxLength={80} autoComplete="name" value={form.name}
