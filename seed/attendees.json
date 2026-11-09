@@ -4,27 +4,27 @@
     {
       "asker": "Dalia Namespace",
       "offerer": "Goran Cgroup",
-      "why": "evictions under memory pressure <-> requests, limits and QoS classes"
+      "why": "evictions under memory pressure <-> requests, limits and QoS classes; both ways: Goran also asks about JVM heap sizing and GC flags in containers, which is Dalia's offer"
     },
     {
       "asker": "Ines Cardinality",
       "offerer": "Soren Sampler",
-      "why": "tracing bill, keep only slow/failed requests <-> tail-based sampling in the Collector"
+      "why": "tracing bill, keep only slow/failed requests <-> tail-based sampling in the Collector; both ways: Soren also asks which labels to drop before metric cardinality grows, which is Ines's offer"
     },
     {
       "asker": "Wren Syllabus",
       "offerer": "Mireille Backport",
-      "why": "never contributed to open source <-> pairs with newcomers on a first pull request"
+      "why": "never contributed to open source <-> pairs with newcomers on a first pull request; both ways: Mireille also asks for fresh eyes on contributor docs and where a beginner gets lost, which is Wren's offer"
     },
     {
       "asker": "Yusuf Ledger",
       "offerer": "Zofia Provenance",
-      "why": "prove where images came from <-> cosign signing and SLSA provenance"
+      "why": "prove where images came from <-> cosign signing and SLSA provenance; both ways: Zofia also asks how to automate audit evidence collection with reusable templates, which is Yusuf's offer"
     },
     {
       "asker": "Kavya Tensor",
       "offerer": "Oskar Quorum",
-      "why": "idle GPUs while jobs wait <-> Kueue quotas, borrowing and bin-packing"
+      "why": "idle GPUs while jobs wait <-> Kueue quotas, borrowing and bin-packing; both ways: Oskar also asks about packaging PyTorch training images with lazy loading and layer ordering, which is Kavya's offer"
     }
   ],
   "attendees": [
@@ -49,8 +49,8 @@
     {
       "name": "Goran Cgroup",
       "working_on": "Node reliability for a multi-tenant cluster fleet; I review kubelet resource-management pull requests in my spare time.",
-      "asks": "Looking for people running cgroup v2 memory throttling in production: did it help or hurt?",
-      "offers": "Happy to walk through requests, limits and QoS classes with your manifests open, and how the kubelet picks what to kill first.",
+      "asks": "Looking for people running cgroup v2 memory throttling in production: did it help or hurt? Also comparing notes on JVM heap sizing and GC flags inside containers, since our Java services keep ballooning.",
+      "offers": "Happy to walk through requests, limits and QoS classes with your manifests open, and how the kubelet picks what to kill first. I can also show how evicted pods and memory pressure point back to the workloads that get killed first.",
       "fun_fact": "Keeps a spreadsheet of every OOM kill he has ever caused.",
       "tags": [
         "kubelet",
@@ -85,8 +85,8 @@
     {
       "name": "Soren Sampler",
       "working_on": "Contributor to the OpenTelemetry Collector contrib processors; day job is the observability platform at a retailer.",
-      "asks": "Want real-world stories of OTTL transform rules that got out of hand, for a talk I'm drafting.",
-      "offers": "I can whiteboard tail-based sampling policies in the OpenTelemetry Collector, including the load-balancing exporter you need in front of it.",
+      "asks": "Want real-world stories of OTTL transform rules that got out of hand, for a talk I'm drafting. Also: which labels do you drop before metric cardinality eats the budget? We keep finding user_id on everything.",
+      "offers": "I can whiteboard tail-based sampling policies in the OpenTelemetry Collector, including the load-balancing exporter you need in front of it. The point is you keep the slow and failed requests and stop paying to store every healthy one, so the tracing bill stops tripling.",
       "fun_fact": "Bakes sourdough and logs the oven temperature as a time series.",
       "tags": [
         "opentelemetry",
@@ -121,8 +121,8 @@
     {
       "name": "Mireille Backport",
       "working_on": "Maintainer of a mid-sized CNCF sandbox project for config validation; I run our contributor ladder and release team.",
-      "asks": "How do other small projects keep reviewers from burning out? Looking for rotation or triage models that actually stuck.",
-      "offers": "I pair with newcomers on good-first-issues and will sit with you through your first pull request, from fork to merge.",
+      "asks": "How do other small projects keep reviewers from burning out? Looking for rotation or triage models that actually stuck. And I will trade you: read our contributor docs with fresh eyes and tell me exactly where a beginner gets lost.",
+      "offers": "I pair with newcomers on good-first-issues and will sit with you through your first pull request, from fork to merge. Especially if you have never contributed to open source and do not know how to pick something to work on.",
       "fun_fact": "Has merged a pull request from every continent except Antarctica.",
       "tags": [
         "community",
@@ -156,8 +156,8 @@
     {
       "name": "Zofia Provenance",
       "working_on": "Supply-chain security tooling; contributor to a policy controller that verifies signatures at admission.",
-      "asks": "Looking for teams doing keyless signing in air-gapped or private-CA environments: how do you handle the transparency log?",
-      "offers": "Can show how to sign artifacts with cosign and attach SLSA provenance in GitHub Actions, then enforce it at admission.",
+      "asks": "Looking for teams doing keyless signing in air-gapped or private-CA environments: how do you handle the transparency log? Also, how do you automate evidence collection for an audit, with templates engineers actually reuse?",
+      "offers": "Can show how to sign artifacts with cosign and attach SLSA provenance in GitHub Actions, then enforce it at admission. And how to prove where container images came from, and that nobody tampered with them between build and deploy.",
       "fun_fact": "Collects wax seals.",
       "tags": [
         "supply-chain",
@@ -191,8 +191,8 @@
     {
       "name": "Oskar Quorum",
       "working_on": "Batch scheduling for a research lab's shared cluster; migrated from a homegrown queue to Kubernetes-native job queueing.",
-      "asks": "Anyone doing fractional GPU sharing with Dynamic Resource Allocation yet? I want to hear what broke.",
-      "offers": "I set up Kueue quotas, cohort borrowing and bin-packing for a shared accelerator cluster and can share the configs that worked.",
+      "asks": "Anyone doing fractional GPU sharing with Dynamic Resource Allocation yet? I want to hear what broke. Also swapping notes on packaging PyTorch training images: lazy loading and layer ordering, so pulls stop taking 20 minutes.",
+      "offers": "I set up Kueue quotas, cohort borrowing and bin-packing for a shared accelerator cluster and can share the configs that worked. The goal is GPU nodes that stop sitting idle while training jobs wait in line, because teams share fairly instead of grabbing whole nodes.",
       "fun_fact": "Plays competitive chess badly but enthusiastically.",
       "tags": [
         "batch",

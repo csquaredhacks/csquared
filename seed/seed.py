@@ -90,6 +90,7 @@ def main() -> None:
             people.append(
                 {
                     "id": me["id"],
+                    "name": attendee["name"],
                     "groups": set(attendee["groups"]),
                     "code": me["recovery_code"],
                     "client": client,
@@ -111,6 +112,24 @@ def main() -> None:
     plans = 0
     if args.phase in ("before", "all"):
         wanted = min(args.invitations, len(people) * (len(people) - 1) // 2)
+        # The planted two-way pairs come first: each asker invites the person whose
+        # offer answers their ask, and that invitation is accepted, so the demo's
+        # reciprocal matches already have a plan before the random invitations start.
+        by_name = {p["name"]: p for p in people}
+        for planted in json.loads(DATA.read_text()).get("_planted_pairs", []):
+            if len(invited) >= wanted:
+                break
+            asker = by_name.get(planted["asker"])
+            offerer = by_name.get(planted["offerer"])
+            if asker is None or offerer is None or asker is offerer:
+                continue
+            pair = frozenset((asker["id"], offerer["id"]))
+            if pair in invited:
+                continue
+            invited.add(pair)
+            call(asker["client"], "POST", "/api/invitations", {"to_id": offerer["id"]})
+            call(offerer["client"], "POST", f"/api/invitations/{asker['id']}/accept")
+            plans += 1
         while len(invited) < wanted:
             source, target = pick_pair(people)
             pair = frozenset((source["id"], target["id"]))
