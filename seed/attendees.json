@@ -1,0 +1,1093 @@
+{
+  "_comment": "Synthetic data. Every person here is invented; no real names, no emails.",
+  "_planted_pairs": [
+    {
+      "asker": "Dalia Namespace",
+      "offerer": "Goran Cgroup",
+      "why": "evictions under memory pressure <-> requests, limits and QoS classes"
+    },
+    {
+      "asker": "Ines Cardinality",
+      "offerer": "Soren Sampler",
+      "why": "tracing bill, keep only slow/failed requests <-> tail-based sampling in the Collector"
+    },
+    {
+      "asker": "Wren Syllabus",
+      "offerer": "Mireille Backport",
+      "why": "never contributed to open source <-> pairs with newcomers on a first pull request"
+    },
+    {
+      "asker": "Yusuf Ledger",
+      "offerer": "Zofia Provenance",
+      "why": "prove where images came from <-> cosign signing and SLSA provenance"
+    },
+    {
+      "asker": "Kavya Tensor",
+      "offerer": "Oskar Quorum",
+      "why": "idle GPUs while jobs wait <-> Kueue quotas, borrowing and bin-packing"
+    }
+  ],
+  "attendees": [
+    {
+      "name": "Dalia Namespace",
+      "working_on": "Moving a 40-service Java backend onto our first production Kubernetes cluster at a regional logistics company.",
+      "asks": "Our pods keep getting evicted under memory pressure and I can't tell which workloads are to blame or why some get killed before others.",
+      "offers": "JVM tuning in containers: heap sizing, GC choice and the flags that stopped our services from ballooning.",
+      "fun_fact": "Learned to drive in a forklift.",
+      "tags": [
+        "kubernetes",
+        "java",
+        "migration",
+        "capacity"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Goran Cgroup",
+      "working_on": "Node reliability for a multi-tenant cluster fleet; I review kubelet resource-management pull requests in my spare time.",
+      "asks": "Looking for people running cgroup v2 memory throttling in production: did it help or hurt?",
+      "offers": "Happy to walk through requests, limits and QoS classes with your manifests open, and how the kubelet picks what to kill first.",
+      "fun_fact": "Keeps a spreadsheet of every OOM kill he has ever caused.",
+      "tags": [
+        "kubelet",
+        "cgroups",
+        "linux",
+        "nodes"
+      ],
+      "groups": [
+        "SRE",
+        "Maintainers"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Ines Cardinality",
+      "working_on": "Running the telemetry pipeline for a payments API: 300 services sending traces and metrics through a central gateway.",
+      "asks": "Our tracing bill tripled this quarter. I need a way to keep the slow and failed requests without paying to store every healthy one.",
+      "offers": "Hard-won lessons on taming metric cardinality: which labels to drop, and how to find the team that added user_id.",
+      "fun_fact": "Has a cat named Histogram.",
+      "tags": [
+        "tracing",
+        "cost",
+        "metrics",
+        "opentelemetry"
+      ],
+      "groups": [
+        "Observability",
+        "SRE"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Soren Sampler",
+      "working_on": "Contributor to the OpenTelemetry Collector contrib processors; day job is the observability platform at a retailer.",
+      "asks": "Want real-world stories of OTTL transform rules that got out of hand, for a talk I'm drafting.",
+      "offers": "I can whiteboard tail-based sampling policies in the OpenTelemetry Collector, including the load-balancing exporter you need in front of it.",
+      "fun_fact": "Bakes sourdough and logs the oven temperature as a time series.",
+      "tags": [
+        "opentelemetry",
+        "collector",
+        "sampling",
+        "ottl"
+      ],
+      "groups": [
+        "Observability",
+        "Maintainers"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Wren Syllabus",
+      "working_on": "Final-year CS student; my capstone is a tiny container runtime written in Go to understand namespaces and cgroups.",
+      "asks": "I've never contributed to open source. I don't know how to pick something to work on or who it's okay to ask without looking clueless.",
+      "offers": "Fresh eyes on your docs: I'll tell you exactly where a beginner gets lost. Also decent at Go table tests.",
+      "fun_fact": "Took a 31-hour bus ride to get here.",
+      "tags": [
+        "go",
+        "containers",
+        "student",
+        "linux"
+      ],
+      "groups": [
+        "Students",
+        "First-time attendees"
+      ],
+      "comfort": "one_on_one"
+    },
+    {
+      "name": "Mireille Backport",
+      "working_on": "Maintainer of a mid-sized CNCF sandbox project for config validation; I run our contributor ladder and release team.",
+      "asks": "How do other small projects keep reviewers from burning out? Looking for rotation or triage models that actually stuck.",
+      "offers": "I pair with newcomers on good-first-issues and will sit with you through your first pull request, from fork to merge.",
+      "fun_fact": "Has merged a pull request from every continent except Antarctica.",
+      "tags": [
+        "community",
+        "mentoring",
+        "releases",
+        "governance"
+      ],
+      "groups": [
+        "Maintainers"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Yusuf Ledger",
+      "working_on": "Platform lead at a fintech; getting our build and deploy pipeline ready for a SOC 2 and PCI audit.",
+      "asks": "Auditors want proof of where our container images came from and that nobody tampered with them between build and deploy.",
+      "offers": "Translating audit controls into things engineers can automate; I have templates for evidence collection.",
+      "fun_fact": "Used to be an accountant and still enjoys reconciling things.",
+      "tags": [
+        "compliance",
+        "fintech",
+        "ci",
+        "audit"
+      ],
+      "groups": [
+        "Security",
+        "Platform Engineering"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Zofia Provenance",
+      "working_on": "Supply-chain security tooling; contributor to a policy controller that verifies signatures at admission.",
+      "asks": "Looking for teams doing keyless signing in air-gapped or private-CA environments: how do you handle the transparency log?",
+      "offers": "Can show how to sign artifacts with cosign and attach SLSA provenance in GitHub Actions, then enforce it at admission.",
+      "fun_fact": "Collects wax seals.",
+      "tags": [
+        "supply-chain",
+        "signing",
+        "slsa",
+        "admission"
+      ],
+      "groups": [
+        "Security",
+        "Maintainers"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Kavya Tensor",
+      "working_on": "ML platform for a computer-vision startup: 12 teams sharing 60 GPUs on Kubernetes.",
+      "asks": "Our GPU nodes sit idle half the day while training jobs wait in line. Teams grab whole nodes and nobody shares fairly.",
+      "offers": "Packaging PyTorch training images that don't take 20 minutes to pull: lazy loading and layer ordering.",
+      "fun_fact": "Trains a model to identify birds at her balcony feeder.",
+      "tags": [
+        "gpu",
+        "training",
+        "pytorch",
+        "mlops"
+      ],
+      "groups": [
+        "AI/ML infra"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Oskar Quorum",
+      "working_on": "Batch scheduling for a research lab's shared cluster; migrated from a homegrown queue to Kubernetes-native job queueing.",
+      "asks": "Anyone doing fractional GPU sharing with Dynamic Resource Allocation yet? I want to hear what broke.",
+      "offers": "I set up Kueue quotas, cohort borrowing and bin-packing for a shared accelerator cluster and can share the configs that worked.",
+      "fun_fact": "Plays competitive chess badly but enthusiastically.",
+      "tags": [
+        "batch",
+        "scheduling",
+        "kueue",
+        "gpu"
+      ],
+      "groups": [
+        "AI/ML infra",
+        "Platform Engineering"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Bao Kubelet",
+      "working_on": "Building an internal developer platform with Backstage templates on top of Crossplane compositions.",
+      "asks": "How do you version golden-path templates without breaking the 200 repos already scaffolded from the old ones?",
+      "offers": "Crossplane composition functions: how we replaced 2,000 lines of patch-and-transform with a small Go function.",
+      "fun_fact": "Has a mechanical keyboard for each day of the week.",
+      "tags": [
+        "backstage",
+        "crossplane",
+        "idp",
+        "templates"
+      ],
+      "groups": [
+        "Platform Engineering"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Chidi Rollout",
+      "working_on": "Progressive delivery for 150 services using Argo Rollouts with metric-based analysis.",
+      "asks": "Need better canary analysis queries: ours pass when traffic is too low to mean anything.",
+      "offers": "GitOps repo layouts for many clusters: app-of-apps versus ApplicationSets, and what we regret.",
+      "fun_fact": "Ran a marathon dressed as a traffic cone.",
+      "tags": [
+        "gitops",
+        "argo",
+        "canary",
+        "delivery"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "SRE"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Emeka Ingress",
+      "working_on": "Moving 400 Ingress objects to Gateway API across three clusters before our controller is retired.",
+      "asks": "Has anyone migrated regex path rewrites and auth annotations to HTTPRoute filters without downtime?",
+      "offers": "Can explain Gateway API roles (GatewayClass, Gateway, Route) at a whiteboard and how to split ownership between teams.",
+      "fun_fact": "Restores vintage radios.",
+      "tags": [
+        "gateway-api",
+        "ingress",
+        "networking",
+        "migration"
+      ],
+      "groups": [
+        "Platform Engineering"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Farah Histogram",
+      "working_on": "Migrating dashboards from classic Prometheus histograms to native histograms.",
+      "asks": "Looking for anyone who has sent native histograms through remote write to a hosted backend.",
+      "offers": "PromQL office hours: bring a slow or confusing query and we'll fix it together.",
+      "fun_fact": "Can recite the first 60 digits of pi, which has never once been useful.",
+      "tags": [
+        "prometheus",
+        "promql",
+        "histograms",
+        "dashboards"
+      ],
+      "groups": [
+        "Observability"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Hana Runbook",
+      "working_on": "Rebuilding on-call for a 30-person engineering org after two people left the rotation.",
+      "asks": "How do small teams in a single timezone run a humane on-call?",
+      "offers": "Blameless incident review facilitation; I have a template and a 30-minute format that people actually attend.",
+      "fun_fact": "Writes haiku summaries of every incident.",
+      "tags": [
+        "on-call",
+        "incidents",
+        "postmortems",
+        "culture"
+      ],
+      "groups": [
+        "SRE"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Jomo Tracer",
+      "working_on": "Adding OpenTelemetry auto-instrumentation to a Django monolith at a health-tech startup.",
+      "asks": "Our traces break at the Celery queue boundary; how do I propagate context through async tasks?",
+      "offers": "Django performance profiling; I've found N+1 queries in every codebase I've touched.",
+      "fun_fact": "Once debugged production from a ferry.",
+      "tags": [
+        "opentelemetry",
+        "django",
+        "python",
+        "tracing"
+      ],
+      "groups": [
+        "Observability",
+        "First-time attendees"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Lior Cipher",
+      "working_on": "Rolling out workload identity with SPIFFE and SPIRE so services stop sharing long-lived API keys.",
+      "asks": "How do you bootstrap trust for workloads running outside the cluster, on VMs and in CI runners?",
+      "offers": "mTLS without a service mesh: what you get from SPIRE alone and where it stops.",
+      "fun_fact": "Solves cryptic crosswords in three languages.",
+      "tags": [
+        "spiffe",
+        "identity",
+        "mtls",
+        "zero-trust"
+      ],
+      "groups": [
+        "Security"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Nilufar Epoch",
+      "working_on": "Serving open-weight LLMs with vLLM behind an internal gateway; autoscaling on queue depth.",
+      "asks": "Cold starts take six minutes because of model weight downloads; how are people caching weights on nodes?",
+      "offers": "Benchmarks comparing vLLM, TGI and Triton for our workloads, with the raw numbers and scripts.",
+      "fun_fact": "Named her GPU nodes after constellations.",
+      "tags": [
+        "llm",
+        "inference",
+        "vllm",
+        "autoscaling"
+      ],
+      "groups": [
+        "AI/ML infra",
+        "First-time attendees"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Priya Finalizer",
+      "working_on": "Maintainer of a Kubernetes operator for Postgres; working on safe major-version upgrades.",
+      "asks": "Seeking war stories about finalizers stuck during namespace deletion; I'm writing a guide.",
+      "offers": "Controller-runtime deep dives: reconcile loops, caching, and why your operator is hammering the API server.",
+      "fun_fact": "Owns a rubber duck for every database engine.",
+      "tags": [
+        "operators",
+        "postgres",
+        "controller-runtime",
+        "crds"
+      ],
+      "groups": [
+        "Maintainers",
+        "Platform Engineering"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Quentin Pager",
+      "working_on": "Defining SLOs for a B2B API where every customer has a different idea of 'down'.",
+      "asks": "How do you do per-tenant SLOs without exploding the number of time series?",
+      "offers": "Multi-window burn-rate alerts explained simply, plus the alert rules we run.",
+      "fun_fact": "Has not been paged in 212 days and is nervous about it.",
+      "tags": [
+        "slo",
+        "alerting",
+        "reliability",
+        "multi-tenant"
+      ],
+      "groups": [
+        "SRE"
+      ],
+      "comfort": "one_on_one"
+    },
+    {
+      "name": "Rosalind Overlay",
+      "working_on": "Network policy rollout with Cilium across 25 clusters; default-deny by the end of the year.",
+      "asks": "How do you discover what talks to what before turning on default-deny without breaking production?",
+      "offers": "eBPF basics for people who are scared of it: reading Hubble flows and tracking down drops.",
+      "fun_fact": "Keeps bees and calls the hive a daemonset.",
+      "tags": [
+        "cilium",
+        "ebpf",
+        "network-policy",
+        "hubble"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "Security"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Tamsin Freshman",
+      "working_on": "Second-year student running a homelab k3s cluster on three old laptops; it hosts my club's website.",
+      "asks": "What should I learn after 'I can deploy an app'? Looking for an honest roadmap toward an SRE internship.",
+      "offers": "I can explain Kubernetes to beginners because I was one two months ago. Also happy to take photos of your talk.",
+      "fun_fact": "Her cluster's control plane lives under her bed.",
+      "tags": [
+        "homelab",
+        "k3s",
+        "student",
+        "career"
+      ],
+      "groups": [
+        "Students",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Ulises Shard",
+      "working_on": "Operating self-managed search clusters for log search, 40 TB hot.",
+      "asks": "Thinking about moving logs to object-storage-backed systems; has anyone compared cost at this scale?",
+      "offers": "Shard sizing and index lifecycle tuning; I can look at your _cat output and tell you what hurts.",
+      "fun_fact": "Makes hot sauce and rates it in terabytes.",
+      "tags": [
+        "elasticsearch",
+        "logs",
+        "storage",
+        "search"
+      ],
+      "groups": [
+        "SRE",
+        "Observability"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Vesna Webhook",
+      "working_on": "Replacing 60 custom admission webhooks with ValidatingAdmissionPolicy and CEL.",
+      "asks": "How do you test CEL policies in CI before they block a deploy at 2 a.m.?",
+      "offers": "Kyverno to CEL migration notes: which policies translate cleanly and which don't.",
+      "fun_fact": "Was a stage manager before tech and still says 'places, everyone' before deploys.",
+      "tags": [
+        "admission",
+        "cel",
+        "policy",
+        "kyverno"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "Security"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Xiomara Gradient",
+      "working_on": "Feature store and training data pipelines on Kubernetes with Ray; 2,000 nodes at peak.",
+      "asks": "Our Ray head node keeps dying under object-store pressure; how do others size and isolate it?",
+      "offers": "Spot-instance strategies for training: checkpointing patterns that survive preemption.",
+      "fun_fact": "Salsa dances competitively.",
+      "tags": [
+        "ray",
+        "data-pipelines",
+        "spot",
+        "training"
+      ],
+      "groups": [
+        "AI/ML infra"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Anselm Changelog",
+      "working_on": "Release manager for an open-source CLI; automating changelogs and signed releases.",
+      "asks": "How do you handle security backports across four supported minor versions with two maintainers?",
+      "offers": "Release automation with GoReleaser and conventional commits; I can review your release workflow.",
+      "fun_fact": "Has kept a handwritten diary since 1999, with a changelog at the back.",
+      "tags": [
+        "releases",
+        "cli",
+        "automation",
+        "backports"
+      ],
+      "groups": [
+        "Maintainers"
+      ],
+      "comfort": "one_on_one"
+    },
+    {
+      "name": "Birgit Latency",
+      "working_on": "Chasing p99 latency in a gRPC mesh; currently bisecting between proxy config and kernel settings.",
+      "asks": "Need a second brain on tail latency: is it connection pooling, retries, or noisy neighbours?",
+      "offers": "Reading flame graphs and continuous profiling output; bring a profile and I'll help interpret it.",
+      "fun_fact": "Times her commute to the millisecond.",
+      "tags": [
+        "profiling",
+        "grpc",
+        "performance",
+        "ebpf"
+      ],
+      "groups": [
+        "SRE",
+        "Observability"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Caspian Monorepo",
+      "working_on": "CI for a 900-engineer monorepo; build caching and ephemeral runners on Kubernetes.",
+      "asks": "Autoscaled CI runners take 90 seconds to become ready; how are people keeping warm pools cheap?",
+      "offers": "Bazel remote cache and remote execution setup, including the cache-poisoning mistakes.",
+      "fun_fact": "Builds ships in bottles, incrementally.",
+      "tags": [
+        "ci",
+        "bazel",
+        "build-cache",
+        "runners"
+      ],
+      "groups": [
+        "Platform Engineering"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Delphine Keyring",
+      "working_on": "Migrating secrets from encrypted files in Git to External Secrets backed by a cloud KMS.",
+      "asks": "How do you rotate database credentials without restarting every pod that mounted the old one?",
+      "offers": "Threat-modelling sessions for Kubernetes clusters: a one-hour format you can run with your own team.",
+      "fun_fact": "Picks locks as a hobby, legally.",
+      "tags": [
+        "secrets",
+        "kms",
+        "rotation",
+        "threat-modelling"
+      ],
+      "groups": [
+        "Security"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Eitan Syscall",
+      "working_on": "Runtime threat detection rules with Falco and Tetragon; contributor to community rule sets.",
+      "asks": "Too many false positives from package managers in init containers; how do others tune their rules?",
+      "offers": "Writing your first eBPF-based detection rule and testing it against a replayed attack.",
+      "fun_fact": "Was once locked out of his own house by a smart lock he was auditing.",
+      "tags": [
+        "falco",
+        "tetragon",
+        "runtime-security",
+        "detection"
+      ],
+      "groups": [
+        "Security",
+        "Maintainers"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Fumiko Gauge",
+      "working_on": "Self-service observability: every new service gets dashboards, alerts and SLOs from a template.",
+      "asks": "How do you stop generated dashboards rotting once teams start hand-editing them?",
+      "offers": "Dashboards-as-code with Jsonnet and Perses; a starter library you can fork.",
+      "fun_fact": "Folds an origami crane for every production deploy.",
+      "tags": [
+        "dashboards-as-code",
+        "jsonnet",
+        "perses",
+        "self-service"
+      ],
+      "groups": [
+        "Observability",
+        "Platform Engineering"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Gideon Failover",
+      "working_on": "Multi-region failover for a stateful ticketing system; we run quarterly game days.",
+      "asks": "How do you rehearse a region evacuation without customers noticing?",
+      "offers": "Chaos engineering starter kit: five safe experiments for a team that has never run one.",
+      "fun_fact": "Volunteer firefighter, which explains a lot.",
+      "tags": [
+        "multi-region",
+        "chaos-engineering",
+        "stateful",
+        "game-days"
+      ],
+      "groups": [
+        "SRE"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Hyun Embedding",
+      "working_on": "Tracing LLM agent workflows: token counts, tool calls and retries as spans.",
+      "asks": "Which GenAI semantic conventions are stable enough to build dashboards on?",
+      "offers": "Vector search relevance tuning: hybrid retrieval, reranking and evaluating results with a small labelled set.",
+      "fun_fact": "Has a playlist for every programming language.",
+      "tags": [
+        "llm-observability",
+        "agents",
+        "vector-search",
+        "evaluation"
+      ],
+      "groups": [
+        "AI/ML infra",
+        "Observability"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Idris Taint",
+      "working_on": "Node autoscaling with Karpenter for mixed on-demand and spot fleets.",
+      "asks": "Consolidation keeps disrupting long-running batch pods; what disruption budgets do people use?",
+      "offers": "Right-sizing workshops: using usage data and VPA recommendations to cut a cluster bill by a third.",
+      "fun_fact": "Grows chillies on his desk under a grow light.",
+      "tags": [
+        "karpenter",
+        "autoscaling",
+        "spot",
+        "cost"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "SRE"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Jacinta Triage",
+      "working_on": "Community manager turned maintainer for a docs-heavy observability project; first time at this conference.",
+      "asks": "How do maintainers say no to feature requests kindly? I end up saying yes to everything.",
+      "offers": "Docs information architecture: I can review your getting-started page and cut it in half.",
+      "fun_fact": "Former librarian; still shushes people in stand-up.",
+      "tags": [
+        "docs",
+        "community",
+        "maintainers",
+        "boundaries"
+      ],
+      "groups": [
+        "Maintainers",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Kwame Registry",
+      "working_on": "Running an internal Harbor registry with replication across four regions and vulnerability gates.",
+      "asks": "Image pulls stall during node scale-up storms; who has tried peer-to-peer distribution or pull-through caches at scale?",
+      "offers": "Vulnerability triage that doesn't drown developers: scoping by reachability and base-image ownership.",
+      "fun_fact": "Roasts his own coffee and tags each batch with a digest.",
+      "tags": [
+        "harbor",
+        "registry",
+        "images",
+        "vulnerabilities"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "Security"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Linnea Bisect",
+      "working_on": "Master's thesis on detecting performance regressions in CI with statistical change-point detection.",
+      "asks": "I need real benchmark time series from open-source projects, and someone to tell me if my approach is naive.",
+      "offers": "Statistics for engineers: I can sanity-check your A/B test or benchmark methodology.",
+      "fun_fact": "Knits scarves whose stripes encode commit history.",
+      "tags": [
+        "benchmarking",
+        "statistics",
+        "ci",
+        "research"
+      ],
+      "groups": [
+        "Students"
+      ],
+      "comfort": "one_on_one"
+    },
+    {
+      "name": "Mateus Daemon",
+      "working_on": "Sysadmin moving from VMs and Ansible to Kubernetes at a university IT department.",
+      "asks": "What replaces my Ansible patching routine for nodes? How do people upgrade clusters without a maintenance window?",
+      "offers": "Linux fundamentals: systemd, networking and storage debugging from 15 years of being paged.",
+      "fun_fact": "Still has a working pager from 2004.",
+      "tags": [
+        "linux",
+        "ansible",
+        "upgrades",
+        "sysadmin"
+      ],
+      "groups": [
+        "SRE",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Noor Inference",
+      "working_on": "Guardrails and data-loss prevention in front of internal LLM endpoints.",
+      "asks": "How are you keeping secrets and customer data out of prompts and traces?",
+      "offers": "Red-teaming playbook for LLM apps: prompt-injection test cases you can run in CI.",
+      "fun_fact": "Does stand-up comedy about compliance.",
+      "tags": [
+        "llm-security",
+        "guardrails",
+        "dlp",
+        "red-teaming"
+      ],
+      "groups": [
+        "AI/ML infra",
+        "Security"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Olumide Manifest",
+      "working_on": "Replacing 1,500 hand-written Helm values files with a typed configuration language.",
+      "asks": "KCL, CUE or just better Helm? I'd love to hear from someone who regretted their choice.",
+      "offers": "Helm chart testing: unit tests, schema validation and diffing rendered output in pull requests.",
+      "fun_fact": "Has alphabetised his spice rack and his YAML keys.",
+      "tags": [
+        "helm",
+        "cue",
+        "kcl",
+        "configuration"
+      ],
+      "groups": [
+        "Platform Engineering"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Paloma Uptime",
+      "working_on": "Part-time SRE intern and student; building a status page that reads from Prometheus.",
+      "asks": "How do you decide what counts as an outage on a public status page versus an internal blip?",
+      "offers": "Frontend help: I can make your internal tool not look like 2009. React and accessibility basics.",
+      "fun_fact": "Skateboards to lectures.",
+      "tags": [
+        "status-page",
+        "react",
+        "intern",
+        "prometheus"
+      ],
+      "groups": [
+        "SRE",
+        "Students"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Rafiq Exemplar",
+      "working_on": "Correlating metrics, logs and traces for a video streaming platform; exemplars everywhere.",
+      "asks": "Half our services log without trace IDs; what's the least painful way to retrofit them?",
+      "offers": "Structured logging conventions and a log-to-metric pipeline that cut our log volume by 60 percent.",
+      "fun_fact": "Watches films at 1.0x speed on principle.",
+      "tags": [
+        "logging",
+        "correlation",
+        "exemplars",
+        "streaming"
+      ],
+      "groups": [
+        "Observability"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Saoirse Canary",
+      "working_on": "Feature flags and safe releases at a 20-person startup; we just adopted OpenFeature.",
+      "asks": "When do feature flags replace canary deploys, and when do you need both?",
+      "offers": "Startup platform on a budget: what to build, what to buy, and what to skip until you have 50 engineers.",
+      "fun_fact": "Keeps actual canaries. Two of them.",
+      "tags": [
+        "feature-flags",
+        "openfeature",
+        "startup",
+        "releases"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "First-time attendees"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Tobias Kernel",
+      "working_on": "Maintaining an immutable Linux distribution for Kubernetes nodes; working on faster boot and upgrades.",
+      "asks": "Looking for users with bare-metal fleets to test our new A/B upgrade path.",
+      "offers": "Bare-metal Kubernetes: PXE boot, BGP load balancing and what to do when a disk dies.",
+      "fun_fact": "Has a rack server as a coffee table.",
+      "tags": [
+        "bare-metal",
+        "immutable-os",
+        "upgrades",
+        "bgp"
+      ],
+      "groups": [
+        "Maintainers",
+        "SRE"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Uma Vector",
+      "working_on": "PhD student researching scheduling for inference workloads with latency SLOs.",
+      "asks": "I need production traces of inference request patterns, even anonymised, to validate my simulator.",
+      "offers": "Reading-group style explanations of recent scheduling papers; I can summarise what matters for practitioners.",
+      "fun_fact": "Has cited a conference hallway conversation in a paper.",
+      "tags": [
+        "research",
+        "scheduling",
+        "inference",
+        "simulation"
+      ],
+      "groups": [
+        "AI/ML infra",
+        "Students"
+      ],
+      "comfort": "one_on_one"
+    },
+    {
+      "name": "Viktor Mutex",
+      "working_on": "Core contributor to a distributed key-value store; currently fixing a rare leader-election bug.",
+      "asks": "Looking for anyone with Jepsen-style testing experience to review our linearizability test harness.",
+      "offers": "Raft explained with paper cut-outs, and how to debug a slow etcd: disk latency, defrag and compaction.",
+      "fun_fact": "Juggles, which he says is just concurrency.",
+      "tags": [
+        "etcd",
+        "raft",
+        "distributed-systems",
+        "testing"
+      ],
+      "groups": [
+        "Maintainers"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Wanjiru Scraper",
+      "working_on": "Bootcamp graduate building a Prometheus exporter for a solar-powered sensor network.",
+      "asks": "How do I monitor devices that are offline most of the day? Pull-based scraping doesn't fit.",
+      "offers": "IoT and low-bandwidth networking experience; also Swahili and French if you want to practise.",
+      "fun_fact": "Built her first weather station from a bicycle dynamo.",
+      "tags": [
+        "prometheus",
+        "exporters",
+        "iot",
+        "edge"
+      ],
+      "groups": [
+        "Observability",
+        "Students"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Xavi Toleration",
+      "working_on": "Multi-cluster platform for robotics simulation workloads; a mix of CPU, GPU and FPGA nodes.",
+      "asks": "How do you expose unusual hardware to users without making them learn taints and node selectors?",
+      "offers": "Cluster API on bare metal and how we template node pools for odd hardware.",
+      "fun_fact": "Owns a robot vacuum with a kubeconfig.",
+      "tags": [
+        "cluster-api",
+        "bare-metal",
+        "heterogeneous-hardware",
+        "robotics"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "AI/ML infra"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Yara Nonce",
+      "working_on": "Application security engineer new to Kubernetes; just inherited RBAC for 30 clusters.",
+      "asks": "Our RBAC is a mess of copy-pasted ClusterRoleBindings; where do I even start auditing who can do what?",
+      "offers": "Web app security reviews and OAuth/OIDC flows; I can spot broken token validation quickly.",
+      "fun_fact": "Has never reused a password, including at age nine.",
+      "tags": [
+        "rbac",
+        "appsec",
+        "oidc",
+        "audit"
+      ],
+      "groups": [
+        "Security",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Zane Reconcile",
+      "working_on": "Flux-based fleet management for 300 edge clusters in retail stores.",
+      "asks": "How do you roll out config changes to hundreds of clusters in waves and stop automatically on failure?",
+      "offers": "Edge Kubernetes operations: flaky networks, tiny nodes and remote debugging without SSH.",
+      "fun_fact": "Has rebooted a cluster from a supermarket car park.",
+      "tags": [
+        "flux",
+        "edge",
+        "fleet",
+        "gitops"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "Maintainers"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Amaru Backoff",
+      "working_on": "Reducing retry storms in a microservice mesh after a cascading failure last quarter.",
+      "asks": "What are good defaults for retry budgets and circuit breakers that don't need per-service tuning?",
+      "offers": "Load-shedding and backpressure patterns, with a small demo app that shows metastable failure.",
+      "fun_fact": "Climbs mountains and always plans the descent first.",
+      "tags": [
+        "resilience",
+        "retries",
+        "load-shedding",
+        "mesh"
+      ],
+      "groups": [
+        "SRE"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Bodhi Tarball",
+      "working_on": "Undergrad building a WebAssembly plugin system for a class project; curious about WASM on Kubernetes.",
+      "asks": "Is server-side WebAssembly actually used in production? I'd love to see a real use case.",
+      "offers": "Rust basics and enthusiasm; happy to test your project's onboarding as a genuine first-time user.",
+      "fun_fact": "Can solve a Rubik's cube one-handed.",
+      "tags": [
+        "webassembly",
+        "rust",
+        "student",
+        "plugins"
+      ],
+      "groups": [
+        "Students",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Cleo Digest",
+      "working_on": "SBOM generation and vulnerability SLAs for 2,000 container images.",
+      "asks": "How do you get developers to act on SBOM findings rather than ignore the report?",
+      "offers": "Distroless and minimal base image migration: how we cut CVE counts by 80 percent without breaking debugging.",
+      "fun_fact": "Reads ingredient labels for fun.",
+      "tags": [
+        "sbom",
+        "vulnerabilities",
+        "distroless",
+        "base-images"
+      ],
+      "groups": [
+        "Security",
+        "Platform Engineering"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Dmitri Semaphore",
+      "working_on": "Multi-tenancy with virtual clusters for 80 internal teams sharing one large fleet.",
+      "asks": "Where does namespace-per-team stop being enough? Looking for the tipping point others hit.",
+      "offers": "Tenant isolation checklist: quotas, priority classes, network policy and the API-server fairness settings people forget.",
+      "fun_fact": "Conducts an amateur orchestra.",
+      "tags": [
+        "multi-tenancy",
+        "vcluster",
+        "quotas",
+        "isolation"
+      ],
+      "groups": [
+        "Platform Engineering"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Esme Baggage",
+      "working_on": "Migrating from a vendor agent to OpenTelemetry Collectors as DaemonSets across 500 nodes.",
+      "asks": "How do you roll out Collector config changes safely? One bad pipeline took out all our logs.",
+      "offers": "Collector deployment patterns: agent versus gateway, memory limiter settings and sizing rules of thumb.",
+      "fun_fact": "Has never checked a suitcase.",
+      "tags": [
+        "opentelemetry",
+        "collector",
+        "daemonset",
+        "migration"
+      ],
+      "groups": [
+        "Observability",
+        "SRE"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Felix Checksum",
+      "working_on": "Backup and disaster recovery for stateful workloads; contributor to a volume snapshot tool.",
+      "asks": "Who actually tests restores? I want to compare restore-drill automation.",
+      "offers": "Running databases on Kubernetes without fear: storage classes, PodDisruptionBudgets and the upgrade order that works.",
+      "fun_fact": "Keeps three copies of his wedding photos in two countries.",
+      "tags": [
+        "backup",
+        "disaster-recovery",
+        "storage",
+        "databases"
+      ],
+      "groups": [
+        "SRE",
+        "Maintainers"
+      ],
+      "comfort": "small_groups"
+    },
+    {
+      "name": "Greta Prompt",
+      "working_on": "Building an internal coding assistant on a self-hosted model; first time running anything on Kubernetes.",
+      "asks": "Should a five-person team run its own inference at all, or is that a trap? I want an honest cost comparison.",
+      "offers": "Prompt evaluation harnesses and how to build a regression suite for LLM outputs.",
+      "fun_fact": "Writes limericks about failing tests.",
+      "tags": [
+        "llm",
+        "self-hosting",
+        "evaluation",
+        "coding-assistant"
+      ],
+      "groups": [
+        "AI/ML infra",
+        "First-time attendees"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Hakan Linter",
+      "working_on": "Maintainer of a Kubernetes manifest linter; adding rules for deprecated APIs.",
+      "asks": "Which deprecated API migrations bit you hardest in the last two upgrades? I'm prioritising rules.",
+      "offers": "Upgrade readiness reviews: I can scan your manifests for removed APIs and risky defaults.",
+      "fun_fact": "Irons his conference T-shirts.",
+      "tags": [
+        "linting",
+        "deprecations",
+        "upgrades",
+        "manifests"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "Maintainers"
+      ],
+      "comfort": "open"
+    },
+    {
+      "name": "Isolde Rebase",
+      "working_on": "Student and new reviewer in a CNCF project's docs group, after a summer mentorship programme.",
+      "asks": "How do I move from docs contributions to code when nobody has seen me write any?",
+      "offers": "How to apply for open-source mentorship programmes and write a proposal that gets accepted.",
+      "fun_fact": "Speaks four languages and reviews docs in three.",
+      "tags": [
+        "docs",
+        "mentorship",
+        "internships",
+        "open-source"
+      ],
+      "groups": [
+        "Students",
+        "Maintainers"
+      ],
+      "comfort": "one_on_one"
+    },
+    {
+      "name": "Pilar Cronjob",
+      "working_on": "Data engineer moving 300 nightly Airflow jobs onto Kubernetes.",
+      "asks": "Jobs silently overlap when one runs long; what's the right way to prevent double runs and get alerted on misses?",
+      "offers": "SQL and data pipeline debugging; dbt project structure for teams that are just starting.",
+      "fun_fact": "Sets seven alarms every morning, one minute apart.",
+      "tags": [
+        "airflow",
+        "data-engineering",
+        "batch",
+        "dbt"
+      ],
+      "groups": [
+        "Platform Engineering",
+        "First-time attendees"
+      ],
+      "comfort": "small_groups"
+    }
+  ]
+}

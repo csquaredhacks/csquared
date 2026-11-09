@@ -1,0 +1,42 @@
+{{- if .Values.tunnel.enabled }}
+# Public HTTPS URL without an Ingress, a domain or an account: a Cloudflare "quick tunnel".
+# cloudflared dials out to Cloudflare and gets a random https://<words>.trycloudflare.com URL.
+#
+# It is a separate Deployment on purpose: the URL changes every time this pod restarts, which
+# would break the printed QR codes. So nothing in this pod template depends on the app's image
+# tag, there is no checksum/rollme annotation, and there are no probes that could restart it.
+# Redeploying the app (`make deploy`) leaves this pod untouched.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hallway-tunnel
+  labels:
+    {{- include "hallway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tunnel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "hallway.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tunnel
+  template:
+    metadata:
+      labels:
+        {{- include "hallway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tunnel
+        app.kubernetes.io/part-of: hallway
+    spec:
+      containers:
+        - name: cloudflared
+          image: {{ .Values.tunnel.image }}
+          args: ["tunnel", "--no-autoupdate", "--url", "http://hallway:8000"]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            {{- include "hallway.containerSecurityContext" . | nindent 12 }}
+            runAsUser: 65532  # the image's "nonroot" user, as a number so runAsNonRoot can verify it
+{{- end }}

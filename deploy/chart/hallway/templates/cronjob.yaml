@@ -1,0 +1,41 @@
+# The matcher: the same image as the API, run as a one-shot job on a schedule.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hallway-matcher
+  labels:
+    {{- include "hallway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: matcher
+spec:
+  schedule: {{ .Values.matcher.schedule | quote }}
+  concurrencyPolicy: Forbid  # never run two matchers at once; a slow run skips the next tick
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 0             # no retries: the next scheduled run is the retry
+      activeDeadlineSeconds: 100  # kill a hung run before it blocks the following ones
+      template:
+        metadata:
+          labels:
+            {{- include "hallway.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: matcher
+            app.kubernetes.io/part-of: hallway
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: matcher
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["opentelemetry-instrument", "python", "-m", "hallway.matcher"]
+              envFrom:
+                - secretRef:
+                    name: {{ .Values.secretName }}
+              env:
+                - name: OTEL_SERVICE_NAME
+                  value: hallway-matcher
+                {{- include "hallway.env" . | nindent 16 }}
+              resources:
+                {{- toYaml .Values.matcher.resources | nindent 16 }}
+              securityContext:
+                {{- include "hallway.containerSecurityContext" . | nindent 16 }}

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: hallway
+description: Hallway conference networking app - API + web, matcher CronJob, and a public tunnel
+type: application
+version: 0.1.0        # chart version
+appVersion: "0.1.0"   # informational; the image that actually runs is set by image.tag
