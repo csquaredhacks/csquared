@@ -2,6 +2,7 @@
 Each test uses its own made-up topic words so people from other tests don't match."""
 
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 from hallway import crews, es
 
@@ -30,6 +31,57 @@ def test_nothing_happens_until_you_accept(person):
     assert joined["status"] == "member"
     assert [m["id"] for m in joined["crew"]["members"]] == [ana_me["id"]]
     assert ben.get("/api/crew").json()["crew"]["members"][0]["id"] == ana_me["id"]
+
+
+def test_concurrent_suggestions_create_one_crew_for_a_pair(person, monkeypatch):
+    (ana, ana_me), _ = _pair(person, "racecrew")
+    client = es.get_client()
+    barrier = Barrier(2)
+    original_index = client.index
+
+    def synchronized_index(*args, **kwargs):
+        if kwargs.get("index") == es.CREWS:
+            barrier.wait(timeout=5)
+        return original_index(*args, **kwargs)
+
+    monkeypatch.setattr(client, "index", synchronized_index)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: crews.suggest(client, ana_me), range(2)))
+
+    assert results[0]["id"] == results[1]["id"]
+    stored = client.get(index=es.CREWS, id=results[0]["id"])
+    assert stored["_version"] == 1
+
+
+def test_suggestion_create_conflict_returns_existing_crew(monkeypatch):
+    class CreateConflict(Exception):
+        pass
+
+    class Client:
+        def __init__(self):
+            self.index_kwargs = None
+
+        def search(self, **_kwargs):
+            return {"hits": {"hits": []}}
+
+        def index(self, **kwargs):
+            self.index_kwargs = kwargs
+            raise CreateConflict
+
+    client = Client()
+    me = {"id": "z-person"}
+    other = {"id": "a-person"}
+    existing = {"id": "a-person-z-person", "members": [], "invited": []}
+    monkeypatch.setattr(crews, "ConflictError", CreateConflict)
+    monkeypatch.setattr(crews, "find_matches", lambda *_args, **_kwargs: [(other, 1, "match")])
+    monkeypatch.setattr(crews, "_get", lambda _client, _crew_id: (existing, 0, 1))
+
+    result = crews.suggest(client, me)
+
+    assert result == existing
+    assert client.index_kwargs["id"] == existing["id"]
+    assert client.index_kwargs["document"]["invited"] == [me["id"], other["id"]]
+    assert client.index_kwargs["op_type"] == "create"
 
 
 def test_a_second_person_joins_the_first_persons_crew(person):

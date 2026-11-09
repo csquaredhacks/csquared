@@ -18,8 +18,6 @@ Capacity is enforced on accept with optimistic concurrency (if_seq_no/if_primary
 so two people accepting the last seat at the same moment cannot both get it.
 """
 
-import secrets
-
 from elasticsearch import ConflictError, Elasticsearch, NotFoundError
 
 from . import es
@@ -138,7 +136,7 @@ def suggest(client: Elasticsearch, me: dict) -> dict | None:
         if crew_of(client, other["id"]) or pending_for(client, other["id"]):
             continue
         crew = {
-            "id": secrets.token_hex(6),
+            "id": "-".join(sorted([me["id"], other["id"]])),
             "members": [],
             "companions": [],
             "invited": [me["id"], other["id"]],
@@ -146,7 +144,16 @@ def suggest(client: Elasticsearch, me: dict) -> dict | None:
             "meeting": None,
             "created_at": es.now(),
         }
-        _save(client, crew)
+        try:
+            client.index(
+                index=es.CREWS,
+                id=crew["id"],
+                document=crew,
+                op_type="create",
+                refresh=True,
+            )
+        except ConflictError:
+            return _get(client, crew["id"])[0]
         return crew
     return None
 
