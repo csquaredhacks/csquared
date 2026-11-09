@@ -75,6 +75,12 @@ export default function Register() {
     }
   }
 
+  /** One tap takes the person to the short form, which is the only step. */
+  function startForm() {
+    document.getElementById("join-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("name")?.focus({ preventScroll: true });
+  }
+
   /** A resume fills the fields it can. Anything it could not read stays blank. */
   function fillFromResume(data: ResumeData) {
     setForm((prev) => ({
@@ -138,19 +144,26 @@ export default function Register() {
           {signedInWith
             ? "You are signed in. Tell us a little about you and you are done."
             : providers.length > 0
-            ? "Pick how you sign in, then tell us a little about you. No password, no account."
-            : "Tell us a little about you. No password, no account."}
+            ? "Sign in with one tap, or fill in one short form. No password."
+            : "One short form and you are in. No password, no account, and no sign-in with another service."}
         </p>
 
         <ResumeIngest onFill={fillFromResume} />
 
-        {!signedInWith && providers.length > 0 && (
+        {/* Only buttons that really work are shown: a provider is listed once the server has
+            its client id and secret. With none, there is one Get started button. */}
+        {!signedInWith && (providers.length > 0 ? (
           <>
             <ProviderButtons providers={providers} />
             <ErrorNote message={signinError} />
-            <p className="divider" role="separator">or tell us about you</p>
           </>
-        )}
+        ) : (
+          <button type="button" className="provider-btn" onClick={startForm}>
+            Get started
+          </button>
+        ))}
+
+        {!signedInWith && <h3 className="divider">{providers.length > 0 ? "Or tell us about you" : "Tell us about you"}</h3>}
 
         <form onSubmit={submit} className="form" id="join-form">
           {signedInWith && (
