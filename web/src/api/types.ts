@@ -10,6 +10,10 @@ export type Goals = components["schemas"]["Goals"];
 export type Crowd = components["schemas"]["Crowd"];
 
 export type Comfort = "open" | "small_groups" | "one_on_one";
+/** The sign in buttons. Which ones a server offers is in Config.signin. */
+export type SigninProvider = components["schemas"]["PendingSignin"]["provider"];
+/** Someone signed in and has not sent the profile form yet. */
+export type PendingSignin = components["schemas"]["PendingSignin"];
 
 /** Body of POST /api/attendees */
 export interface AttendeeIn {
@@ -44,6 +48,8 @@ export interface Me extends Attendee {
   recovery_code: string;
   on_graph: boolean;
   show_groups: boolean;
+  /** How I joined, if I used a sign in button. Only I am told. */
+  signin_provider: SigninProvider | null;
 }
 
 export interface Match {
@@ -143,6 +149,8 @@ export interface Config {
   rooms: string[];
   chaos_enabled: boolean;
   rum: { url: string; token: string } | null;
+  /** The sign in buttons that are set up on this server. Empty: the form only. */
+  signin: SigninProvider[];
 }
 
 export interface Health {

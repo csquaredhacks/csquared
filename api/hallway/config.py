@@ -24,6 +24,15 @@ class Settings:
         self.rum_url = os.getenv("DASH0_RUM_URL", "")
         self.rum_token = os.getenv("DASH0_RUM_TOKEN", "")
         self.cookie_secure = _flag("COOKIE_SECURE")
+        # Sign in with Google and LinkedIn. A button only appears when both of its
+        # values are set; with none set, people join with the plain form.
+        self.google_client_id = os.getenv("GOOGLE_CLIENT_ID", "")
+        self.google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET", "")
+        self.linkedin_client_id = os.getenv("LINKEDIN_CLIENT_ID", "")
+        self.linkedin_client_secret = os.getenv("LINKEDIN_CLIENT_SECRET", "")
+        # The address people open, e.g. https://hallway.example. Only needed when it
+        # cannot be read from the request; see signin.redirect_uri.
+        self.public_url = os.getenv("PUBLIC_URL", "").strip().rstrip("/")
         # Built web app. Default is <repo>/web/dist for local runs; the image sets WEB_DIST.
         default_dist = Path(__file__).resolve().parents[2] / "web" / "dist"
         self.web_dist = Path(os.getenv("WEB_DIST", str(default_dist)))

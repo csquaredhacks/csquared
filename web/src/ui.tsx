@@ -1,34 +1,12 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import type { Attendee } from "./api/types";
+import type { Attendee, SigninProvider } from "./api/types";
 
-/** How the person chose to sign in. Hallway has no passwords and no OAuth yet:
-    the choice is the entry to the same one step profile form, and it is kept
-    on this device only so the Me page can show how they joined. */
-export type SigninProvider = "LinkedIn" | "Google";
-
-const PROVIDER_KEY = "hallway.signin_provider";
-
-export function getSigninProvider(): SigninProvider | null {
-  try {
-    const value = window.localStorage.getItem(PROVIDER_KEY);
-    return value === "LinkedIn" || value === "Google" ? value : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setSigninProvider(provider: SigninProvider | null) {
-  try {
-    if (provider) window.localStorage.setItem(PROVIDER_KEY, provider);
-    else window.localStorage.removeItem(PROVIDER_KEY);
-  } catch {
-    // Private mode or blocked storage: joining still works, the badge just will not show.
-  }
-}
+/** The names people know the providers by. The API uses the lowercase keys. */
+export const PROVIDER_NAMES: Record<SigninProvider, string> = { linkedin: "LinkedIn", google: "Google" };
 
 export function ProviderMark({ provider }: { provider: SigninProvider }) {
-  if (provider === "LinkedIn") {
+  if (provider === "linkedin") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <rect width="24" height="24" rx="5" fill="#0a66c2" />
@@ -46,26 +24,19 @@ export function ProviderMark({ provider }: { provider: SigninProvider }) {
   );
 }
 
-/** Apple Glass style sign in buttons: one tap picks how you join, then the
-    short form below finishes it. No password, no account. */
-export function ProviderButtons({ picked, onPick }: {
-  picked: SigninProvider | null;
-  onPick: (provider: SigninProvider) => void;
-}) {
-  const providers: SigninProvider[] = ["LinkedIn", "Google"];
+/** Apple Glass style sign in buttons. Each one is a real link: the browser leaves for
+    the provider's own sign in page and comes back signed in. Someone who has been here
+    before lands in their profile; someone new gets the short form with their name filled in.
+    `providers` is what this server has set up (GET /api/config). */
+export function ProviderButtons({ providers }: { providers: SigninProvider[] }) {
   return (
     <ul className="provider-list">
       {providers.map((provider) => (
         <li key={provider}>
-          <button
-            type="button"
-            className={`provider-btn ${provider.toLowerCase()}`}
-            aria-pressed={picked === provider}
-            onClick={() => onPick(provider)}
-          >
+          <a className={`provider-btn ${provider}`} href={`/api/signin/${provider}`}>
             <ProviderMark provider={provider} />
-            Continue with {provider}
-          </button>
+            Continue with {PROVIDER_NAMES[provider]}
+          </a>
         </li>
       ))}
     </ul>
