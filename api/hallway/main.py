@@ -36,7 +36,7 @@ for module in (
 
 @app.get("/healthz")
 def healthz() -> Health:
-    """Always 200 while alive; `es` is green only when the required indices exist."""
+    """Always 200 while the process is alive; `es` says whether the datastore is reachable."""
     try:
         client = es.get_client()
         reachable = client.ping() and client.indices.exists(
