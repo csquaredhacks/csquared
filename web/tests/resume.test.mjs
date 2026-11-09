@@ -18,3 +18,14 @@ test("finds skills in experience without inventing an ask", () => {
   assert.equal(result.asks, "");
   assert.ok(!parseResumeText("We go to conferences").tags.includes("Go"));
 });
+
+
+test("goals stop the previous section instead of becoming skills or summary", () => {
+  const skills = parseResumeText("SKILLS\nPython\nLooking for\nan internship\nExperience\nBuilt apps");
+  assert.deepEqual(skills.tags, ["Python"]);
+  assert.equal(skills.asks, "an internship");
+  assert.doesNotMatch(skills.offers, /internship|looking for/i);
+  const summary = parseResumeText("SUMMARY\nCloud developer.\nGOALS\nFind a mentor");
+  assert.equal(summary.working_on, "Cloud developer.");
+  assert.equal(summary.asks, "Find a mentor");
+});
