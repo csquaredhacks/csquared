@@ -29,4 +29,13 @@ test("goal headings stop earlier sections", () => {
     assert.deepEqual(skills.tags, ["Python", "Rust"]);
     assert.equal(skills.asks, "Find a mentor.");
   }
+
+  const skills = parseResumeText("SKILLS\nPython\nLooking for\nan internship\nExperience\nBuilt apps");
+  assert.deepEqual(skills.tags, ["Python"]);
+  assert.equal(skills.asks, "an internship");
+  assert.doesNotMatch(skills.offers, /internship|looking for/i);
+
+  const summary = parseResumeText("SUMMARY\nCloud developer.\nGOALS\nFind a mentor");
+  assert.equal(summary.working_on, "Cloud developer.");
+  assert.equal(summary.asks, "Find a mentor");
 });
