@@ -12,7 +12,7 @@ KEYS = {
 def test_refresh_funnel_uses_only_count_queries(monkeypatch):
     class Client:
         def count(self, *, index):
-            return {es.ATTENDEES: 8, es.CHECKINS: 3}[index]
+            return {"count": {es.ATTENDEES: 8, es.CHECKINS: 3}[index]}
 
         def search(self, *, index, size, **kwargs):
             assert size == 0
