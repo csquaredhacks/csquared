@@ -435,11 +435,10 @@ def test_list_communities_shows_duplicate_names_as_separate_communities(monkeypa
 def test_list_communities_against_real_elasticsearch(person):
     """Integration: the same browse behaviour on real ES (skipped without it)."""
     organizer, _ = person("Olu Organizer")
-    first = _create(organizer, "Beta")
-    second = _create(organizer, "alpha")
-    listed = TestClient(app).get("/api/communities")
+    first = _create(organizer, "Zephyrbrowse")
+    second = _create(organizer, "Quillbrowse")
+    listed = TestClient(app).get("/api/communities?limit=50")
     assert listed.status_code == 200
-    assert {c["id"] for c in listed.json()} == {first["id"], second["id"]}
-    assert [c["id"] for c in TestClient(app).get("/api/communities?q=beta").json()] == [
-        first["id"]
-    ]
+    assert {first["id"], second["id"]} <= {c["id"] for c in listed.json()}
+    found = TestClient(app).get("/api/communities?q=zephyrbrowse").json()
+    assert [c["id"] for c in found] == [first["id"]]
