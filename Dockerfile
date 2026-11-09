@@ -10,6 +10,13 @@ RUN npm ci
 COPY web/ ./
 RUN npm run build
 
+# Build the Nuxt welcome experience as static files on the same origin as Hallway.
+WORKDIR /welcome
+COPY welcome/package.json welcome/package-lock.json ./
+RUN npm ci
+COPY welcome/ ./
+RUN npm run build && mkdir -p /web/dist/welcome && cp -a .output/public/. /web/dist/welcome/
+
 # ---- Stage 2: the runtime image ----
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
