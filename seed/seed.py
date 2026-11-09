@@ -47,6 +47,11 @@ def parse_args() -> argparse.Namespace:
         "--crew-share", type=float, default=0.8, help="share of attendees who look for a crew"
     )
     p.add_argument("--checkins", action="store_true", help="check everyone into a random room")
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="force re-registering attendees even if already present",
+    )
     p.add_argument("--seed", type=int, default=7, help="random seed: same seed, same graph")
     p.add_argument("--delay", type=float, default=0, help="seconds to wait between requests")
     return p.parse_args()
@@ -81,7 +86,39 @@ def main() -> None:
     # `people` keeps each attendee's id, communities and logged-in client.
     people: list[dict] = []
     if args.phase in ("before", "all"):
-        for attendee in json.loads(DATA.read_text())["attendees"]:
+        existing_names = set()
+        if not args.force:
+            try:
+                probe = call(httpx.Client(base_url=base, timeout=30), "GET", "/api/graph")
+                if probe and "nodes" in probe:
+                    existing_names = {n["name"] for n in probe["nodes"] if "name" in n}
+            except Exception:
+                existing_names = set()
+
+        attendees_to_seed = json.loads(DATA.read_text())["attendees"]
+        if existing_names and not args.force:
+            seeded_names = {a["name"] for a in attendees_to_seed}
+            overlap = existing_names & seeded_names
+            if len(overlap) >= len(attendees_to_seed) // 2:
+                print(
+                    f"Notice: {len(overlap)} of {len(attendees_to_seed)} seeded attendees "
+                    f"already exist on {base}. Skipping re-registration to prevent duplicate "
+                    "profiles. Use --force to override."
+                )
+                if SESSIONS.exists():
+                    for saved in json.loads(SESSIONS.read_text()):
+                        client = httpx.Client(base_url=base, timeout=30)
+                        call(client, "POST", "/api/recover", {"code": saved["code"]})
+                        people.append(
+                            {
+                                "id": saved["id"],
+                                "groups": set(saved["groups"]),
+                                "client": client,
+                            }
+                        )
+                attendees_to_seed = []
+
+        for attendee in attendees_to_seed:
             client = httpx.Client(base_url=base, timeout=30)
             # These people are fictional, so they all opt in to the public graph.
             me = call(
@@ -96,8 +133,12 @@ def main() -> None:
                     "client": client,
                 }
             )
-        saved = [{"id": p["id"], "groups": sorted(p["groups"]), "code": p["code"]} for p in people]
-        SESSIONS.write_text(json.dumps(saved))
+        if attendees_to_seed:
+            saved = [
+                {"id": p["id"], "groups": sorted(p["groups"]), "code": p["code"]}
+                for p in people
+            ]
+            SESSIONS.write_text(json.dumps(saved))
     else:
         if not SESSIONS.exists():
             sys.exit('Run with "--phase before" first: there is nobody to log back in.')
