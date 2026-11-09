@@ -65,7 +65,7 @@ async function extractPdfText(file: File): Promise<string> {
 /** Drop a resume, or paste its text, and the form fills itself in.
     Nothing leaves the browser: the file is read here and only the filled
     form is ever sent to Hallway. */
-export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => void }) {
+export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => string[] }) {
   const [status, setStatus] = useState("");
   const [dragging, setDragging] = useState(false);
   const [paste, setPaste] = useState("");
@@ -84,8 +84,12 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => void })
       setStatus("Could not find a name, summary or skills in that text. Fill the form in by hand, it is short.");
       return;
     }
-    onFill(data);
-    setStatus(`Filled from your resume: ${filled.join(", ")}. Review and edit the suggestions below. Your needs and privacy choices stay yours.`);
+    const applied = onFill(data);
+    if (applied.length === 0) {
+      setStatus("Your form already has these details. Nothing new was added.");
+      return;
+    }
+    setStatus(`Filled from your resume: ${applied.join(", ")}. Review and edit the suggestions below. Your needs and privacy choices stay yours.`);
   }
 
   async function handleFile(file: File | undefined) {

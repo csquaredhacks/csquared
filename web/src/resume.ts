@@ -10,7 +10,7 @@ export interface ResumeData {
   groups: string[];
 }
 
-const HEADINGS = ["summary", "about", "profile", "objective", "skills", "technologies", "technical skills", "experience", "work experience", "education", "projects", "contact"];
+const HEADINGS = ["summary", "about", "profile", "objective", "skills", "technologies", "technical skills", "experience", "work experience", "education", "projects", "contact", "looking for", "interests", "goals"];
 
 /** The lines under a heading, up to the next heading. Also handles "Skills: a, b" on one line. */
 function sectionText(text: string, names: string[]): string {

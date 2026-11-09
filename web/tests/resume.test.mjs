@@ -18,3 +18,15 @@ test("finds skills in experience without inventing an ask", () => {
   assert.equal(result.asks, "");
   assert.ok(!parseResumeText("We go to conferences").tags.includes("Go"));
 });
+
+test("goal headings stop earlier sections", () => {
+  for (const heading of ["LOOKING FOR", "INTERESTS", "GOALS"]) {
+    const summary = parseResumeText(`Amira Flores\nSUMMARY\nBuilding useful tools.\n${heading}\nFind a mentor.`);
+    assert.equal(summary.working_on, "Building useful tools.");
+    assert.equal(summary.asks, "Find a mentor.");
+
+    const skills = parseResumeText(`Amira Flores\nSKILLS\nPython, Rust\n${heading}\nFind a mentor.`);
+    assert.deepEqual(skills.tags, ["Python", "Rust"]);
+    assert.equal(skills.asks, "Find a mentor.");
+  }
+});
