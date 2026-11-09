@@ -40,7 +40,7 @@ for module in (
 
 @app.get("/healthz")
 def healthz() -> Health:
-    """Always 200 while alive; `es` is green only when ES responds and the required indices exist."""
+    """Always 200 while alive; `es` is green when ES responds and the required indices exist."""
     try:
         client = es.get_client()
         ready = _indices_ready.is_set() and client.ping() and client.indices.exists(
