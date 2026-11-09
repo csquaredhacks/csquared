@@ -77,7 +77,13 @@ class CommunityIn(BaseModel):
         value = value.strip()
         try:
             url = urlsplit(value)
-            if url.scheme != "https" or url.hostname not in {"luma.com", "lu.ma"} or url.username or url.password:
+            if (
+                url.scheme != "https"
+                or url.hostname not in {"luma.com", "lu.ma"}
+                or url.username
+                or url.password
+                or not url.path.strip("/")
+            ):
                 raise ValueError
         except ValueError as error:
             raise ValueError("Enter an HTTPS event link from luma.com or lu.ma") from error

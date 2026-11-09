@@ -8,7 +8,9 @@ from hallway.main import app
 
 def test_community_invitation_is_public_but_creation_requires_session(person):
     anonymous = TestClient(app)
-    data = {"name": "Community", "description": "Meet together", "luma_url": "https://luma.com/event"}
+    data = {
+        "name": "Community", "description": "Meet together", "luma_url": "https://luma.com/event"
+    }
     assert anonymous.post("/api/communities", json=data).status_code == 401
     client, _ = person("Organizer")
     created = client.post("/api/communities", json=data)
