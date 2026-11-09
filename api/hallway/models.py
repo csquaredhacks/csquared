@@ -4,8 +4,9 @@ so web/src/api/schema.d.ts stays in sync (CI checks this)."""
 import re
 from typing import Literal
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, Field, field_validator
 
 Comfort = Literal["open", "small_groups", "one_on_one"]
 # Link kinds that may appear on the public graph. A pending invitation is never one of them.
@@ -197,6 +198,60 @@ class Recap(BaseModel):
     connections: list[Attendee]
     groups_bridged: int
     nudges: list[str]
+
+
+CrewStatus = Literal["none", "suggested", "member"]
+
+
+class Meeting(BaseModel):
+    """Agreed by the crew. Stored as given; never derived from a hash of the crew id."""
+
+    place: str
+    starts_at: str
+    timezone: str
+    set_by: str
+
+
+class MeetingIn(BaseModel):
+    place: str = Field(min_length=1, max_length=200)
+    starts_at: AwareDatetime  # must carry a UTC offset
+    timezone: str = Field(min_length=1, max_length=64)  # IANA name, e.g. America/Denver
+
+    @field_validator("place")
+    @classmethod
+    def strip_place(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("timezone")
+    @classmethod
+    def known_timezone(cls, value: str) -> str:
+        try:
+            ZoneInfo(value)
+        except (ZoneInfoNotFoundError, ValueError):
+            raise ValueError("Unknown time zone; use an IANA name like America/Denver") from None
+        return value
+
+
+class Crew(BaseModel):
+    """An arrival group. `members` are only people who accepted. Pending suggestions
+    and declines are never shown to anyone."""
+
+    id: str
+    members: list[Attendee]
+    seats_taken: int
+    limit: int
+    why: str
+    meeting: Meeting | None
+
+
+class CrewOut(BaseModel):
+    status: CrewStatus
+    crew: Crew | None
+    bringing_companion: bool = False
+
+
+class AcceptIn(BaseModel):
+    companion: bool = False  # bringing one friend or companion, who takes a seat too
 
 
 class Rum(BaseModel):

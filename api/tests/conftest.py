@@ -31,7 +31,8 @@ def indices():
     es.ensure_indices(client)
     yield
     client.indices.delete(
-        index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.COMMUNITIES], ignore_unavailable=True
+        index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.COMMUNITIES, es.CREWS],
+        ignore_unavailable=True,
     )
 
 

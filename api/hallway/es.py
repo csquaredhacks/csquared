@@ -14,6 +14,7 @@ log = logging.getLogger("hallway.es")
 ATTENDEES = f"{settings.index_prefix}-attendees"
 EDGES = f"{settings.index_prefix}-edges"
 CHECKINS = f"{settings.index_prefix}-checkins"
+CREWS = f"{settings.index_prefix}-crews"
 COMMUNITIES = f"{settings.index_prefix}-communities"
 
 
@@ -80,6 +81,18 @@ CHECKIN_MAPPING = {
 }
 
 
+CREW_MAPPING = {
+    "properties": {
+        "id": {"type": "keyword"},
+        "members": {"type": "keyword"},
+        "companions": {"type": "keyword"},
+        "invited": {"type": "keyword"},
+        "declined": {"type": "keyword"},
+        # Free text chosen by members; stored, never searched or aggregated.
+        "meeting": {"type": "object", "enabled": False},
+        "created_at": {"type": "date"},
+    }
+}
 COMMUNITY_MAPPING = {"properties": {
     "id": {"type": "keyword"}, "name": {"type": "text"},
     "description": {"type": "text"}, "luma_url": {"type": "keyword", "index": False},
@@ -92,6 +105,7 @@ def ensure_indices(client: Elasticsearch) -> None:
         ATTENDEES: attendee_mapping(settings.elser_id),
         EDGES: EDGE_MAPPING,
         CHECKINS: CHECKIN_MAPPING,
+        CREWS: CREW_MAPPING,
         COMMUNITIES: COMMUNITY_MAPPING,
     }
     for name, mapping in wanted.items():
