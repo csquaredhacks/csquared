@@ -1,0 +1,55 @@
+# The API: FastAPI serving /api/*, /healthz and the built web app.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hallway
+  labels:
+    {{- include "hallway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "hallway.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        {{- include "hallway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: hallway
+      annotations:
+        # A new value on every `helm upgrade` forces a rollout, so `make deploy` picks up a
+        # freshly pushed image even when the tag (latest) did not change.
+        rollme: {{ randAlphaNum 5 | quote }}
+    spec:
+      containers:
+        - name: hallway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}  # every key in the Secret becomes an env var
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: hallway-api
+            {{- include "hallway.env" . | nindent 12 }}
+          readinessProbe:  # not ready = removed from the Service, no restart
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+          livenessProbe:  # failing 3 times in a row = container restarted
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- include "hallway.containerSecurityContext" . | nindent 12 }}

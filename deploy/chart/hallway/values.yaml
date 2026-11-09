@@ -1,0 +1,44 @@
+# Everything a human might change lives here. Secrets do NOT: they come from the
+# Kubernetes Secret named below, created by `make secrets` from your .env file.
+
+image:
+  repository: ghcr.io/csquaredhacks/hallway
+  tag: latest
+  # Always: `latest` and ttl.sh tags are reused for new builds, so never trust a node's cached copy.
+  pullPolicy: Always
+
+# The one Secret. Keys: ES_URL, ES_API_KEY, ELSER_ID, OPENAI_API_KEY, ADMIN_TOKEN,
+# DASH0_OTLP_ENDPOINT, DASH0_AUTH_TOKEN, DASH0_RUM_URL, DASH0_RUM_TOKEN.
+secretName: hallway-secrets
+
+# Comma-separated room names. With --set, escape the commas: --set rooms="A\,B".
+rooms: "Main Stage,Room A,Room B,Coffee Bar,Quiet Room"
+# Enables POST /api/chaos (still needs the X-Admin-Token header). Used in the Dash0 demo.
+chaosEnabled: true
+
+otel:
+  # grpc (port 4317) or http/protobuf (port 4318). Must match DASH0_OTLP_ENDPOINT in the Secret.
+  protocol: grpc
+  environment: hackathon
+
+# API container. `make oom-demo` lowers the memory numbers to 48Mi on purpose.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi   # no CPU limit on purpose: CPU limits throttle, memory limits protect the node
+
+matcher:
+  schedule: "*/2 * * * *"
+  # Separate from the API's resources so the OOM demo only breaks the API.
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+tunnel:
+  enabled: true
+  image: cloudflare/cloudflared:latest

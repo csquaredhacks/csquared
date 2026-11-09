@@ -1,0 +1,13 @@
+# One lint config for api/ and seed/.
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[lint.flake8-bugbear]
+# FastAPI's dependency injection is declared in argument defaults on purpose.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Header"]
+
+[lint.isort]
+known-first-party = ["hallway"]

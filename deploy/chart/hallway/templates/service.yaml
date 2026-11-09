@@ -1,0 +1,16 @@
+# Stable in-cluster address http://hallway:8000 for the tunnel (ClusterIP, nothing public).
+apiVersion: v1
+kind: Service
+metadata:
+  name: hallway
+  labels:
+    {{- include "hallway.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    {{- include "hallway.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

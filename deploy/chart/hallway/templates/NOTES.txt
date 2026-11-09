@@ -1,0 +1,15 @@
+Hallway is deployed in namespace {{ .Release.Namespace }}.
+
+{{- if .Values.tunnel.enabled }}
+
+Public URL (may take ~20 seconds to appear after the first install):
+
+  make url NS={{ .Release.Namespace }}
+{{- else }}
+
+The tunnel is disabled. Reach the app with:
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/hallway 8000:8000
+{{- end }}
+
+Pods not starting? Check that the Secret exists:  make secrets NS={{ .Release.Namespace }}
