@@ -126,7 +126,7 @@ interface Crowd { registered: number;
 | PATCH | `/api/me` | cookie | `MeUpdate` | `Me` (my own profile after the edit) | 401, 422 unknown field or invalid value |
 | POST | `/api/recover` | | `{code: string}` | `Me` + cookie | 404 |
 | GET | `/api/attendees/{id}` | | | `Attendee` | 404 |
-| GET | `/api/matches` | cookie | | `Match[]` (max 5), each with `is_reciprocal` | 401 |
+| GET | `/api/matches` | cookie | | `Match[]` (max 5, reciprocal first), each with `is_reciprocal` | 401 |
 | POST | `/api/edges` | cookie | `{to_id: string}` | `ConnectResult` | 400 self, 401, 404 |
 | GET | `/api/graph` | | | `Graph` | |
 | GET | `/api/graph/path?to={id}` | cookie | | `Path` (me → to) | 401 |
@@ -166,7 +166,9 @@ each person. `reason` and `is_reciprocal` are both read from that report, never 
 `offers_to_asks` (my offers against their asks) matched. It is the same evidence as `reason`,
 and as loose: without ELSER one shared word is enough for a query to match. Filler
 words ("and", "with", "need", ...) are removed from the word query first, so they never
-count as a match.
+count as a match. Matches are ranked reciprocal-first (preserving Elasticsearch score order
+within each group), and capped at five after the sort so stronger one-way matches never displace
+a two-way match.
 
 ## The four relationships
 
