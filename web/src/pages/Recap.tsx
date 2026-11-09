@@ -40,7 +40,7 @@ export default function Recap() {
 
       <section aria-labelledby="goals-title">
         <h2 id="goals-title">Your goals</h2>
-        <GoalBoard />
+        <GoalBoard readOnly />
       </section>
 
       <section aria-labelledby="met-title">
