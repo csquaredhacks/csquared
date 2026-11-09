@@ -44,13 +44,21 @@ async def lifespan(_: FastAPI):
 
 
 # Keep the two product gauges fresh in Dash0 even when nobody has their page open.
-telemetry.refreshers["rooms"] = rooms.current_occupancy
+# Both refreshes run while metrics are being exported, so they use a client that gives
+# up after two seconds: a slow Elasticsearch must not hold back every other metric.
+def _fast_client():
+    return es.get_client().options(request_timeout=2, max_retries=0)
+
+
+def _refresh_rooms() -> None:
+    rooms.current_occupancy(_fast_client())
 
 
 def _refresh_funnel() -> None:
-    crowd_counts.refresh_funnel(es.get_client().options(request_timeout=2, max_retries=0))
+    crowd_counts.refresh_funnel(_fast_client())
 
 
+telemetry.refreshers["rooms"] = _refresh_rooms
 telemetry.refreshers["funnel"] = _refresh_funnel
 
 app = FastAPI(title="Hallway", lifespan=lifespan)
