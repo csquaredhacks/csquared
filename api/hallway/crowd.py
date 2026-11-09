@@ -79,6 +79,28 @@ def _edges(client: Elasticsearch) -> dict[str, int]:
     return {b["key"]: b["doc_count"] for b in buckets}
 
 
+def refresh_funnel(client: Elasticsearch) -> None:
+    """Refresh the organizer funnel using counts, without loading the full board."""
+    registered = client.count(index=es.ATTENDEES)["count"]
+    in_groups = client.search(
+        index=es.CREWS,
+        size=0,
+        query={"exists": {"field": "members"}},
+        aggs={"members": {"value_count": {"field": "members"}}},
+    )["aggregations"]["members"]["value"]
+    edges = _edges(client)
+    checked_in = client.count(index=es.CHECKINS)["count"]
+    set_funnel(
+        {
+            "registered": registered,
+            "in_group": int(in_groups),
+            "planned": edges.get("planned", 0),
+            "met": edges.get("connected", 0),
+            "checked_in": checked_in,
+        }
+    )
+
+
 def board(client: Elasticsearch) -> dict:
     registered, tags, comfort = _attendees(client)
     in_groups, groups, groups_with_meeting = _groups(client)

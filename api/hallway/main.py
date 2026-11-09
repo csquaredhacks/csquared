@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import chaos, es, telemetry
+from . import crowd as crowd_counts
 from .config import settings
 from .models import Health
 from .routes import (
@@ -44,7 +45,13 @@ async def lifespan(_: FastAPI):
 
 # Keep the two product gauges fresh in Dash0 even when nobody has their page open.
 telemetry.refreshers["rooms"] = rooms.current_occupancy
-telemetry.refreshers["funnel"] = crowd.get_crowd
+
+
+def _refresh_funnel() -> None:
+    crowd_counts.refresh_funnel(es.get_client().options(request_timeout=2, max_retries=0))
+
+
+telemetry.refreshers["funnel"] = _refresh_funnel
 
 app = FastAPI(title="Hallway", lifespan=lifespan)
 for module in (

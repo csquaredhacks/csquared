@@ -9,6 +9,36 @@ KEYS = {
 }
 
 
+def test_refresh_funnel_uses_only_count_queries(monkeypatch):
+    class Client:
+        def count(self, *, index):
+            return {es.ATTENDEES: 8, es.CHECKINS: 3}[index]
+
+        def search(self, *, index, size, **kwargs):
+            assert size == 0
+            if index == es.CREWS:
+                assert kwargs["query"] == {"exists": {"field": "members"}}
+                return {"aggregations": {"members": {"value": 2.0}}}
+            assert index == es.EDGES
+            return {
+                "aggregations": {
+                    "kinds": {
+                        "buckets": [
+                            {"key": "planned", "doc_count": 4},
+                            {"key": "connected", "doc_count": 5},
+                        ]
+                    }
+                }
+            }
+
+    updated = []
+    monkeypatch.setattr(crowd, "set_funnel", updated.append)
+    crowd.refresh_funnel(Client())
+    assert updated == [
+        {"registered": 8, "in_group": 2, "planned": 4, "met": 5, "checked_in": 3}
+    ]
+
+
 def test_board_is_public_and_holds_only_counts(person):
     from fastapi.testclient import TestClient
 
