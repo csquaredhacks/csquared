@@ -1,5 +1,8 @@
 # Hallway — Design Spec
 
+> **Current source of truth:** [the working plan](../../WORKING_PLAN.md).
+> This specification is historical where its scope or requirements conflict.
+
 > **Emphasis changed on the day (v4).** The product now leads with what happens before the conference. This spec still describes the original day-of framing. Read [`docs/PRE_CONFERENCE.md`](../../PRE_CONFERENCE.md) first.
 
 **Event:** Cloud Native Hackathon, Salt Lake City, Monday 2026-11-09

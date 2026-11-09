@@ -1,5 +1,10 @@
 # Pre-conference first (plan v4)
 
+> **Historical plan.** Read [the working plan](WORKING_PLAN.md) for current scope
+> and build order, including community signup, Luma, accessibility, and accepted
+> arrival plans. Its consent, capacity, meeting-location, and migration requirements
+> replace conflicting shortcuts below. This document is retained for design history.
+
 **The change:** Hallway's main promise now happens *before* the conference, not during it.
 You get the link in your ticket email. By the time you walk in, you already know who to
 find, you have a few people to walk in with, and the organizers already know what the

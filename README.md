@@ -2,12 +2,14 @@
 
 **Nobody at a conference goes solo.**
 
-The hardest ten minutes of a conference are the first ten. So Hallway does its work
-*before* you arrive. The link comes with your ticket. You say what you are working on,
-what you need, and what you can offer. By the time you walk in, you know the five people
-you should find and why, you have a small crew to walk in with, and the organizers already
-know what the crowd is asking for. At the venue, a scan of a QR code turns each plan into a
-real connection, and a live graph shows the room coming together.
+Hallway helps communities and attendees prepare to arrive together. RSVP on Luma,
+share your asks and offers, and find people to meet before the conference. Our
+product direction is an accepted arrival group and meeting plan, with a graph
+that helps those relationships grow during and after the event.
+
+**Start with the [working plan](docs/WORKING_PLAN.md).** It consolidates community
+signup, Luma integration, accessibility, graph behavior, and build priorities.
+Planned features are distinguished from the existing implementation below.
 
 Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 
@@ -19,13 +21,14 @@ Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 | **Before** | Your five: the people to meet, each with a true reason and an icebreaker. | Built |
 | **Before** | Send your link to someone you already know, and you are connected before day one. | Built |
 | **Before** | A recovery code, so the profile you made at home opens on your phone at the venue. | Built |
-| **Before** | A crew of two to five people to walk in with, sized to your comfort preference. | In progress today |
-| **Before** | Wave at people you want to meet. Private until they wave back. | In progress today |
-| **Before** | For organizers: a crowd board of what people ask for against what they offer. | In progress today |
+| **Before** | A chosen arrival group and an agreed meeting plan. | Planned |
+| **Before** | Wave at people you want to meet. Private until they wave back. | Planned |
+| **Before** | Community signup, event invitations, and an organizer crowd board. | Planned |
 | **During** | Scan a QR code to connect. A live graph on the venue screen. A room map. | Built |
 | **After** | A recap of who you met and what to follow up on. | Built |
 
-The full pre-conference plan is in [`docs/PRE_CONFERENCE.md`](docs/PRE_CONFERENCE.md).
+The current build order is in [`docs/WORKING_PLAN.md`](docs/WORKING_PLAN.md).
+[`docs/PRE_CONFERENCE.md`](docs/PRE_CONFERENCE.md) preserves the earlier v4 design.
 
 ## How it works
 
