@@ -1,13 +1,18 @@
 """Request and response shapes. Changing anything here means running `make types`
 so web/src/api/schema.d.ts stays in sync (CI checks this)."""
 
+import re
 from typing import Literal
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import AwareDatetime, BaseModel, Field, field_validator
 
 Comfort = Literal["open", "small_groups", "one_on_one"]
-EdgeKind = Literal["connected", "suggested"]
+# Link kinds that may appear on the public graph. A pending invitation is never one of them.
+EdgeKind = Literal["connected", "planned", "suggested"]
+# How one person relates to me, in my own private view of the graph.
+RelationKind = Literal["met", "planned", "invited_you", "you_invited", "suggested"]
 ChaosMode = Literal["off", "slow", "error"]
 
 
@@ -20,7 +25,9 @@ class AttendeeIn(BaseModel):
     tags: list[str] = Field(default_factory=list, max_length=10)
     groups: list[str] = Field(default_factory=list, max_length=5)
     comfort: Comfort = "open"
-    on_graph: bool = True
+    # Two separate opt-in choices. Both are off unless the person turns them on.
+    on_graph: bool = False  # show me, and who I have met or planned to meet, on the public graph
+    show_groups: bool = False  # also show my communities there
 
     @field_validator("name", "working_on", "asks", "offers", "fun_fact")
     @classmethod
@@ -55,10 +62,55 @@ class Attendee(BaseModel):
 class Me(Attendee):
     recovery_code: str
     on_graph: bool
+    show_groups: bool = False
+
+
+class MeUpdate(BaseModel):
+    """PATCH /api/me. Leave a field out to keep it as it is."""
+
+    on_graph: bool | None = None
+    show_groups: bool | None = None
 
 
 class RecoverIn(BaseModel):
     code: str = Field(min_length=6, max_length=6)
+
+
+class CommunityIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    description: str = Field(default="", max_length=500)
+    luma_url: str = Field(max_length=2048)
+
+    @field_validator("name", "description", mode="before")
+    @classmethod
+    def strip_community_text(cls, value: str) -> str:
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("luma_url")
+    @classmethod
+    def valid_luma_url(cls, value: str) -> str:
+        value = value.strip()
+        # Reject whitespace and control characters inside the URL.
+        if re.search(r"[\s\x00-\x1f]", value):
+            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma")
+        try:
+            url = urlsplit(value)
+            if (
+                url.scheme != "https"
+                or url.hostname not in {"luma.com", "www.luma.com", "lu.ma"}
+                or url.username
+                or url.password
+                or not url.path.strip("/")
+                or (url.port is not None and url.port != 443)
+            ):
+                raise ValueError
+        except ValueError as error:
+            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma") from error
+        return value
+
+
+class Community(CommunityIn):
+    id: str
 
 
 class Match(BaseModel):
@@ -79,6 +131,7 @@ class Edge(BaseModel):
     kind: EdgeKind
     reason: str
     created_at: str
+    planned: bool = False  # true when the two had agreed to meet before they met
 
 
 class ConnectResult(BaseModel):
@@ -90,9 +143,8 @@ class ConnectResult(BaseModel):
 class GraphNode(BaseModel):
     id: str
     name: str
-    groups: list[str]
+    groups: list[str]  # empty unless the person chose to show their communities
     tags: list[str]
-    degree: int
 
 
 class GraphLink(BaseModel):
@@ -110,6 +162,22 @@ class Graph(BaseModel):
 class PathStep(BaseModel):
     id: str
     name: str
+
+
+class Relationship(BaseModel):
+    attendee: Attendee
+    kind: RelationKind
+    reason: str  # why this person is relevant to me, built from matching evidence
+    via: list[PathStep]  # people I have met who could introduce us, nearest first
+
+
+class MyGraph(BaseModel):
+    relationships: list[Relationship]
+
+
+class InvitationResult(BaseModel):
+    kind: Literal["you_invited", "planned"]
+    other: Attendee
 
 
 class Path(BaseModel):

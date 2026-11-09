@@ -11,3 +11,4 @@ __pycache__/
 !.env.example
 web/openapi.json
 *.egg-info/
+seed/.sessions.json

@@ -19,9 +19,14 @@ def connect(body: EdgeIn, me: dict = Depends(current_attendee)) -> ConnectResult
     except NotFoundError:
         raise HTTPException(404, "No such attendee") from None
 
-    edge, created = edges.upsert_edge(
-        client, me["id"], other["id"], "connected", reason="Met at the conference"
+    # Remember whether the two had agreed to meet beforehand: the recap and the
+    # dashboard can then tell planned meetings that happened from chance ones.
+    had_plan = bool(
+        client.exists(index=es.EDGES, id=edges.edge_id(me["id"], other["id"], "planned"))
     )
-    # The dashed "you should meet" line has done its job: replace it with the solid one.
-    edges.delete_edge(client, me["id"], other["id"], "suggested")
+    edge, created = edges.upsert_edge(
+        client, me["id"], other["id"], "connected", "Met at the conference", planned=had_plan
+    )
+    # The suggestion, invitation or plan has done its job: only "met" remains.
+    edges.delete_between(client, me["id"], other["id"], ["suggested", "invited", "planned"])
     return ConnectResult(edge=Edge(**edge), created=created, other=Attendee(**other))

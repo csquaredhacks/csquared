@@ -15,6 +15,7 @@ ATTENDEES = f"{settings.index_prefix}-attendees"
 EDGES = f"{settings.index_prefix}-edges"
 CHECKINS = f"{settings.index_prefix}-checkins"
 CREWS = f"{settings.index_prefix}-crews"
+COMMUNITIES = f"{settings.index_prefix}-communities"
 
 
 def now() -> str:
@@ -43,6 +44,7 @@ def attendee_mapping(elser_id: str) -> dict:
         "groups": {"type": "keyword"},
         "comfort": {"type": "keyword"},
         "on_graph": {"type": "boolean"},
+        "show_groups": {"type": "boolean"},
         "created_at": {"type": "date"},
     }
     if elser_id:
@@ -65,6 +67,7 @@ EDGE_MAPPING = {
         "reason": {"type": "text"},
         "icebreaker": {"type": "text"},
         "created_at": {"type": "date"},
+        "planned": {"type": "boolean"},
     }
 }
 
@@ -90,6 +93,11 @@ CREW_MAPPING = {
         "created_at": {"type": "date"},
     }
 }
+COMMUNITY_MAPPING = {"properties": {
+    "id": {"type": "keyword"}, "name": {"type": "text"},
+    "description": {"type": "text"}, "luma_url": {"type": "keyword", "index": False},
+    "owner_id": {"type": "keyword"}, "created_at": {"type": "date"},
+}}
 
 
 def ensure_indices(client: Elasticsearch) -> None:
@@ -98,11 +106,16 @@ def ensure_indices(client: Elasticsearch) -> None:
         EDGES: EDGE_MAPPING,
         CHECKINS: CHECKIN_MAPPING,
         CREWS: CREW_MAPPING,
+        COMMUNITIES: COMMUNITY_MAPPING,
     }
     for name, mapping in wanted.items():
         if not client.indices.exists(index=name):
             client.indices.create(index=name, mappings=mapping)
             log.info("created index %s", name)
+    # Fields added after the first release. Adding a field to an existing index is safe
+    # and keeps its data, so nobody has to delete an index to get a new feature.
+    client.indices.put_mapping(index=ATTENDEES, properties={"show_groups": {"type": "boolean"}})
+    client.indices.put_mapping(index=EDGES, properties={"planned": {"type": "boolean"}})
 
 
 def ensure_indices_with_retry(client: Elasticsearch, seconds: int = 60) -> bool:

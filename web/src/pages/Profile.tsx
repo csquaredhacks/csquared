@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import { ApiError, errorMessage, getMe } from "../api/client";
+import { ApiError, errorMessage, getMe, updateMe } from "../api/client";
 import type { Me } from "../api/types";
 import { ErrorNote } from "../ui";
 
@@ -40,8 +40,23 @@ export default function Profile() {
           Hallway has no accounts or passwords. If you switch phones or clear your browser,
           enter this code at <Link to="/recover">Recover</Link> to pick up where you left off.
         </p>
-        {!me.on_graph && <p className="muted">You are hidden from the live graph.</p>}
       </section>
+
+      <fieldset className="card">
+        <legend className="label">What other people can see</legend>
+        <label className="choice">
+          <input type="checkbox" checked={me.on_graph}
+            onChange={(e) => updateMe({ on_graph: e.target.checked }).then(setMe).catch((err) => setError(errorMessage(err)))} />
+          Show me on the public graph, with the people I plan to meet and have met
+        </label>
+        <label className="choice">
+          <input type="checkbox" checked={me.show_groups}
+            onChange={(e) => updateMe({ show_groups: e.target.checked }).then(setMe).catch((err) => setError(errorMessage(err)))} />
+          Also show my communities on the graph
+        </label>
+        <p className="muted">Turning one off removes it from the graph straight away.</p>
+        <ErrorNote message={error} />
+      </fieldset>
 
       <ul className="links">
         <li><Link to="/graph">Watch the live graph</Link></li>

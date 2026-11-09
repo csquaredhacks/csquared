@@ -52,7 +52,12 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Me
+         * @description Change what I show publicly. Turning a choice off removes that information from
+         *     the public graph on its very next load.
+         */
+        patch: operations["update_me_api_me_patch"];
         trace?: never;
     };
     "/api/recover": {
@@ -81,6 +86,40 @@ export interface paths {
         };
         /** Get Attendee */
         get: operations["get_attendee_api_attendees__attendee_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Community */
+        post: operations["create_community_api_communities_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{community_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Community */
+        get: operations["get_community_api_communities__community_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -158,6 +197,84 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/graph/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My Graph
+         * @description My relationships, each with a reason and, where one exists, an introducer.
+         */
+        get: operations["my_graph_api_graph_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invite
+         * @description Ask to meet someone. They can accept, decline or ignore it. Nobody else sees it.
+         */
+        post: operations["invite_api_invitations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{other_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept */
+        post: operations["accept_api_invitations__other_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invitations/{other_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Withdraw
+         * @description Decline their invitation, take back mine, or cancel our plan. The other person is
+         *     not told who did it or why: the invitation or plan is simply no longer there.
+         */
+        delete: operations["withdraw_api_invitations__other_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -422,9 +539,14 @@ export interface components {
             comfort: "open" | "small_groups" | "one_on_one";
             /**
              * On Graph
-             * @default true
+             * @default false
              */
             on_graph: boolean;
+            /**
+             * Show Groups
+             * @default false
+             */
+            show_groups: boolean;
         };
         /** Chaos */
         Chaos: {
@@ -438,6 +560,32 @@ export interface components {
         CheckinIn: {
             /** Room */
             room: string;
+        };
+        /** Community */
+        Community: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Luma Url */
+            luma_url: string;
+            /** Id */
+            id: string;
+        };
+        /** CommunityIn */
+        CommunityIn: {
+            /** Name */
+            name: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Luma Url */
+            luma_url: string;
         };
         /** Config */
         Config: {
@@ -498,11 +646,16 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "connected" | "suggested";
+            kind: "connected" | "planned" | "suggested";
             /** Reason */
             reason: string;
             /** Created At */
             created_at: string;
+            /**
+             * Planned
+             * @default false
+             */
+            planned: boolean;
         };
         /** EdgeIn */
         EdgeIn: {
@@ -526,7 +679,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "connected" | "suggested";
+            kind: "connected" | "planned" | "suggested";
             /** Reason */
             reason: string;
         };
@@ -540,8 +693,6 @@ export interface components {
             groups: string[];
             /** Tags */
             tags: string[];
-            /** Degree */
-            degree: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -557,6 +708,15 @@ export interface components {
              * @enum {string}
              */
             es: "green" | "red";
+        };
+        /** InvitationResult */
+        InvitationResult: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "you_invited" | "planned";
+            other: components["schemas"]["Attendee"];
         };
         /** Match */
         Match: {
@@ -595,6 +755,21 @@ export interface components {
             recovery_code: string;
             /** On Graph */
             on_graph: boolean;
+            /**
+             * Show Groups
+             * @default false
+             */
+            show_groups: boolean;
+        };
+        /**
+         * MeUpdate
+         * @description PATCH /api/me. Leave a field out to keep it as it is.
+         */
+        MeUpdate: {
+            /** On Graph */
+            on_graph?: boolean | null;
+            /** Show Groups */
+            show_groups?: boolean | null;
         };
         /**
          * Meeting
@@ -622,6 +797,11 @@ export interface components {
             /** Timezone */
             timezone: string;
         };
+        /** MyGraph */
+        MyGraph: {
+            /** Relationships */
+            relationships: components["schemas"]["Relationship"][];
+        };
         /** Path */
         Path: {
             /** Path */
@@ -647,6 +827,19 @@ export interface components {
         RecoverIn: {
             /** Code */
             code: string;
+        };
+        /** Relationship */
+        Relationship: {
+            attendee: components["schemas"]["Attendee"];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "met" | "planned" | "invited_you" | "you_invited" | "suggested";
+            /** Reason */
+            reason: string;
+            /** Via */
+            via: components["schemas"]["PathStep"][];
         };
         /** Room */
         Room: {
@@ -759,6 +952,39 @@ export interface operations {
             };
         };
     };
+    update_me_api_me_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     recover_api_recover_post: {
         parameters: {
             query?: never;
@@ -810,6 +1036,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Attendee"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_community_api_communities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_community_api_communities__community_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"];
                 };
             };
             /** @description Validation Error */
@@ -915,6 +1205,119 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Path"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_graph_api_graph_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyGraph"];
+                };
+            };
+        };
+    };
+    invite_api_invitations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EdgeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_api_invitations__other_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                other_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    withdraw_api_invitations__other_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                other_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

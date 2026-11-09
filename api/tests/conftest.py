@@ -25,11 +25,14 @@ def indices():
     except Exception:  # noqa: BLE001
         reachable = False
     if not reachable:
+        if os.getenv("CI_REQUIRE_ELASTICSEARCH") == "true":
+            pytest.fail("Elasticsearch is required for integration tests in CI")
         pytest.skip("Elasticsearch is not reachable; skipping integration tests")
     es.ensure_indices(client)
     yield
     client.indices.delete(
-        index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.CREWS], ignore_unavailable=True
+        index=[es.ATTENDEES, es.EDGES, es.CHECKINS, es.COMMUNITIES, es.CREWS],
+        ignore_unavailable=True,
     )
 
 
@@ -40,7 +43,9 @@ def person(indices):
 
     def make(name: str, **fields):
         client = TestClient(app)
-        body = {"name": name, "working_on": "testing hallway", **fields}
+        # Graph visibility is opt-in. Most tests want people who opted in.
+        shown = {"on_graph": True, "show_groups": True}
+        body = {"name": name, "working_on": "testing hallway", **shown, **fields}
         response = client.post("/api/attendees", json=body)
         assert response.status_code == 201, response.text
         return client, response.json()

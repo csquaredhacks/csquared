@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Connect from "./pages/Connect";
+import { CommunityPage, NewCommunity } from "./pages/Community";
 import Graph from "./pages/Graph";
 import Profile from "./pages/Profile";
 import Recap from "./pages/Recap";
@@ -39,6 +40,8 @@ export default function App() {
           <Route path="/me" element={<Profile />} />
           <Route path="/connect/:id" element={<Connect />} />
           <Route path="/recover" element={<Recover />} />
+          <Route path="/communities/new" element={<NewCommunity />} />
+          <Route path="/communities/:id" element={<CommunityPage />} />
           <Route path="/graph" element={<Graph />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/recap" element={<Recap />} />
@@ -49,6 +52,7 @@ export default function App() {
         <nav className="nav" aria-label="Main">
           <NavLink to="/five">Five</NavLink>
           <NavLink to="/me">Me</NavLink>
+          <NavLink to="/communities/new">Community</NavLink>
           <NavLink to="/graph">Graph</NavLink>
           <NavLink to="/rooms">Rooms</NavLink>
           <NavLink to="/recap">Recap</NavLink>

@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from .. import es, matcher
 from ..auth import current_attendee, set_session
 from ..config import settings
-from ..models import Attendee, AttendeeIn, Config, Me, RecoverIn, Rum
+from ..models import Attendee, AttendeeIn, Config, Me, MeUpdate, RecoverIn, Rum
 from ..telemetry import tag_attendee
 
 router = APIRouter()
@@ -45,6 +45,16 @@ def register(body: AttendeeIn, response: Response, background: BackgroundTasks) 
 @router.get("/api/me")
 def me(doc: dict = Depends(current_attendee)) -> Me:
     return Me(**doc)
+
+
+@router.patch("/api/me")
+def update_me(body: MeUpdate, doc: dict = Depends(current_attendee)) -> Me:
+    """Change what I show publicly. Turning a choice off removes that information from
+    the public graph on its very next load."""
+    changes = body.model_dump(exclude_none=True)
+    if changes:
+        es.get_client().update(index=es.ATTENDEES, id=doc["id"], doc=changes, refresh=True)
+    return Me(**(doc | changes))
 
 
 @router.post("/api/recover")
