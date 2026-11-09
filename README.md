@@ -113,6 +113,22 @@ make url
 `make url` prints a public https address. Share it or turn it into a QR code. No ingress, DNS or account is needed.
 If you cannot log in to the GitHub container registry, `make image-ttl` pushes to a free anonymous registry instead and prints the deploy command.
 
+Check a deployed demo without changing its data (uses the Python API dependencies):
+
+```bash
+make smoke API="$URL"
+```
+
+Set `URL` to the demo base URL, or use `make smoke` for `http://localhost:8000`
+with the built frontend served by the API. The check uses only GET requests:
+Join (`/`), Plan (`/plan`), Graph (`/graph`), a JavaScript asset referenced by
+Join, and `/healthz` with `ok: true` and Elasticsearch `es: "green"`.
+It checks the HTML app shell and asset delivery, not browser execution or attendee
+flows. Each request has a 10-second timeout; redirects, failed routes, invalid
+content and unavailable Elasticsearch exit nonzero with the failing check.
+No credentials or fixed tunnel address are needed. Run `make test-smoke` to test
+the checker against a local fixture without a deployed app or Elasticsearch.
+
 ### Option 3: just the tests
 
 ```bash
