@@ -133,7 +133,7 @@ only through meetings between people who are on the public graph.
 
 ## Web routes (served by the same process, SPA fallback)
 
-`/` register (or redirect to `/five` if already registered), `/five`, `/me`, `/connect/:id`,
+`/` register (or redirect to `/five` if already registered), `/five`, `/crew` (arrival group: suggest, join, decline, leave, meeting plan), `/me`, `/connect/:id`,
 `/recover`, `/graph` (`?kiosk=1` full screen, `?focus=<id>`), `/rooms` (`?room=<name>` checks in), `/recap`.
 A profile QR encodes `<origin>/connect/<my id>`.
 

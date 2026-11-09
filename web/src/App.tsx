@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import Connect from "./pages/Connect";
+import Crew from "./pages/Crew";
 import { CommunityPage, NewCommunity } from "./pages/Community";
 import Graph from "./pages/Graph";
 import Profile from "./pages/Profile";
@@ -11,10 +12,10 @@ import Rooms from "./pages/Rooms";
 import YourFive from "./pages/YourFive";
 
 const TITLES: Record<string, string> = {
-  "/": "Join", "/five": "Your five", "/me": "My code", "/recover": "Recover",
+  "/": "Join", "/five": "Your five", "/me": "My code", "/crew": "Your crew", "/recover": "Recover",
   "/graph": "Live graph", "/rooms": "Rooms", "/recap": "Recap",
 };
-const WIDE_PAGES = ["/five", "/graph", "/rooms", "/recap"];
+const WIDE_PAGES = ["/five", "/crew", "/graph", "/rooms", "/recap"];
 
 export default function App() {
   const { pathname, search } = useLocation();
@@ -37,6 +38,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Register />} />
           <Route path="/five" element={<YourFive />} />
+          <Route path="/crew" element={<Crew />} />
           <Route path="/me" element={<Profile />} />
           <Route path="/connect/:id" element={<Connect />} />
           <Route path="/recover" element={<Recover />} />
@@ -51,6 +53,7 @@ export default function App() {
       {showNav && (
         <nav className="nav" aria-label="Main">
           <NavLink to="/five">Five</NavLink>
+          <NavLink to="/crew">Crew</NavLink>
           <NavLink to="/me">Me</NavLink>
           <NavLink to="/communities/new">Community</NavLink>
           <NavLink to="/graph">Graph</NavLink>

@@ -6,6 +6,8 @@ import type { components } from "./schema";
 
 type Community = components["schemas"]["Community"];
 type CommunityIn = components["schemas"]["CommunityIn"];
+export type CrewOut = components["schemas"]["CrewOut"];
+type MeetingIn = components["schemas"]["MeetingIn"];
 
 /** Thrown for every non-2xx response. `detail` is the server's message. */
 export class ApiError extends Error {
@@ -68,6 +70,12 @@ export const acceptInvitation = (fromId: string) =>
 /** Decline theirs, take back mine, or cancel our plan. */
 export const withdrawInvitation = (otherId: string) =>
   request<void>("DELETE", `/api/invitations/${encodeURIComponent(otherId)}`);
+export const getCrew = () => request<CrewOut>("GET", "/api/crew");
+export const suggestCrew = () => request<CrewOut>("POST", "/api/crew/suggest");
+export const acceptCrew = (body: { companion?: boolean }) => request<CrewOut>("POST", "/api/crew/accept", body);
+export const declineCrew = () => request<CrewOut>("POST", "/api/crew/decline");
+export const leaveCrew = () => request<CrewOut>("DELETE", "/api/crew");
+export const setCrewMeeting = (body: MeetingIn) => request<CrewOut>("PUT", "/api/crew/meeting", body);
 export const getPath = (toId: string) => request<Path>("GET", `/api/graph/path?to=${encodeURIComponent(toId)}`);
 export const checkIn = (room: string) => request<Room>("POST", "/api/checkins", { room });
 export const getRooms = () => request<Room[]>("GET", "/api/rooms");
