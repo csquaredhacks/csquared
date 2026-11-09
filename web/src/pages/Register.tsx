@@ -24,7 +24,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "", working_on: "", asks: "", offers: "",
-    fun_fact: "", tags: "", groups: "", comfort: "open" as Comfort, on_graph: true,
+    fun_fact: "", tags: "", groups: "", comfort: "open" as Comfort, on_graph: false, show_groups: false,
   });
 
   // Already registered on this phone? Skip the form.
@@ -49,6 +49,7 @@ export default function Register() {
         groups: splitList(form.groups, 5),
         comfort: form.comfort,
         on_graph: form.on_graph,
+        show_groups: form.show_groups,
       });
       navigate(nextPath(), { replace: true });
     } catch (err) {
@@ -116,12 +117,22 @@ export default function Register() {
             ))}
           </fieldset>
 
+        </details>
+
+        <fieldset>
+          <legend>What can other people see?</legend>
+          <p className="hint">Both are off unless you turn them on. You can change them later under Me.</p>
           <label className="choice">
             <input type="checkbox" checked={form.on_graph}
               onChange={(e) => setForm({ ...form, on_graph: e.target.checked })} />
-            Show me on the live graph
+            Show me on the public graph, with the people I plan to meet and have met
           </label>
-        </details>
+          <label className="choice">
+            <input type="checkbox" checked={form.show_groups}
+              onChange={(e) => setForm({ ...form, show_groups: e.target.checked })} />
+            Also show my communities on the graph
+          </label>
+        </fieldset>
 
         <ErrorNote message={error} />
         <button type="submit" className="button" disabled={busy}>

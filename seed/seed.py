@@ -1,10 +1,16 @@
-"""Seed Hallway with synthetic attendees, connections and check-ins.
+"""Seed Hallway with synthetic attendees, in two acts.
 
-    python seed/seed.py --api http://localhost:8000 [--connections 45] [--checkins] [--delay 0.2]
+    python seed/seed.py --api http://localhost:8000 --phase before   # the week before
+    python seed/seed.py --api http://localhost:8000 --phase live     # the day itself
+    python seed/seed.py --api http://localhost:8000                  # both, in one go
+
+"before" registers everyone and sends invitations to meet, some of which are accepted.
+"live" turns most of those plans into real meetings, adds chance meetings and check-ins.
 
 Every attendee gets its own httpx.Client. The server answers POST /api/attendees with a
 session cookie; keeping the client keeps the cookie, so later calls are made *as that person*.
-With --delay it doubles as a gentle load generator. Only dependency: `pip install httpx`.
+Between the two acts the recovery codes are kept in seed/.sessions.json (git-ignored), and
+"live" uses them to log each person back in. Only dependency: `pip install httpx`.
 """
 
 import argparse
@@ -17,12 +23,15 @@ from pathlib import Path
 import httpx
 
 DATA = Path(__file__).with_name("attendees.json")
+SESSIONS = Path(__file__).with_name(".sessions.json")
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Seed Hallway with synthetic attendees.")
     p.add_argument("--api", default="http://localhost:8000", help="base URL of the app")
-    p.add_argument("--connections", type=int, default=45, help="how many 'connected' edges")
+    p.add_argument("--phase", choices=["before", "live", "all"], default="all")
+    p.add_argument("--invitations", type=int, default=40, help="how many invitations to meet")
+    p.add_argument("--connections", type=int, default=45, help="how many meetings in total")
     p.add_argument("--checkins", action="store_true", help="check everyone into a random room")
     p.add_argument("--seed", type=int, default=7, help="random seed: same seed, same graph")
     p.add_argument("--delay", type=float, default=0, help="seconds to wait between requests")
@@ -33,6 +42,7 @@ def main() -> None:
     args = parse_args()
     rng = random.Random(args.seed)
     started = time.monotonic()
+    base = args.api.rstrip("/")
 
     def call(client: httpx.Client, method: str, path: str, body: dict | None = None):
         """One request. Stop with a readable message on any error status."""
@@ -45,43 +55,92 @@ def main() -> None:
         if r.is_error:
             sys.exit(f"{method} {path} -> {r.status_code}: {r.text[:300]}")
         time.sleep(args.delay)
-        return r.json()
+        return r.json() if r.content else None
 
-    # 1. Register everyone. `people` keeps each attendee's id, groups and logged-in client.
-    people = []
-    for attendee in json.loads(DATA.read_text())["attendees"]:
-        client = httpx.Client(base_url=args.api.rstrip("/"), timeout=30)
-        me = call(client, "POST", "/api/attendees", attendee)
-        people.append({"id": me["id"], "groups": set(attendee["groups"]), "client": client})
-
-    # 2. Random connections, 70% of them between people who share a group,
-    #    so the graph shows clusters with a few bridges between them.
-    pairs: set[frozenset[str]] = set()
-    wanted = min(args.connections, len(people) * (len(people) - 1) // 2)
-    while len(pairs) < wanted:
+    def pick_pair(people: list[dict]) -> tuple[dict, dict]:
+        """70% of pairs share a community, so the graph shows clusters with bridges."""
         source = rng.choice(people)
         others = [p for p in people if p is not source]
-        same_group = [p for p in others if p["groups"] & source["groups"]]
-        target = rng.choice(same_group if same_group and rng.random() < 0.7 else others)
-        pair = frozenset((source["id"], target["id"]))
-        if pair in pairs:
-            continue  # already connected, pick again
-        pairs.add(pair)
-        call(source["client"], "POST", "/api/edges", {"to_id": target["id"]})
+        same = [p for p in others if p["groups"] & source["groups"]]
+        return source, rng.choice(same if same and rng.random() < 0.7 else others)
 
-    # 3. Optional check-ins into the rooms the server is configured with.
+    # `people` keeps each attendee's id, communities and logged-in client.
+    people: list[dict] = []
+    if args.phase in ("before", "all"):
+        for attendee in json.loads(DATA.read_text())["attendees"]:
+            client = httpx.Client(base_url=base, timeout=30)
+            # These people are fictional, so they all opt in to the public graph.
+            me = call(
+                client, "POST", "/api/attendees", attendee | {"on_graph": True, "show_groups": True}
+            )
+            people.append(
+                {
+                    "id": me["id"],
+                    "groups": set(attendee["groups"]),
+                    "code": me["recovery_code"],
+                    "client": client,
+                }
+            )
+        saved = [{"id": p["id"], "groups": sorted(p["groups"]), "code": p["code"]} for p in people]
+        SESSIONS.write_text(json.dumps(saved))
+    else:
+        if not SESSIONS.exists():
+            sys.exit('Run with "--phase before" first: there is nobody to log back in.')
+        for saved in json.loads(SESSIONS.read_text()):
+            client = httpx.Client(base_url=base, timeout=30)
+            call(client, "POST", "/api/recover", {"code": saved["code"]})
+            people.append({"id": saved["id"], "groups": set(saved["groups"]), "client": client})
+    by_id = {p["id"]: p for p in people}
+
+    # Act one: invitations to meet. About two in three are accepted and become plans.
+    invited: set[frozenset[str]] = set()
+    plans = 0
+    if args.phase in ("before", "all"):
+        wanted = min(args.invitations, len(people) * (len(people) - 1) // 2)
+        while len(invited) < wanted:
+            source, target = pick_pair(people)
+            pair = frozenset((source["id"], target["id"]))
+            if pair in invited:
+                continue
+            invited.add(pair)
+            call(source["client"], "POST", "/api/invitations", {"to_id": target["id"]})
+            if rng.random() < 0.65:
+                call(target["client"], "POST", f"/api/invitations/{source['id']}/accept")
+                plans += 1
+
+    # Act two: most plans happen, and some people simply meet by chance.
+    met: set[frozenset[str]] = set()
     checkins = 0
-    if args.checkins:
-        rooms = call(people[0]["client"], "GET", "/api/config")["rooms"]
-        for person in people if rooms else []:
-            call(person["client"], "POST", "/api/checkins", {"room": rng.choice(rooms)})
-            checkins += 1
+    if args.phase in ("live", "all"):
+        graph = call(people[0]["client"], "GET", "/api/graph")
+        for link in graph["links"]:
+            # Real people may have made plans too. The seed only acts for its own people.
+            ours = link["source"] in by_id and link["target"] in by_id
+            if ours and link["kind"] == "planned" and rng.random() < 0.75:
+                met.add(frozenset((link["source"], link["target"])))
+                call(
+                    by_id[link["source"]]["client"], "POST", "/api/edges", {"to_id": link["target"]}
+                )
+        wanted = min(args.connections, len(people) * (len(people) - 1) // 2)
+        while len(met) < wanted:
+            source, target = pick_pair(people)
+            pair = frozenset((source["id"], target["id"]))
+            if pair in met:
+                continue
+            met.add(pair)
+            call(source["client"], "POST", "/api/edges", {"to_id": target["id"]})
+        if args.checkins:
+            rooms = call(people[0]["client"], "GET", "/api/config")["rooms"]
+            for person in people if rooms else []:
+                call(person["client"], "POST", "/api/checkins", {"room": rng.choice(rooms)})
+                checkins += 1
 
     for person in people:
         person["client"].close()
     print(
-        f"Seeded {len(people)} attendees, {len(pairs)} connections, {checkins} check-ins "
-        f"into {args.api} in {time.monotonic() - started:.1f}s"
+        f"{args.phase}: {len(people)} attendees, {len(invited)} invitations, {plans} plans, "
+        f"{len(met)} meetings, {checkins} check-ins into {args.api} "
+        f"in {time.monotonic() - started:.1f}s"
     )
 
 

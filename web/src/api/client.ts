@@ -1,6 +1,6 @@
 import type {
   Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, Graph, Health,
-  Match, Me, Path, Recap, Room,
+  InvitationResult, Match, Me, MyGraph, Path, Recap, Room,
 } from "./types";
 
 /** Thrown for every non-2xx response. `detail` is the server's message. */
@@ -40,6 +40,7 @@ async function request<T>(method: string, path: string, body?: unknown, headers?
     }
     throw new ApiError(response.status, detail);
   }
+  if (response.status === 204) return undefined as T; // no body to read
   return (await response.json()) as T;
 }
 
@@ -52,6 +53,15 @@ export const getAttendee = (id: string) => request<Attendee>("GET", `/api/attend
 export const getMatches = () => request<Match[]>("GET", "/api/matches");
 export const connect = (toId: string) => request<ConnectResult>("POST", "/api/edges", { to_id: toId });
 export const getGraph = () => request<Graph>("GET", "/api/graph");
+export const getMyGraph = () => request<MyGraph>("GET", "/api/graph/me");
+export const updateMe = (changes: { on_graph?: boolean; show_groups?: boolean }) =>
+  request<Me>("PATCH", "/api/me", changes);
+export const invite = (toId: string) => request<InvitationResult>("POST", "/api/invitations", { to_id: toId });
+export const acceptInvitation = (fromId: string) =>
+  request<InvitationResult>("POST", `/api/invitations/${encodeURIComponent(fromId)}/accept`);
+/** Decline theirs, take back mine, or cancel our plan. */
+export const withdrawInvitation = (otherId: string) =>
+  request<void>("DELETE", `/api/invitations/${encodeURIComponent(otherId)}`);
 export const getPath = (toId: string) => request<Path>("GET", `/api/graph/path?to=${encodeURIComponent(toId)}`);
 export const checkIn = (room: string) => request<Room>("POST", "/api/checkins", { room });
 export const getRooms = () => request<Room[]>("GET", "/api/rooms");
