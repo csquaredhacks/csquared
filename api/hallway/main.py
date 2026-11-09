@@ -21,6 +21,7 @@ from .routes import (
     goals,
     graph,
     matches,
+    messages,
     recap,
     rooms,
     signin,
@@ -64,8 +65,8 @@ telemetry.refreshers["funnel"] = _refresh_funnel
 
 app = FastAPI(title="Hallway", lifespan=lifespan)
 for module in (
-    attendees, communities, matches, edges, graph, rooms, recap, crews, crowd, goals, chaos,
-    signin,
+    attendees, communities, matches, messages, edges, graph, rooms, recap, crews, crowd,
+    goals, chaos, signin,
 ):
     app.include_router(module.router)
 

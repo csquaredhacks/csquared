@@ -203,6 +203,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/communities/{community_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Messages
+         * @description The community's messages, oldest first. Members only.
+         */
+        get: operations["list_messages_api_communities__community_id__messages_get"];
+        put?: never;
+        /**
+         * Send Message
+         * @description I send one message to a community I joined. Members only.
+         */
+        post: operations["send_message_api_communities__community_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/edges": {
         parameters: {
             query?: never;
@@ -1038,6 +1062,29 @@ export interface components {
             /** Timezone */
             timezone: string;
         };
+        /**
+         * Message
+         * @description What members see. The author's id is never returned — only their name,
+         *     which they already chose to show on their profile.
+         */
+        Message: {
+            /** Id */
+            id: string;
+            /** Author Name */
+            author_name: string;
+            /** Text */
+            text: string;
+            /** Created At */
+            created_at: string;
+        };
+        /**
+         * MessageIn
+         * @description One message in a community's group chat. Text only, no attachments.
+         */
+        MessageIn: {
+            /** Text */
+            text: string;
+        };
         /** MyGraph */
         MyGraph: {
             /** Relationships */
@@ -1541,6 +1588,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Match"][];
+                };
+            };
+        };
+    };
+    list_messages_api_communities__community_id__messages_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_message_api_communities__community_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Message"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -186,6 +186,27 @@ class Community(CommunityIn):
     is_organizer: bool
 
 
+class MessageIn(BaseModel):
+    """One message in a community's group chat. Text only, no attachments."""
+
+    text: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("text", mode="before")
+    @classmethod
+    def strip_message_text(cls, value: str) -> str:
+        return strip_text(value)
+
+
+class Message(BaseModel):
+    """What members see. The author's id is never returned — only their name,
+    which they already chose to show on their profile."""
+
+    id: str
+    author_name: str
+    text: str
+    created_at: str
+
+
 class Match(BaseModel):
     attendee: Attendee
     score: float

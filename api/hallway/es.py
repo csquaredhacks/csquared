@@ -16,6 +16,7 @@ EDGES = f"{settings.index_prefix}-edges"
 CHECKINS = f"{settings.index_prefix}-checkins"
 CREWS = f"{settings.index_prefix}-crews"
 COMMUNITIES = f"{settings.index_prefix}-communities"
+MESSAGES = f"{settings.index_prefix}-messages"
 
 
 def now() -> str:
@@ -109,6 +110,12 @@ COMMUNITY_MAPPING = {"properties": {
     "created_at": {"type": "date"},
 }}
 
+MESSAGE_MAPPING = {"properties": {
+    "id": {"type": "keyword"}, "community_id": {"type": "keyword"},
+    "author_id": {"type": "keyword"}, "author_name": {"type": "keyword"},
+    "text": {"type": "text"}, "created_at": {"type": "date"},
+}}
+
 
 def ensure_indices(client: Elasticsearch) -> None:
     wanted = {
@@ -117,6 +124,7 @@ def ensure_indices(client: Elasticsearch) -> None:
         CHECKINS: CHECKIN_MAPPING,
         CREWS: CREW_MAPPING,
         COMMUNITIES: COMMUNITY_MAPPING,
+        MESSAGES: MESSAGE_MAPPING,
     }
     for name, mapping in wanted.items():
         if not client.indices.exists(index=name):
