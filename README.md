@@ -2,10 +2,14 @@
 
 **Nobody at a conference goes solo.**
 
-You tell Hallway three things: what you are working on, what you need, and what you can offer.
-It introduces you to the five people you should meet, and tells you why in plain words.
-You connect by scanning each other's QR code. A live graph on the venue screen grows as people meet,
-and a room map shows where everyone is.
+Hallway's goal is to help you find your group before a conference, arrive with
+familiar people, and keep growing those connections during and after the event.
+Your asks, offers, and chosen communities help you find people to meet. The graph
+helps you discover introductions and expand your group as the event continues.
+
+Read the [product brief](docs/PRODUCT_BRIEF.md) for the intended experience, build
+priorities, and open decisions. It separates the product direction from what is
+currently implemented.
 
 Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
 

@@ -1,5 +1,10 @@
 # Hallway Implementation Plan (v2: cluster on Radar, one image, zero-friction setup)
 
+> **Product direction updated.** Read [the product brief](../../PRODUCT_BRIEF.md)
+> before choosing new work. Pre-conference asks, offers, and initial groups lead
+> the experience, the graph expands those relationships during the event, and
+> groups can continue afterward. QR or NFC, points, and rewards remain open.
+
 > **Superseded on the day (v3).** The code no longer follows this plan in several places: there is no OTel Collector, the session cookie carries a secret, matching is hybrid, and the email field is gone. Read [`docs/REVIEW.md`](../../REVIEW.md) for what changed and why, [`docs/RUNBOOK.md`](../../RUNBOOK.md) for today's tasks, and [`docs/API.md`](../../API.md) for the contract. This file is kept as a record of the original plan.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

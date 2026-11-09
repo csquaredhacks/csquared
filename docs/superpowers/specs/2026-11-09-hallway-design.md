@@ -1,5 +1,11 @@
 # Hallway — Design Spec
 
+> **Historical design.** The current product direction is in
+> [the product brief](../../PRODUCT_BRIEF.md). Pre-conference group formation is
+> now central. Earlier decisions below that defer it, settle QR over NFC, or cut
+> off growing conversations do not represent the team's current scope. Use
+> [the API contract](../../API.md) for the implemented interface.
+
 **Event:** Cloud Native Hackathon, Salt Lake City, Monday 2026-11-09
 **Build window:** 11:00 AM – 5:30 PM MT (about 6 hours, minus lunch/panel at 2:00 PM)
 **Presentations:** 5:30 – 6:30 PM. Winners 6:30 PM.

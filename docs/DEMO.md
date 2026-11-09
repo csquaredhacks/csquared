@@ -1,5 +1,10 @@
 # Demo script (three minutes)
 
+> This script demonstrates the existing on-site slice. The intended full story is
+> before, during, and after the conference, as described in the
+> [product brief](PRODUCT_BRIEF.md). Demonstrate pre-conference groups and
+> post-event continuation as working features only after verifying those flows.
+
 **Before you walk up:** kiosk view open on the projector (`<url>/graph?kiosk=1`), Dash0
 dashboard in a second tab, Radar in a third, cluster seeded, chaos off.
 
