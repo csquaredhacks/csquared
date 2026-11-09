@@ -15,7 +15,8 @@ Stored in its own index (no change to the attendee mapping, no reindex):
 - `declined` stops the same crew from being suggested to the same person again.
 
 Capacity is enforced on accept with optimistic concurrency (if_seq_no/if_primary_term),
-so two people accepting the last seat at the same moment cannot both get it.
+so two people accepting the last seat at the same moment cannot both get it. One person
+accepting two crews at the same moment ends up in exactly one (`_keep_one_membership`).
 """
 
 import hashlib
@@ -254,8 +255,33 @@ def accept(client: Elasticsearch, me: dict, companion: bool = False) -> dict:
             # Don't leave a dead suggestion behind: the next suggest finds a new crew.
             _update(client, pending["id"], lambda c: _drop(c, me["id"], "invited"))
         raise
+    crew = _keep_one_membership(client, me, crew)
     crew_joins.add(1)
     return crew
+
+
+def _keep_one_membership(client: Elasticsearch, me: dict, joined: dict) -> dict:
+    """Two accepts by the same person, sent at the same moment, can both pass the
+    "already in a crew" check above and join two different crews. So look again after
+    joining. If I am now in more than one crew, the one with the smallest id is kept and
+    I am taken out of the others. Every racing request applies the same rule, so they
+    agree on the result whatever order they run in."""
+    mine = _search(client, "members", me["id"])
+    if len(mine) <= 1:
+        return joined
+    keep = min(mine, key=lambda c: c["id"])
+    for other in mine:
+        if other["id"] == keep["id"]:
+            continue
+
+        def undo(c: dict) -> None:
+            _drop(c, me["id"], "members")
+            _drop(c, me["id"], "companions")
+
+        _update(client, other["id"], undo)
+    if keep["id"] != joined["id"]:
+        raise CrewError(409, "You are already in a crew. Leave it first.")
+    return joined
 
 
 def _drop(crew: dict, attendee_id: str, field: str) -> None:

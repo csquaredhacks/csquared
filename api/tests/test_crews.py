@@ -3,7 +3,7 @@ Each test uses its own made-up topic words so people from other tests don't matc
 
 from concurrent.futures import ThreadPoolExecutor
 from importlib import reload
-from threading import Barrier
+from threading import Barrier, local
 
 from hallway import crews, es
 
@@ -198,6 +198,54 @@ def test_two_people_racing_for_the_last_seat_cannot_both_get_it(person):
     assert sorted(codes) == [200, 409]
     stored = client.get(index=es.CREWS, id=crew["id"])["_source"]
     assert len(stored["members"]) == 2
+
+
+def test_one_person_accepting_two_crews_at_once_ends_up_in_one(person, monkeypatch):
+    """Two accept requests for the same person, each for a different pending crew."""
+    ana, ana_me = person("Ana twocrews", working_on="twocrews")
+    client = es.get_client()
+    for crew_id in ("twocrews-a", "twocrews-b"):
+        client.index(
+            index=es.CREWS,
+            id=crew_id,
+            document={
+                "id": crew_id,
+                "members": [],
+                "companions": [],
+                "invited": [ana_me["id"]],
+                "declined": [],
+                "meeting": None,
+                "created_at": es.now(),
+            },
+            refresh=True,
+        )
+
+    # Each request is handed a different pending crew, and both pass the "already in a
+    # crew" check before either one joins: the worst ordering.
+    barrier = Barrier(2)
+    turn = local()
+
+    def pending_for(es_client, _attendee_id):
+        barrier.wait(timeout=5)
+        return crews._get(es_client, turn.crew_id)[0]
+
+    monkeypatch.setattr(crews, "pending_for", pending_for)
+
+    def accept_one(crew_id: str) -> str:
+        turn.crew_id = crew_id
+        try:
+            return crews.accept(client, ana_me)["id"]
+        except crews.CrewError as error:
+            return str(error.status)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = sorted(pool.map(accept_one, ["twocrews-a", "twocrews-b"]))
+
+    monkeypatch.undo()
+    member_of = [c["id"] for c in crews._search(client, "members", ana_me["id"])]
+    assert member_of == ["twocrews-a"]  # exactly one, and always the same one
+    assert results == ["409", "twocrews-a"]
+    assert ana.get("/api/crew").json()["crew"]["id"] == "twocrews-a"
 
 
 def test_leaving_sticks(person):
