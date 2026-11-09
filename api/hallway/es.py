@@ -99,7 +99,8 @@ CREW_MAPPING = {
 COMMUNITY_MAPPING = {"properties": {
     "id": {"type": "keyword"}, "name": {"type": "text"},
     "description": {"type": "text"}, "luma_url": {"type": "keyword", "index": False},
-    "owner_id": {"type": "keyword"}, "created_at": {"type": "date"},
+    "owner_id": {"type": "keyword"}, "members": {"type": "keyword"},
+    "created_at": {"type": "date"},
 }}
 
 
@@ -119,6 +120,7 @@ def ensure_indices(client: Elasticsearch) -> None:
     # and keeps its data, so nobody has to delete an index to get a new feature.
     client.indices.put_mapping(index=ATTENDEES, properties={"show_groups": {"type": "boolean"}})
     client.indices.put_mapping(index=EDGES, properties={"planned": {"type": "boolean"}})
+    client.indices.put_mapping(index=COMMUNITIES, properties={"members": {"type": "keyword"}})
     client.indices.put_mapping(
         index=ATTENDEES, properties={"goals": {"type": "object", "enabled": False}}
     )

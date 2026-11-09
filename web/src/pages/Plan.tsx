@@ -8,6 +8,7 @@ import {
 import type { CrewOut, Match, Me } from "../api/types";
 import { GoalBoard } from "../Goals";
 import { ErrorNote, PersonCard } from "../ui";
+import { MyCommunities } from "./Community";
 
 /** "Before you arrive": the four things to do in the week before the conference. */
 export default function Plan() {
@@ -52,6 +53,8 @@ export default function Plan() {
           at <Link to="/recover">Recover</Link> and your plan opens there.
         </p>
       </section>
+
+      <MyCommunities />
 
       <section aria-labelledby="goals">
         <h2 id="goals">What do you want from this conference?</h2>

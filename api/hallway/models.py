@@ -105,6 +105,32 @@ class RecoverIn(BaseModel):
     code: str = Field(min_length=6, max_length=6)
 
 
+def strip_text(value):
+    return value.strip() if isinstance(value, str) else value
+
+
+def check_luma_url(value: str) -> str:
+    """Shared by creating and editing a community, so the two can never disagree."""
+    value = value.strip()
+    # Reject whitespace and control characters inside the URL.
+    if re.search(r"[\s\x00-\x1f]", value):
+        raise ValueError("Enter an HTTPS event link from luma.com or lu.ma")
+    try:
+        url = urlsplit(value)
+        if (
+            url.scheme != "https"
+            or url.hostname not in {"luma.com", "www.luma.com", "lu.ma"}
+            or url.username
+            or url.password
+            or not url.path.strip("/")
+            or (url.port is not None and url.port != 443)
+        ):
+            raise ValueError
+    except ValueError as error:
+        raise ValueError("Enter an HTTPS event link from luma.com or lu.ma") from error
+    return value
+
+
 class CommunityIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     description: str = Field(default="", max_length=500)
@@ -113,33 +139,41 @@ class CommunityIn(BaseModel):
     @field_validator("name", "description", mode="before")
     @classmethod
     def strip_community_text(cls, value: str) -> str:
-        return value.strip() if isinstance(value, str) else value
+        return strip_text(value)
 
     @field_validator("luma_url")
     @classmethod
     def valid_luma_url(cls, value: str) -> str:
-        value = value.strip()
-        # Reject whitespace and control characters inside the URL.
-        if re.search(r"[\s\x00-\x1f]", value):
-            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma")
-        try:
-            url = urlsplit(value)
-            if (
-                url.scheme != "https"
-                or url.hostname not in {"luma.com", "www.luma.com", "lu.ma"}
-                or url.username
-                or url.password
-                or not url.path.strip("/")
-                or (url.port is not None and url.port != 443)
-            ):
-                raise ValueError
-        except ValueError as error:
-            raise ValueError("Enter an HTTPS event link from luma.com or lu.ma") from error
-        return value
+        return check_luma_url(value)
+
+
+class CommunityUpdate(BaseModel):
+    """PATCH /api/communities/{id}. Leave a field out to keep it as it is. A field that
+    is sent follows the same rules as in CommunityIn."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    description: str | None = Field(default=None, max_length=500)
+    luma_url: str | None = Field(default=None, max_length=2048)
+
+    @field_validator("name", "description", mode="before")
+    @classmethod
+    def strip_community_text(cls, value: str | None) -> str | None:
+        return strip_text(value)
+
+    @field_validator("luma_url")
+    @classmethod
+    def valid_luma_url(cls, value: str | None) -> str | None:
+        return value if value is None else check_luma_url(value)
 
 
 class Community(CommunityIn):
+    """What anyone may see. Members are only ever a count: no names, no ids. The last
+    two fields are about the signed-in caller, and false for a visitor."""
+
     id: str
+    member_count: int
+    is_member: bool
+    is_organizer: bool
 
 
 class Match(BaseModel):

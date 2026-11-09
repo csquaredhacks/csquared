@@ -40,3 +40,12 @@ def current_attendee(request: Request) -> dict:
         raise HTTPException(401, "Not registered yet")
     tag_attendee(attendee_id)
     return doc
+
+
+def optional_attendee(request: Request) -> dict | None:
+    """For public pages that show a little more to a signed-in person: their attendee
+    document, or None for a visitor. A missing or stale cookie is not an error here."""
+    try:
+        return current_attendee(request)
+    except HTTPException:
+        return None

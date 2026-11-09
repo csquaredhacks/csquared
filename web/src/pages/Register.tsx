@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createAttendee, errorMessage, getMe } from "../api/client";
 import type { Comfort } from "../api/types";
-import { hasPendingConnect, nextPath } from "../pending";
+import { hasPendingCommunity, hasPendingConnect, nextPath } from "../pending";
 import { ErrorNote } from "../ui";
 
 export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
@@ -66,6 +66,8 @@ export default function Register() {
       <p className="lede">
         {hasPendingConnect()
           ? "You scanned someone's code. Fill this in once and we will connect you two straight after."
+          : hasPendingCommunity()
+          ? "You came from a community invitation. Fill this in once and we will take you back to it, where you can choose to join."
           : "Going to a conference? Meet your people before you get there. One form, no account: say what you need and what you can give, and we will find your five and a group to walk in with."}
       </p>
 

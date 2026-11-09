@@ -17,7 +17,10 @@ def test_community_invitation_is_public_but_creation_requires_session(person):
     assert created.status_code == 201
     invitation = anonymous.get(f"/api/communities/{created.json()['id']}")
     assert invitation.status_code == 200
-    assert invitation.json() == {"id": created.json()["id"], **data}
+    assert invitation.json() == {
+        "id": created.json()["id"], **data,
+        "member_count": 0, "is_member": False, "is_organizer": False,
+    }  # fmt: skip
     assert anonymous.get("/api/communities/missing").status_code == 404
     for url in ("javascript:alert(1)", "https://luma.com.example.com/event", "http://luma.com/event"):
         assert client.post("/api/communities", json=data | {"luma_url": url}).status_code == 422
