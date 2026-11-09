@@ -257,10 +257,30 @@ class CrewOut(BaseModel):
     status: CrewStatus
     crew: Crew | None
     bringing_companion: bool = False
+    # True when someone left and I am now the only member. I am told; nothing is changed
+    # for me unless I ask for another group.
+    left_alone: bool = False
 
 
 class AcceptIn(BaseModel):
     companion: bool = False  # bringing one friend or companion, who takes a seat too
+
+
+class Goal(BaseModel):
+    text: str = Field(min_length=1, max_length=120)
+    done: bool = False  # set only by the person themselves
+
+    @field_validator("text", mode="before")
+    @classmethod
+    def strip_text(cls, value: object) -> object:
+        """Before the length check, so a goal made only of spaces is refused."""
+        return value.strip() if isinstance(value, str) else value
+
+
+class Goals(BaseModel):
+    """My own goals for this conference. Private to me."""
+
+    goals: list[Goal] = Field(max_length=5)
 
 
 class Topic(BaseModel):
