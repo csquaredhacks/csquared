@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, errorMessage, getRecap } from "../api/client";
 import type { Recap as RecapData } from "../api/types";
+import { GoalBoard } from "../Goals";
 import { ErrorNote, PersonCard } from "../ui";
 
 export default function Recap() {
@@ -36,6 +37,11 @@ export default function Recap() {
           </ul>
         </section>
       )}
+
+      <section aria-labelledby="goals-title">
+        <h2 id="goals-title">Your goals</h2>
+        <GoalBoard />
+      </section>
 
       <section aria-labelledby="met-title">
         <h2 id="met-title">People you met</h2>

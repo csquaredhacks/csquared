@@ -93,7 +93,12 @@ interface Meeting { place: string; starts_at: string;   // ISO 8601 with UTC off
 interface Crew { id: string; members: Attendee[]; seats_taken: number;  // companions count
                  limit: number;    // smallest comfort limit: one_on_one 2, small_groups 4, open 5
                  why: string; meeting: Meeting | null; }  // null until a member sets it
-interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: boolean; }
+interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: boolean;
+                    left_alone: boolean; }   // someone left and I am the only member now; nothing was changed for me
+
+// My own goals. Private: returned only to me, never part of a profile. Only I set `done`.
+interface Goal { text: string; done: boolean; }        // text 1 to 120 characters
+interface Goals { goals: Goal[]; }                     // at most 5
 
 // Organizer board. Counts only: no name, id, free text or affiliation. A topic or a
 // comfort row that describes fewer than three people is left out.
@@ -138,7 +143,10 @@ interface Crowd { registered: number;
 | POST | `/api/crew/decline` | cookie | | `CrewOut` (`none`); that crew is not suggested again | 401 |
 | DELETE | `/api/crew` | cookie | | `CrewOut` (`none`); you are not reassigned | 401 |
 | PUT | `/api/crew/meeting` | cookie | `{place, starts_at, timezone}` | `CrewOut` | 401, 403 not a member, 422 no offset, unknown zone, or an offset that is not the zone's offset at that time |
+| POST | `/api/crew/replace` | cookie | | `CrewOut`: I leave my crew and get a new suggestion (`suggested`) or `none`. Nothing is joined for me | 401 |
 | GET | `/api/crowd` | | | `Crowd` | |
+| GET | `/api/goals` | cookie | | `Goals` | 401 |
+| PUT | `/api/goals` | cookie | `Goals` (the whole list) | `Goals` | 401, 422 more than 5, empty or over-long text |
 | GET | `/api/chaos` | | | `{mode: "off" \| "slow" \| "error"}` | |
 | POST | `/api/chaos` | header `X-Admin-Token` | `{mode}` | `{mode}` | 403 |
 

@@ -1,5 +1,5 @@
 import type {
-  Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, CrewOut, Crowd, Graph, Health,
+  Attendee, AttendeeIn, Chaos, ChaosMode, Config, ConnectResult, CrewOut, Crowd, Goal, Goals, Graph, Health,
   InvitationResult, Match, Me, MyGraph, Path, Recap, Room,
 } from "./types";
 import type { components } from "./schema";
@@ -81,6 +81,10 @@ export const setCrewMeeting = (place: string, startsAt: string, timezone: string
 export const getPath = (toId: string) => request<Path>("GET", `/api/graph/path?to=${encodeURIComponent(toId)}`);
 export const checkIn = (room: string) => request<Room>("POST", "/api/checkins", { room });
 export const getRooms = () => request<Room[]>("GET", "/api/rooms");
+/** Leave my group and ask for another. I still have to accept the new one. */
+export const replaceCrew = () => request<CrewOut>("POST", "/api/crew/replace");
+export const getGoals = () => request<Goals>("GET", "/api/goals");
+export const setGoals = (goals: Goal[]) => request<Goals>("PUT", "/api/goals", { goals });
 export const getCrowd = () => request<Crowd>("GET", "/api/crowd");
 export const getRecap = () => request<Recap>("GET", "/api/recap");
 export const getChaos = () => request<Chaos>("GET", "/api/chaos");

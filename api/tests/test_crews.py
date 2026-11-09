@@ -5,7 +5,10 @@ from concurrent.futures import ThreadPoolExecutor
 from importlib import reload
 from threading import Barrier, Event, local
 
+from fastapi.testclient import TestClient
+
 from hallway import crews, es
+from hallway.main import app
 
 
 def _pair(person, topic: str, a_comfort: str = "open", b_comfort: str = "open"):
@@ -20,6 +23,7 @@ def test_nothing_happens_until_you_accept(person):
         "status": "none",
         "crew": None,
         "bringing_companion": False,
+        "left_alone": False,
     }
 
     out = ana.post("/api/crew/suggest").json()
@@ -348,6 +352,38 @@ def test_leaving_sticks(person):
         refresh=True,
     )
     assert ana.post("/api/crew/accept", json={}).status_code == 200
+
+
+def test_when_the_other_person_leaves_i_am_told_and_nothing_is_changed_for_me(person):
+    (ana, ana_me), (ben, _) = _pair(person, "mossgarnet")
+    ana.post("/api/crew/suggest")
+    first = ana.post("/api/crew/accept", json={}).json()
+    assert first["left_alone"] is False  # alone only because nobody else answered yet
+    ben.post("/api/crew/accept", json={})
+    ben.delete("/api/crew")
+
+    mine = ana.get("/api/crew").json()
+    assert mine["left_alone"] is True
+    assert mine["status"] == "member"  # still in the same crew: nobody moved me
+    assert mine["crew"]["id"] == first["crew"]["id"]
+    assert [m["id"] for m in mine["crew"]["members"]] == [ana_me["id"]]
+
+
+def test_asking_for_a_replacement_leaves_the_old_crew_and_only_suggests_a_new_one(person):
+    (ana, ana_me), (ben, _) = _pair(person, "larkspindle")
+    cho, _ = person("Cho larkspindle", offers="larkspindle", working_on="larkspindle")
+    ana.post("/api/crew/suggest")
+    old = ana.post("/api/crew/accept", json={}).json()["crew"]["id"]
+    ben.post("/api/crew/accept", json={})
+    ben.delete("/api/crew")
+
+    out = ana.post("/api/crew/replace").json()
+    assert out["status"] in ("suggested", "none")  # never joined on my behalf
+    assert out["crew"] is None or out["crew"]["id"] != old
+    stored = es.get_client().get(index=es.CREWS, id=old)["_source"]
+    assert ana_me["id"] not in stored["members"]
+    assert ana.post("/api/crew/replace").status_code == 200  # safe to ask again
+    assert TestClient(app).post("/api/crew/replace").status_code == 401
 
 
 def test_only_members_set_the_meeting_and_it_keeps_its_time_zone(person):

@@ -412,6 +412,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/crew/replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace Crew
+         * @description My plan fell through (for example, everyone else left). Leave this crew and get a
+         *     new suggestion. I still have to accept it; nothing is joined for me.
+         */
+        post: operations["replace_crew_api_crew_replace_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/crew/meeting": {
         parameters: {
             query?: never;
@@ -442,6 +463,27 @@ export interface paths {
          */
         get: operations["get_crowd_api_crowd_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Goals */
+        get: operations["get_goals_api_goals_get"];
+        /**
+         * Set Goals
+         * @description Replace my whole list: add, reword, tick, untick and remove are all this one call.
+         */
+        put: operations["set_goals_api_goals_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -660,6 +702,11 @@ export interface components {
              * @default false
              */
             bringing_companion: boolean;
+            /**
+             * Left Alone
+             * @default false
+             */
+            left_alone: boolean;
         };
         /**
          * Crowd
@@ -714,6 +761,24 @@ export interface components {
         EdgeIn: {
             /** To Id */
             to_id: string;
+        };
+        /** Goal */
+        Goal: {
+            /** Text */
+            text: string;
+            /**
+             * Done
+             * @default false
+             */
+            done: boolean;
+        };
+        /**
+         * Goals
+         * @description My own goals for this conference. Private to me.
+         */
+        Goals: {
+            /** Goals */
+            goals: components["schemas"]["Goal"][];
         };
         /** Graph */
         Graph: {
@@ -1595,6 +1660,26 @@ export interface operations {
             };
         };
     };
+    replace_crew_api_crew_replace_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrewOut"];
+                };
+            };
+        };
+    };
     set_meeting_api_crew_meeting_put: {
         parameters: {
             query?: never;
@@ -1644,6 +1729,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Crowd"];
+                };
+            };
+        };
+    };
+    get_goals_api_goals_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goals"];
+                };
+            };
+        };
+    };
+    set_goals_api_goals_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Goals"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Goals"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
