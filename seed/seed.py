@@ -18,12 +18,23 @@ import json
 import random
 import sys
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import httpx
 
 DATA = Path(__file__).with_name("attendees.json")
 SESSIONS = Path(__file__).with_name(".sessions.json")
+# Where seeded crews agree to meet. Salt Lake City, the hackathon's home.
+MEET_ZONE = "America/Denver"
+MEETING_POINTS = [
+    "North entrance, by the ramp",
+    "Registration desk, left side",
+    "Coffee bar, the quiet end",
+    "Main Stage doors",
+    "Outside Room A, by the benches",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -32,6 +43,9 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--phase", choices=["before", "live", "all"], default="all")
     p.add_argument("--invitations", type=int, default=40, help="how many invitations to meet")
     p.add_argument("--connections", type=int, default=45, help="how many meetings in total")
+    p.add_argument(
+        "--crew-share", type=float, default=0.8, help="share of attendees who look for a crew"
+    )
     p.add_argument("--checkins", action="store_true", help="check everyone into a random room")
     p.add_argument("--seed", type=int, default=7, help="random seed: same seed, same graph")
     p.add_argument("--delay", type=float, default=0, help="seconds to wait between requests")
@@ -108,6 +122,43 @@ def main() -> None:
                 call(target["client"], "POST", f"/api/invitations/{source['id']}/accept")
                 plans += 1
 
+    # Still act one: arrival groups. Most people ask for a crew and say yes; a few say
+    # no thanks, so the organizer board shows people still without a group. Each crew
+    # that forms agrees on a place and time, as its members would in the app.
+    crew_ids: set[str] = set()
+    joined = declined = 0
+    if args.phase in ("before", "all"):
+        when = (datetime.now(ZoneInfo(MEET_ZONE)) + timedelta(days=1)).replace(
+            hour=8, minute=30, second=0, microsecond=0
+        )
+        for person in rng.sample(people, k=round(len(people) * args.crew_share)):
+            out = call(person["client"], "POST", "/api/crew/suggest")
+            if out["status"] == "member" or out["crew"] is None:
+                continue
+            if rng.random() < 0.12:
+                call(person["client"], "POST", "/api/crew/decline")
+                declined += 1
+                continue
+            r = person["client"].post("/api/crew/accept", json={"companion": rng.random() < 0.1})
+            if r.status_code == 409:  # filled up a moment ago; that is part of the story
+                continue
+            if r.is_error:
+                sys.exit(f"POST /api/crew/accept -> {r.status_code}: {r.text[:300]}")
+            joined += 1
+            crew = r.json()["crew"]
+            if crew["id"] not in crew_ids and crew["meeting"] is None:
+                crew_ids.add(crew["id"])
+                call(
+                    person["client"],
+                    "PUT",
+                    "/api/crew/meeting",
+                    {
+                        "place": rng.choice(MEETING_POINTS),
+                        "starts_at": when.isoformat(),
+                        "timezone": MEET_ZONE,
+                    },
+                )
+
     # Act two: most plans happen, and some people simply meet by chance.
     met: set[frozenset[str]] = set()
     checkins = 0
@@ -139,6 +190,7 @@ def main() -> None:
         person["client"].close()
     print(
         f"{args.phase}: {len(people)} attendees, {len(invited)} invitations, {plans} plans, "
+        f"{joined} crew joins in {len(crew_ids)} crews ({declined} said no thanks), "
         f"{len(met)} meetings, {checkins} check-ins into {args.api} "
         f"in {time.monotonic() - started:.1f}s"
     )
