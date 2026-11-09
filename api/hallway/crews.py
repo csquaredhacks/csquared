@@ -18,11 +18,29 @@ Capacity is enforced on accept with optimistic concurrency (if_seq_no/if_primary
 so two people accepting the last seat at the same moment cannot both get it.
 """
 
+import hashlib
+import hmac
+import os
+import secrets
+
 from elasticsearch import ConflictError, Elasticsearch, NotFoundError
 
 from . import es
 from .matching import find_matches
 from .telemetry import crew_joins
+
+# Keys the crew id. Set CREW_ID_SALT to keep ids stable across restarts or replicas;
+# without it, a fresh salt per process still deduplicates within the one API replica.
+_SALT = (os.getenv("CREW_ID_SALT") or secrets.token_hex(16)).encode()
+
+
+def pair_crew_id(a: str, b: str) -> str:
+    """Same id whichever of the two starts the crew, so concurrent suggestions collapse
+    into one document. Keyed and hashed, because attendee ids are public (they are in
+    QR codes) and a readable id would reveal who else was suggested or declined."""
+    pair = ":".join(sorted([a, b])).encode()
+    return hmac.new(_SALT, pair, hashlib.sha256).hexdigest()[:16]
+
 
 # A crew's limit is the smallest limit among its members (and the person joining).
 COMFORT_LIMIT = {"one_on_one": 2, "small_groups": 4, "open": 5}
@@ -136,7 +154,7 @@ def suggest(client: Elasticsearch, me: dict) -> dict | None:
         if crew_of(client, other["id"]) or pending_for(client, other["id"]):
             continue
         crew = {
-            "id": "-".join(sorted([me["id"], other["id"]])),
+            "id": pair_crew_id(me["id"], other["id"]),
             "members": [],
             "companions": [],
             "invited": [me["id"], other["id"]],
@@ -153,7 +171,14 @@ def suggest(client: Elasticsearch, me: dict) -> dict | None:
                 refresh=True,
             )
         except ConflictError:
-            return _get(client, crew["id"])[0]
+            # The other person started this pair's crew a moment ago, or we were paired
+            # before. Reuse it unless I already declined or left it.
+            existing = _get(client, crew["id"])[0]
+            if me["id"] in existing.get("declined", []):
+                continue
+            if me["id"] in existing.get("invited", []):
+                return existing
+            return _update(client, crew["id"], lambda c: _invite(c, me["id"]))
         return crew
     return None
 

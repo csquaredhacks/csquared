@@ -71,7 +71,12 @@ def test_suggestion_create_conflict_returns_existing_crew(monkeypatch):
     client = Client()
     me = {"id": "z-person"}
     other = {"id": "a-person"}
-    existing = {"id": "a-person-z-person", "members": [], "invited": []}
+    existing = {
+        "id": crews.pair_crew_id("a-person", "z-person"),
+        "members": [],
+        "invited": ["a-person", "z-person"],
+        "declined": [],
+    }
     monkeypatch.setattr(crews, "ConflictError", CreateConflict)
     monkeypatch.setattr(crews, "find_matches", lambda *_args, **_kwargs: [(other, 1, "match")])
     monkeypatch.setattr(crews, "_get", lambda _client, _crew_id: (existing, 0, 1))
@@ -82,6 +87,21 @@ def test_suggestion_create_conflict_returns_existing_crew(monkeypatch):
     assert client.index_kwargs["id"] == existing["id"]
     assert client.index_kwargs["document"]["invited"] == [me["id"], other["id"]]
     assert client.index_kwargs["op_type"] == "create"
+
+
+def test_pair_crew_id_is_stable_and_reveals_no_attendee_id():
+    first = crews.pair_crew_id("aaa111", "bbb222")
+    assert first == crews.pair_crew_id("bbb222", "aaa111")
+    assert "aaa111" not in first and "bbb222" not in first
+
+
+def test_a_declined_pair_crew_is_not_suggested_again(person):
+    (ana, _), (ben, _) = _pair(person, "wobblequince")
+    ana.post("/api/crew/suggest")
+    ana.post("/api/crew/decline")
+    ben.post("/api/crew/decline")
+    out = ana.post("/api/crew/suggest").json()
+    assert out["status"] == "none"  # the old pair crew was not handed back
 
 
 def test_a_second_person_joins_the_first_persons_crew(person):
