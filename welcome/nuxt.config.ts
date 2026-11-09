@@ -9,7 +9,7 @@ export default defineNuxtConfig({
     },
   },
   css: ['~/assets/welcome.css'],
-  nitro: { prerender: { crawlLinks: false } },
+  nitro: { prerender: { crawlLinks: false, routes: ['/'] } },
   runtimeConfig: {
     public: {
       hallwayUrl: '/',

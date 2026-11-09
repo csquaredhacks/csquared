@@ -1,16 +1,26 @@
 <Rive version="1" kind="fragment">
   <Artboard width="620" height="420" name="Arrival passes">
     <!-- Registration cards become a pair of passes for the same arrival plan. -->
-    <Shape name="Connection line" x="310" y="205" opacity="0" id="0:3">
-      <Rectangle width="150" height="4" cornerRadiusTL="2"/>
-      <Fill><SolidColor colorValue="FF96D69A"/></Fill>
-    </Shape>
-    <Node name="First attendee" x="200" y="176" rotation="-0.18" id="0:1">
-      <Shape name="First pass">
-        <Rectangle width="238" height="144" cornerRadiusTL="24"/>
-        <Fill><SolidColor colorValue="FFE9F7DD"/></Fill>
-        <Stroke thickness="2"><SolidColor colorValue="FFB4DEAF"/></Stroke>
+    <Node name="Connection badge" x="310" y="205" opacity="0" scaleX="0.65" scaleY="0.65" id="0:4">
+      <Shape name="Badge first point" x="-7">
+        <Ellipse width="9" height="9"/>
+        <Fill><SolidColor colorValue="FF23482E"/></Fill>
       </Shape>
+      <Shape name="Badge second point" x="7">
+        <Ellipse width="9" height="9"/>
+        <Fill><SolidColor colorValue="FF23482E"/></Fill>
+      </Shape>
+      <Shape name="Badge link">
+        <Rectangle width="14" height="3" cornerRadiusTL="1.5"/>
+        <Fill><SolidColor colorValue="FF23482E"/></Fill>
+      </Shape>
+      <Shape name="Outer badge">
+        <Ellipse width="51" height="51"/>
+        <Fill><SolidColor colorValue="FFBDE79F"/></Fill>
+        <Stroke thickness="2"><SolidColor colorValue="FFE7F5D9"/></Stroke>
+      </Shape>
+    </Node>
+    <Node name="First attendee" x="200" y="176" rotation="-0.18" id="0:1">
       <Shape name="First avatar" x="-75" y="-21">
         <Ellipse width="34" height="34"/>
         <Fill><SolidColor colorValue="FF497E55"/></Fill>
@@ -35,13 +45,13 @@
         <Rectangle width="61" height="5" cornerRadiusTL="2.5"/>
         <Fill><SolidColor colorValue="FF497E55"/></Fill>
       </Shape>
+      <Shape name="First pass">
+        <Rectangle width="238" height="144" cornerRadiusTL="24"/>
+        <Fill><SolidColor colorValue="FFE9F7DD"/></Fill>
+        <Stroke thickness="2"><SolidColor colorValue="FFB4DEAF"/></Stroke>
+      </Shape>
     </Node>
     <Node name="Second attendee" x="424" y="233" rotation="0.16" id="0:2">
-      <Shape name="Second pass">
-        <Rectangle width="238" height="144" cornerRadiusTL="24"/>
-        <Fill><SolidColor colorValue="FF2A6348"/></Fill>
-        <Stroke thickness="2"><SolidColor colorValue="FF6FA982"/></Stroke>
-      </Shape>
       <Shape name="Second avatar" x="-75" y="-21">
         <Ellipse width="34" height="34"/>
         <Fill><SolidColor colorValue="FFD1EDBD"/></Fill>
@@ -66,26 +76,16 @@
         <Rectangle width="61" height="5" cornerRadiusTL="2.5"/>
         <Fill><SolidColor colorValue="FFD1EDBD"/></Fill>
       </Shape>
-    </Node>
-    <Node name="Connection badge" x="310" y="205" opacity="0" scaleX="0.65" scaleY="0.65" id="0:4">
-      <Shape name="Outer badge">
-        <Ellipse width="51" height="51"/>
-        <Fill><SolidColor colorValue="FFBDE79F"/></Fill>
-        <Stroke thickness="2"><SolidColor colorValue="FFE7F5D9"/></Stroke>
-      </Shape>
-      <Shape name="Badge first point" x="-7">
-        <Ellipse width="9" height="9"/>
-        <Fill><SolidColor colorValue="FF23482E"/></Fill>
-      </Shape>
-      <Shape name="Badge second point" x="7">
-        <Ellipse width="9" height="9"/>
-        <Fill><SolidColor colorValue="FF23482E"/></Fill>
-      </Shape>
-      <Shape name="Badge link">
-        <Rectangle width="14" height="3" cornerRadiusTL="1.5"/>
-        <Fill><SolidColor colorValue="FF23482E"/></Fill>
+      <Shape name="Second pass">
+        <Rectangle width="238" height="144" cornerRadiusTL="24"/>
+        <Fill><SolidColor colorValue="FF2A6348"/></Fill>
+        <Stroke thickness="2"><SolidColor colorValue="FF6FA982"/></Stroke>
       </Shape>
     </Node>
+    <Shape name="Connection line" x="310" y="205" opacity="0" id="0:3">
+      <Rectangle width="150" height="4" cornerRadiusTL="2"/>
+      <Fill><SolidColor colorValue="FF96D69A"/></Fill>
+    </Shape>
     <LinearAnimation name="Gather" duration="120" fps="60">
       <KeyedObject objectId="0:1">
         <KeyedProperty propertyKey="13">
