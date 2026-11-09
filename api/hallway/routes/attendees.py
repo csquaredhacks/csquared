@@ -13,6 +13,8 @@ router = APIRouter()
 
 # No 0/O or 1/I/L: the code gets read off one phone and typed into another.
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+# The profile fields the match query reads. An edit to any of them changes the matches.
+MATCHING_FIELDS = ["working_on", "asks", "offers", "tags", "groups"]
 
 
 @router.get("/api/config")
@@ -48,13 +50,24 @@ def me(doc: dict = Depends(current_attendee)) -> Me:
 
 
 @router.patch("/api/me")
-def update_me(body: MeUpdate, doc: dict = Depends(current_attendee)) -> Me:
-    """Change what I show publicly. Turning a choice off removes that information from
-    the public graph on its very next load."""
-    changes = body.model_dump(exclude_none=True)
-    if changes:
-        es.get_client().update(index=es.ATTENDEES, id=doc["id"], doc=changes, refresh=True)
-    return Me(**(doc | changes))
+def update_me(
+    body: MeUpdate, background: BackgroundTasks, doc: dict = Depends(current_attendee)
+) -> Me:
+    """Change my own profile: what I need and offer, and what I show publicly. Turning a
+    public choice off removes that information from the public graph on its next load."""
+    changes = body.model_dump(exclude_unset=True, exclude_none=True)
+    if not changes:
+        return Me(**doc)
+    client = es.get_client()
+    # A partial update through the Update API re-indexes the whole merged document, so the
+    # semantic copies of working_on, asks and offers (copy_to in the mapping) are rebuilt
+    # exactly as they are at registration. refresh=True: matching sees the edit at once.
+    client.update(index=es.ATTENDEES, id=doc["id"], doc=changes, refresh=True)
+    updated = doc | changes
+    if any(updated.get(field) != doc.get(field) for field in MATCHING_FIELDS):
+        # Who this person should meet has changed, so the matcher looks again.
+        background.add_task(matcher.resuggest_for, client, updated)
+    return Me(**updated)
 
 
 @router.post("/api/recover")

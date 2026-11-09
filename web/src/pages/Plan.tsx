@@ -60,6 +60,7 @@ export default function Plan() {
           <dt>I can offer</dt><dd>{me.offers || <span className="muted">Nothing written yet</span>}</dd>
         </dl>
         <p className="muted">Your five are chosen by matching what you need with what others offer, in both directions.</p>
+        <p><Link to="/me#edit">Edit what you need and offer</Link></p>
       </section>
     </>
   );
