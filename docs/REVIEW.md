@@ -19,14 +19,34 @@ this branch, not just noted.
 | 9 | Check-ins were an append-only log read back and deduplicated. | Extra code and a query that grows all day. | One check-in document per attendee, keyed by attendee id. Moving rooms overwrites it. |
 | 10 | Matches were fetched by attendee id in the URL. | Anyone could read anyone's matches. | `GET /api/matches` uses the session. |
 
+## v4: pre-conference first
+
+Decided at 1 PM. The v3 product was correct but its pitch started at the venue door, where
+every other networking tool starts. The promise "nobody goes solo" is only true if it is
+kept before people arrive. So the emphasis moved:
+
+| Was | Now |
+|---|---|
+| Pitch: live graph and room map. | Pitch: you arrive already knowing who to find and who to walk in with. The live graph is the payoff. |
+| Your Five was a page you opened at the event. | "Before you arrive" is the home page: your five, your crew, your link, your recovery code. |
+| Suggested links were decoration on the graph. | Waves turn a suggestion into a plan, and the recap reports planned against met. |
+| Organizers got a live room map. | Organizers also get a crowd board days ahead: asked for against offered. |
+| The demo started with "scan this". | The demo starts with "it is the Thursday before". |
+
+Nothing was removed to make room. The cost is three new features on a tight clock, so they
+have a strict order and a cut line. See [`PRE_CONFERENCE.md`](PRE_CONFERENCE.md).
+
 ## Scope that was cut
 
-PWA manifest, sessions index, NFC, points economy, LinkedIn import, resume upload, wayfinding
-arrows. None of them move a judging criterion. Recap stayed because it cost forty lines.
+PWA manifest, NFC, points economy, LinkedIn import, resume upload, wayfinding arrows, and
+email outreach. None of them move a judging criterion. Recap stayed because it cost forty
+lines. The sessions index is the last stretch item in the pre-conference plan.
 
 ## What to say to senior judges
 
-- **Lead with simplicity.** One image, one Helm release, one Secret, one URL. No database
+- **Lead with the week before.** Say the problem in one line: the hardest ten minutes of a
+  conference are the first ten, so we moved the work to before you arrive.
+- **Then simplicity.** One image, one Helm release, one Secret, one URL. No database
   besides Elasticsearch. Say what you chose not to build.
 - **Be honest about the planned incidents.** Say "we planted this fault to show the workflow"
   and separately show the real problems you hit, logged in `docs/investigations/`. Real ones

@@ -2,12 +2,30 @@
 
 **Nobody at a conference goes solo.**
 
-You tell Hallway three things: what you are working on, what you need, and what you can offer.
-It introduces you to the five people you should meet, and tells you why in plain words.
-You connect by scanning each other's QR code. A live graph on the venue screen grows as people meet,
-and a room map shows where everyone is.
+The hardest ten minutes of a conference are the first ten. So Hallway does its work
+*before* you arrive. The link comes with your ticket. You say what you are working on,
+what you need, and what you can offer. By the time you walk in, you know the five people
+you should find and why, you have a small crew to walk in with, and the organizers already
+know what the crowd is asking for. At the venue, a scan of a QR code turns each plan into a
+real connection, and a live graph shows the room coming together.
 
 Built in one day at the Cloud Native Hackathon, Salt Lake City, 9 November 2026.
+
+## Before, during, after
+
+| When | What you get | Status |
+|---|---|---|
+| **Before** | Register in a minute, with no account. | Built |
+| **Before** | Your five: the people to meet, each with a true reason and an icebreaker. | Built |
+| **Before** | Send your link to someone you already know, and you are connected before day one. | Built |
+| **Before** | A recovery code, so the profile you made at home opens on your phone at the venue. | Built |
+| **Before** | A crew of two to five people to walk in with, sized to your comfort preference. | In progress today |
+| **Before** | Wave at people you want to meet. Private until they wave back. | In progress today |
+| **Before** | For organizers: a crowd board of what people ask for against what they offer. | In progress today |
+| **During** | Scan a QR code to connect. A live graph on the venue screen. A room map. | Built |
+| **After** | A recap of who you met and what to follow up on. | Built |
+
+The full pre-conference plan is in [`docs/PRE_CONFERENCE.md`](docs/PRE_CONFERENCE.md).
 
 ## How it works
 
@@ -110,6 +128,7 @@ The API tests run against a real Elasticsearch at `ES_URL` and skip themselves i
 | `deploy/chart/hallway/` | The Helm chart: API, matcher CronJob, tunnel. |
 | `seed/` | 60 fictional attendees and a script that loads them through the API. |
 | `docs/API.md` | The contract between the API and the web app. |
+| `docs/PRE_CONFERENCE.md` | Why the product leads with the week before, and the features that make it real. |
 | `docs/RUNBOOK.md` | Who does what today, in order, with a troubleshooting table. |
 | `docs/REVIEW.md` | What was wrong with our first plan and how we fixed it. |
 | `docs/DEMO.md` | The three-minute demo script and the planned incidents. |

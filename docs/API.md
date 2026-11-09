@@ -83,3 +83,44 @@ Errors are `{"detail": "<message>"}`.
 `/` register (or redirect to `/five` if already registered), `/five`, `/me`, `/connect/:id`,
 `/recover`, `/graph` (`?kiosk=1` full screen, `?focus=<id>`), `/rooms` (`?room=<name>` checks in), `/recap`.
 A profile QR encodes `<origin>/connect/<my id>`.
+
+## Planned: pre-conference additions (v4)
+
+Not built yet. Build against these shapes. The design and the order are in
+[`PRE_CONFERENCE.md`](PRE_CONFERENCE.md). Move each block up into the sections above when it merges.
+
+```ts
+// B. Crews
+interface Crew { id: string; members: Attendee[]; room: string; when: string; why: string; }
+interface CrewOut { crew: Crew | null; }       // null: not assigned yet, or opted out
+
+// C. Waves
+type WaveState = "none" | "sent" | "received" | "mutual";
+interface Match { /* existing fields */ wave: WaveState; }
+interface WaveResult { mutual: boolean; other: Attendee; }
+interface Waves { mutual: Attendee[]; incoming: Attendee[]; outgoing: Attendee[]; }
+interface Edge { /* existing fields */ planned: boolean; }            // true when a wave came first
+interface GraphLink { /* existing */ kind: "connected" | "suggested" | "planned"; }
+interface Recap { /* existing fields */ planned: number; planned_met: number; still_to_meet: Attendee[]; }
+
+// D. Crowd board
+interface Topic { topic: string; asking: number; offering: number; }  // sorted by asking - offering, largest first
+interface Count { key: string; count: number; }
+interface Crowd { registered: number; with_crew: number; waves: number;
+                  topics: Topic[]; comfort: Count[]; groups: Count[]; }
+
+// E. Phase
+type Phase = "before" | "live" | "after";
+interface Config { /* existing fields */ phase: Phase; }
+```
+
+| Method | Path | Auth | Body | Returns | Errors |
+|---|---|---|---|---|---|
+| GET | `/api/crew` | cookie | | `CrewOut` | 401 |
+| DELETE | `/api/crew` | cookie | | `CrewOut` (always `null`; you are not reassigned) | 401 |
+| POST | `/api/waves` | cookie | `{to_id: string}` | `WaveResult` | 400 self or already connected, 401, 404, 429 after 20 |
+| GET | `/api/waves` | cookie | | `Waves` | 401 |
+| GET | `/api/crowd` | | | `Crowd` | |
+| POST | `/api/phase` | header `X-Admin-Token` | `{phase}` | `{phase}` | 403 |
+
+New web routes: `/plan` (replaces `/five`, which redirects), `/crowd` (`?kiosk=1` full screen).

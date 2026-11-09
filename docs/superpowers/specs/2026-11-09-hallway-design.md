@@ -1,5 +1,7 @@
 # Hallway — Design Spec
 
+> **Emphasis changed on the day (v4).** The product now leads with what happens before the conference. This spec still describes the original day-of framing. Read [`docs/PRE_CONFERENCE.md`](../../PRE_CONFERENCE.md) first.
+
 **Event:** Cloud Native Hackathon, Salt Lake City, Monday 2026-11-09
 **Build window:** 11:00 AM – 5:30 PM MT (about 6 hours, minus lunch/panel at 2:00 PM)
 **Presentations:** 5:30 – 6:30 PM. Winners 6:30 PM.
