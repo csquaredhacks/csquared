@@ -156,7 +156,9 @@ Every query in the match request is named, and Elasticsearch reports which names
 each person. `reason` and `is_reciprocal` are both read from that report, never guessed.
 `is_reciprocal` is true when both `asks_to_offers` (my asks against their offers) and
 `offers_to_asks` (my offers against their asks) matched. It is the same evidence as `reason`,
-and as loose: without ELSER one shared word is enough for a query to match.
+and as loose: without ELSER one shared word is enough for a query to match. Filler
+words ("and", "with", "need", ...) are removed from the word query first, so they never
+count as a match.
 
 ## The four relationships
 

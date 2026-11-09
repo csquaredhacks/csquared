@@ -46,3 +46,13 @@ def test_find_matches_still_returns_three_tuples(person):
     detailed = find_matches_detailed(client, a)
     assert [row[:3] for row in detailed] == plain
     assert {"asks_to_offers", "offers_to_asks", "similar_work"} <= detailed[0][3]
+
+
+def test_sharing_only_filler_words_is_not_a_match_in_either_direction(person):
+    """Two people who both wrote "and" or "with" have nothing to give each other."""
+    ana, _ = person("Ana filler", asks="I need help with and for the", offers="grobnatch")
+    ben, ben_me = person("Ben filler", asks="plimsoll", offers="help with and for the")
+    found = {m["attendee"]["id"]: m for m in ana.get("/api/matches").json()}
+    if ben_me["id"] in found:
+        assert found[ben_me["id"]]["is_reciprocal"] is False
+        assert not found[ben_me["id"]]["reason"].startswith("They offer what you asked for")
