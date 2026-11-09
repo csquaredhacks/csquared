@@ -100,8 +100,8 @@ interface CrewOut { status: CrewStatus; crew: Crew | null; bringing_companion: b
 interface Goal { text: string; done: boolean; }        // text 1 to 120 characters
 interface Goals { goals: Goal[]; }                     // at most 5
 
-// Organizer board. Counts only: no name, id, free text or affiliation. A topic or a
-// comfort row that describes fewer than three people is left out.
+// Organizer board. Counts only: no name, id, free text or affiliation. A topic or
+// preference row appears only when at least three people are behind it.
 interface Topic { topic: string; asking: number; offering: number; }  // widest gap (asking - offering) first, at most 15
 interface Count { key: string; count: number; }
 interface Crowd { registered: number;

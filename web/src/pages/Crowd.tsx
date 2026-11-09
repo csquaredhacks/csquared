@@ -33,8 +33,8 @@ export default function Crowd() {
     <>
       <h1>What the crowd needs</h1>
       <p className="lede">
-        For organizers, while there is still time to act. Counts only: no names, and nothing
-        that describes fewer than three people.
+        For organizers, while there is still time to act. Counts only: no names. A topic or
+        preference row appears only when at least three people are behind it.
       </p>
 
       <h2>From sign-up to meeting</h2>
