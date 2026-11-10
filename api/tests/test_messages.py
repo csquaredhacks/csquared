@@ -43,7 +43,10 @@ class Store:
     def search(self, *, index, query, size, sort):
         community_id = query["term"]["community_id"]
         found = [m for m in self.messages.values() if m["community_id"] == community_id]
-        found.sort(key=lambda m: m["created_at"])
+        found.sort(
+            key=lambda m: (m["created_at"], m["id"]),
+            reverse=sort[0]["created_at"] == "desc",
+        )
         return {"hits": {"hits": [{"_source": m} for m in found[:size]]}}
 
 
@@ -72,6 +75,8 @@ def test_members_only_and_author_id_never_returned(monkeypatch):
         assert client.post(path, json={"text": "x" * 1001}).status_code == 422
         sent = client.post(path, json={"text": "See you at the keynote"})
         assert sent.status_code == 201, sent.text
+        timestamp = sent.json()["created_at"]
+        assert len(timestamp.split(".")[1].split("+")[0]) == 3
         assert sent.json() == {
             "id": sent.json()["id"],
             "author_name": "Mia Member",
@@ -81,6 +86,35 @@ def test_members_only_and_author_id_never_returned(monkeypatch):
         listed = client.get(path)
         assert listed.status_code == 200
         assert listed.json() == [sent.json()]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_limit_returns_latest_messages_oldest_first(monkeypatch):
+    store = Store()
+    store.messages = {
+        str(number): {
+            "id": str(number),
+            "community_id": "community-1",
+            "author_name": "Mia Member",
+            "text": f"Message {number}",
+            "created_at": f"2026-11-09T00:00:0{number}.000+00:00",
+        }
+        for number in range(1, 5)
+    }
+    monkeypatch.setattr(es, "get_client", lambda: store)
+    app.dependency_overrides[current_attendee] = lambda: {
+        "id": "member-1",
+        "name": "Mia Member",
+    }
+    try:
+        path = PATH.format(id="community-1")
+        listed = TestClient(app).get(f"{path}?limit=2")
+        assert listed.status_code == 200, listed.text
+        assert [message["text"] for message in listed.json()] == [
+            "Message 3",
+            "Message 4",
+        ]
     finally:
         app.dependency_overrides.clear()
 

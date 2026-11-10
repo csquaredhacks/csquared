@@ -13,6 +13,7 @@ One document per message in the MESSAGES index:
 """
 
 import secrets
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -54,9 +55,9 @@ def list_messages(
         index=es.MESSAGES,
         query={"term": {"community_id": community_id}},
         size=limit,
-        sort=[{"created_at": "asc"}],
+        sort=[{"created_at": "desc"}, {"id": "desc"}],
     )["hits"]["hits"]
-    return [_view(h["_source"]) for h in hits]
+    return [_view(h["_source"]) for h in reversed(hits)]
 
 
 @router.post("/api/communities/{community_id}/messages", status_code=201)
@@ -71,7 +72,7 @@ def send_message(
         "author_id": me["id"],
         "author_name": me["name"],
         "text": body.text,
-        "created_at": es.now(),
+        "created_at": datetime.now(UTC).isoformat(timespec="milliseconds"),
     }
     es.get_client().index(index=es.MESSAGES, id=doc["id"], document=doc, refresh=True)
     return _view(doc)
