@@ -88,13 +88,26 @@ test("a one-line tech stack under a job does not end the experience section", ()
     "Hallway",
     "Tools: Git, Docker",
     "Matches people at conferences.",
-    "Goals: Find a mentor",
-    "Second Project",
   ].join("\n"));
   assert.deepEqual(result.tags, ["React", "Node.js", "PostgreSQL", "Git", "Docker"]);
   assert.equal(result.offers, "I can help with React, Node.js, PostgreSQL, Git, Docker.");
   assert.equal(result.working_on, "Backend Engineer, Acme. Built the billing service.");
-  assert.equal(result.asks, "Find a mentor");
+});
+
+test("sections written on one line after Experience still start their section", () => {
+  const result = parseResumeText([
+    "Alex Chen",
+    "EXPERIENCE",
+    "Backend Engineer, Acme",
+    "\u2022 Built the billing service.",
+    "Skills: Python, Go",
+    "Frameworks: Spring, Flask",
+    "Looking for: a mentor in distributed systems and",
+    "an internship for summer 2027.",
+  ].join("\n"));
+  assert.deepEqual(result.tags, ["Python", "Go", "Spring", "Flask"]);
+  assert.equal(result.asks, "a mentor in distributed systems and an internship for summer 2027.");
+  assert.equal(result.working_on, "Backend Engineer, Acme. Built the billing service.");
 });
 
 test("falls back to a project, then a degree, for what someone is working on", () => {

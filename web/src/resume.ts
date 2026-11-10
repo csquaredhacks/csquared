@@ -57,29 +57,35 @@ function headingOf(line: string): { key: SectionKey; rest: string } | null {
   return null;
 }
 
+/** "Frameworks: Spring, Flask": a short label, then a list. Not a bullet and not a sentence. */
+const SKILL_LABEL = /^[\p{L}][\p{L}&/ ]{1,30}:\s*[^\s.!?][^.!?]*$/u;
+
 /** The lines of a resume, grouped by the section they sit under. "head" is everything above the first heading. */
 function splitSections(raw: string): Record<SectionKey | "head", string[]> {
   const sections: Record<SectionKey | "head", string[]> = { head: [], summary: [], skills: [], experience: [], education: [], projects: [], asks: [], interests: [], other: [] };
   let current: SectionKey | "head" = "head";
-  // Set while a one-line heading inside a job or project ("Tech stack: React,") wraps onto the next line.
-  let wrapped: SectionKey | null = null;
+  // True while reading a skills line that sits inside a job or project.
+  let aside = false;
   for (const line of raw.split(/\r?\n/)) {
-    if (!line.trim()) continue;
+    const text = line.trim();
+    if (!text) continue;
     const heading = headingOf(line);
-    if (heading && heading.rest && (current === "experience" || current === "projects")) {
+    const inEntries = current === "experience" || current === "projects";
+    if (heading && heading.rest && heading.key === "skills" && inEntries) {
       // Many resumes close each job with "Tech stack: React, Node.js". That is one line of
       // skills, not the end of the experience section: the next job still belongs to it.
-      sections[heading.key].push(heading.rest);
-      wrapped = heading.rest.endsWith(",") ? heading.key : null;
+      sections.skills.push(heading.rest);
+      aside = true;
     } else if (heading) {
       current = heading.key;
-      wrapped = null;
+      aside = false;
       if (heading.rest) sections[current].push(heading.rest);
-    } else if (wrapped) {
-      sections[wrapped].push(line.trim());
-      if (!line.trim().endsWith(",")) wrapped = null;
+    } else if (aside && (sections.skills[sections.skills.length - 1].endsWith(",") || SKILL_LABEL.test(text))) {
+      // The list wrapped onto this line, or it is another labelled list ("Frameworks: Spring, Flask").
+      sections.skills.push(text);
     } else {
-      sections[current].push(line.trim());
+      aside = false;
+      sections[current].push(text);
     }
   }
   return sections;
