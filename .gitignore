@@ -12,3 +12,6 @@ __pycache__/
 web/openapi.json
 *.egg-info/
 seed/.sessions.json
+welcome/.nuxt/
+welcome/.output/
+welcome/dist

@@ -23,6 +23,7 @@ from .routes import (
     matches,
     recap,
     rooms,
+    signin,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -63,7 +64,8 @@ telemetry.refreshers["funnel"] = _refresh_funnel
 
 app = FastAPI(title="Hallway", lifespan=lifespan)
 for module in (
-    attendees, communities, matches, edges, graph, rooms, recap, crews, crowd, goals, chaos
+    attendees, communities, matches, edges, graph, rooms, recap, crews, crowd, goals, chaos,
+    signin,
 ):
     app.include_router(module.router)
 
@@ -85,6 +87,9 @@ def healthz() -> Health:
 dist = settings.web_dist.resolve()
 if (dist / "index.html").exists():
     app.mount("/assets", StaticFiles(directory=dist / "assets"), name="assets")
+    welcome = dist / "welcome"
+    if (welcome / "index.html").is_file():
+        app.mount("/welcome", StaticFiles(directory=welcome, html=True), name="welcome")
 
     @app.get("/{path:path}", include_in_schema=False)
     def web(path: str):

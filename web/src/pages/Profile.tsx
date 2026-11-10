@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { ApiError, errorMessage, getMe, updateMe } from "../api/client";
 import type { Me } from "../api/types";
-import { ErrorNote } from "../ui";
+import { ErrorNote, PROVIDER_NAMES } from "../ui";
 import { COMFORT_OPTIONS, splitList } from "./Register";
 
 export default function Profile() {
@@ -47,6 +47,7 @@ export default function Profile() {
         <p className="muted">
           Hallway has no accounts or passwords. If you switch phones or clear your browser,
           enter this code at <Link to="/recover">Recover</Link> to pick up where you left off.
+          {me.signin_provider && ` You joined with ${PROVIDER_NAMES[me.signin_provider]}, so signing in with it again works too.`}
         </p>
       </section>
 

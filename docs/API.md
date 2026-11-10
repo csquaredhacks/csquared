@@ -10,6 +10,22 @@ The cookie value is `<attendee id>.<secret>`. The secret never appears in any re
 so knowing someone's public id (it is in their QR) does not let you act as them.
 "Me" endpoints return 401 without a valid cookie.
 
+Sign in with Google or LinkedIn is optional, and only offered when the server has the
+provider's client id and secret (`Config.signin`). The buttons are plain links:
+
+1. `GET /api/signin/{provider}` sends the browser to the provider (OpenID Connect,
+   authorization code flow, scope `openid profile`) and sets `hallway_signin_state`
+   (HttpOnly, 10 minutes).
+2. The provider sends the browser to `GET /api/signin/{provider}/callback`. The `state`
+   must match the cookie. The server swaps the code for the provider's id for the person
+   (`sub`) and their name. It keeps nothing else.
+3. If an attendee joined with that account before, the callback sets `hallway_session` for
+   them. If not, it sets `hallway_signin_pending` (HttpOnly, signed, 1 hour) and the next
+   `POST /api/attendees` from that browser ties the new profile to the account.
+
+Every callback ends with a redirect to `/`, or to `/?signin_error=cancelled|failed`. The
+provider's id is stored as `signin_sub` and is never in any response.
+
 ## Shapes
 
 ```ts
@@ -35,7 +51,11 @@ interface Attendee {              // public profile
   fun_fact: string; tags: string[]; groups: string[]; comfort: Comfort;
 }
 
-interface Me extends Attendee { recovery_code: string; on_graph: boolean; show_groups: boolean; }
+interface Me extends Attendee { recovery_code: string; on_graph: boolean; show_groups: boolean;
+                                signin_provider: SigninProvider | null; }  // how I joined; only I am told
+
+type SigninProvider = "linkedin" | "google";
+interface PendingSignin { provider: SigninProvider; name: string; }
 
 // PATCH /api/me body. Every field is optional: send only what should change. A field left
 // out (or null) keeps its value. These are the only editable fields; any other field
@@ -83,7 +103,8 @@ interface CommunityIn { name: string; description: string; luma_url: string; }
 interface Community extends CommunityIn { id: string; }
 
 interface Config { rooms: string[]; chaos_enabled: boolean;
-                   rum: { url: string; token: string } | null; }
+                   rum: { url: string; token: string } | null;
+                   signin: SigninProvider[]; }   // the sign in buttons this server has set up
 
 // Arrival groups (working plan step 3). Pending suggestions and declines are never
 // returned to anyone; `members` lists only people who accepted.
@@ -119,8 +140,13 @@ interface Crowd { registered: number;
 |---|---|---|---|---|---|
 | GET | `/healthz` | | | `{ok: true, es: "green" \| "red"}` | |
 | GET | `/api/config` | | | `Config` | |
-| POST | `/api/attendees` | | `AttendeeIn` | 201 `Me` + cookie | 422 |
+| POST | `/api/attendees` | | `AttendeeIn` | 201 `Me` + cookie | 409 the signed-in account already has a profile, 422 |
+| GET | `/api/signin/{provider}` | | | 307 to the provider | 404 not set up |
+| GET | `/api/signin/{provider}/callback` | state cookie | | 303 to `/` (+ session or pending cookie) | 404 not set up |
+| GET | `/api/signin/pending` | | | `PendingSignin \| null` | |
+| DELETE | `/api/signin/pending` | | | 204 | |
 | POST | `/api/communities` | cookie | `CommunityIn` | 201 `Community` | 401, 422 |
+| GET | `/api/communities?q=&limit=` | optional cookie | | `Community[]` (newest first, limit 1-50, default 20) | 422 |
 | GET | `/api/communities/{id}` | | | `Community` | 404 |
 | GET | `/api/me` | cookie | | `Me` | 401 |
 | PATCH | `/api/me` | cookie | `MeUpdate` | `Me` (my own profile after the edit) | 401, 422 unknown field or invalid value |

@@ -28,6 +28,11 @@ def get_client() -> Elasticsearch:
     return Elasticsearch(settings.es_url, api_key=settings.es_api_key or None, request_timeout=15)
 
 
+# Set when someone joins with Google or LinkedIn: which one, and the provider's id for
+# them. Looked up at the next sign in. Never part of a public profile.
+SIGNIN_FIELDS = {"signin_provider": {"type": "keyword"}, "signin_sub": {"type": "keyword"}}
+
+
 def attendee_mapping(elser_id: str) -> dict:
     """Plain text fields for BM25, plus (when ELSER is configured) semantic_text copies
     of the same text, so one document can be searched both ways."""
@@ -48,6 +53,7 @@ def attendee_mapping(elser_id: str) -> dict:
         "created_at": {"type": "date"},
         # Private to the person. Stored, never searched or aggregated.
         "goals": {"type": "object", "enabled": False},
+        **SIGNIN_FIELDS,
     }
     if elser_id:
         for source, target in [
@@ -125,6 +131,7 @@ def ensure_indices(client: Elasticsearch) -> None:
         index=ATTENDEES, properties={"goals": {"type": "object", "enabled": False}}
     )
     client.indices.put_mapping(index=CREWS, properties={"left": {"type": "keyword"}})
+    client.indices.put_mapping(index=ATTENDEES, properties=SIGNIN_FIELDS)
 
 
 def ensure_indices_with_retry(client: Elasticsearch, seconds: int | None = 60) -> bool:

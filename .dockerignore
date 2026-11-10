@@ -14,3 +14,5 @@ docs
 deploy
 seed
 *.md
+welcome/.nuxt
+welcome/.output
