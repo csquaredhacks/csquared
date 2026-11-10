@@ -1,0 +1,235 @@
+.personal-graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+.personal-graph-layout > * {
+  min-width: 0;
+}
+.personal-graph h2 {
+  margin-top: 0;
+}
+.personal-graph > section {
+  margin-top: 2rem;
+}
+.community-stage {
+  position: relative;
+  background: radial-gradient(ellipse at 30% 20%, #262335, #101017 80%);
+  border-radius: 24px;
+  color: #f4f1ea;
+  overflow: hidden;
+}
+.community-stage canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.community-orb {
+  position: absolute;
+  width: 88px;
+  height: 88px;
+  margin: -44px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.community-orb:hover,
+.community-orb[aria-pressed="true"] {
+  border-color: #f4f1ea80;
+}
+.community-stage :focus-visible {
+  outline-color: #ffc233;
+}
+.community-name {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 145px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.person-dot {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #ffc233;
+}
+.person-dot i {
+  display: block;
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  left: 9px;
+  top: 9px;
+  border-radius: 50%;
+  background: #d0cfdf;
+  box-shadow: 0 0 0 2px #121117;
+}
+.person-dot.is-me i {
+  width: 12px;
+  height: 12px;
+  left: 7px;
+  top: 7px;
+  background: #ffc233;
+  box-shadow:
+    0 0 0 4px #ffc23333,
+    0 0 18px #ffc23366;
+}
+.person-dot.is-selected i,
+.person-dot:hover i {
+  box-shadow: 0 0 0 3px #ffc233;
+}
+.person-dot b {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  background: #121117;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.person-dot em {
+  position: absolute;
+  right: -2px;
+  top: -3px;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+  border-radius: 50%;
+  background: #ffc233;
+  color: #1b1500;
+  font-size: 9px;
+  font-style: normal;
+}
+.community-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.7rem 0 1rem;
+}
+.community-filters [aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--accent-deep);
+}
+.graph-detail {
+  position: sticky;
+  top: 1rem;
+  scroll-margin-top: 1rem;
+}
+.graph-detail > h2 {
+  font-family: var(--display);
+  font-size: 1.5rem;
+}
+.connection-card {
+  position: relative;
+  padding: 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--raised);
+  margin-bottom: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.connection-card h3 {
+  font-family: var(--display);
+  font-size: 1.25rem;
+  margin: 0;
+  padding-right: 1.7rem;
+}
+.connection-card p {
+  margin: 0.6rem 0;
+}
+.suggestion-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.suggestion-rank {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  width: 28px;
+  height: 28px;
+  text-align: center;
+  line-height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  font-weight: 700;
+}
+.person-name {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.connection-chain {
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+.connection-chain strong {
+  background: #121117;
+  color: #f4f1ea;
+  padding: 3px 6px;
+  border-radius: 10px;
+  box-decoration-break: clone;
+}
+.connection-level {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.connection-level span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.profile-facts {
+  margin: 1rem 0;
+}
+.profile-facts dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.profile-facts dd {
+  margin: 0 0 0.7rem;
+}
+.graph-empty {
+  padding: 2rem;
+}
+.personal-graph .relations {
+  overflow-wrap: anywhere;
+}
+.personal-graph .relation-actions {
+  flex-wrap: wrap;
+}
+@media (max-width: 959px) {
+  .personal-graph-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .graph-detail {
+    position: static;
+  }
+  .community-orb {
+    width: 72px;
+    height: 72px;
+    margin: -36px;
+  }
+}
