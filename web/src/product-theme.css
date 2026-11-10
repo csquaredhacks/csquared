@@ -195,8 +195,10 @@
 .product-theme .join-benefits span { display: block; color: #304d37; font-size: 0.9rem; margin-top: 0.25rem; }
 .product-theme .join-explore { color: #183b2b; font-size: 0.9rem; font-weight: 600; }
 .product-theme .join-explore span { margin-left: 0.6rem; }
-.product-theme .resume-option { margin: 1.25rem 0; }
-.product-theme .resume-option > summary { font-size: 0.9rem; }
+.product-theme .resume { margin: 1.25rem 0; }
+.product-theme .resume .optional > summary { font-size: 0.9rem; }
+.product-theme .dropzone.done { background: #e4edda; }
+.product-theme input.autofilled, .product-theme textarea.autofilled { background: #eef7e6; }
 .product-theme .provider-btn:hover { color: var(--raised); }
 .product-theme .provider-btn.google, .product-theme .provider-btn.linkedin { background: var(--raised); color: var(--text); border-color: var(--field); box-shadow: none; }
 .product-theme .provider-btn.google:hover, .product-theme .provider-btn.linkedin:hover { background: #e4edda; color: var(--text); }

@@ -13,6 +13,13 @@ const SIGNIN_ERRORS: Record<string, string> = {
   failed: "Sign in did not work. Try again, or fill in the form below.",
 };
 
+type ResumeField = "name" | "working_on" | "offers" | "asks" | "tags" | "groups";
+/** The fields a resume can fill, in form order, with the words the status line uses for them. */
+const RESUME_FIELDS: [ResumeField, string][] = [
+  ["name", "name"], ["working_on", "what you are working on"], ["asks", "what you need"],
+  ["offers", "what you can offer"], ["tags", "tags"], ["groups", "school"],
+];
+
 export const COMFORT_OPTIONS: { value: Comfort; label: string }[] = [
   { value: "open", label: "Open to anyone" },
   { value: "small_groups", label: "Small groups" },
@@ -39,6 +46,10 @@ export default function Register() {
     fun_fact: "", tags: "", groups: "", comfort: "open" as Comfort, on_graph: false, show_groups: false,
   });
   const formRef = useRef(form);
+  // What the last resume put in each field, so a second resume can replace it and the form can mark it.
+  const [suggested, setSuggested] = useState<Partial<Record<ResumeField, string>>>({});
+  const suggestedRef = useRef(suggested);
+  const [moreOpen, setMoreOpen] = useState(false);
   function setForm(update: typeof form | ((prev: typeof form) => typeof form)) {
     const next = typeof update === "function" ? update(formRef.current) : update;
     formRef.current = next;
@@ -87,28 +98,40 @@ export default function Register() {
     document.getElementById("name")?.focus({ preventScroll: true });
   }
 
-  /** A resume fills the fields it can. Anything it could not read stays blank. */
+  /** A resume fills the fields it can. Anything it could not read stays blank, and anything
+      the person typed stays theirs: only empty fields, and ones still holding an earlier
+      resume's suggestion, are replaced. Returns the names of the fields that changed. */
   function fillFromResume(data: ResumeData): string[] {
     const current = formRef.current;
+    const previous = suggestedRef.current;
+    const open = (field: ResumeField) => !current[field] || current[field] === previous[field];
+    const text = (field: "name" | "working_on" | "offers" | "asks") => (open(field) && data[field] ? data[field] : current[field]);
+    const list = (field: "tags" | "groups", max: number) => {
+      const kept = open(field) ? [] : splitList(current[field], max);
+      const seen = new Set<string>();
+      return [...kept, ...data[field]]
+        .filter((item) => !seen.has(item.toLowerCase()) && seen.add(item.toLowerCase()))
+        .slice(0, max).join(", ") || current[field];
+    };
     const next = {
       ...current,
-      name: current.name || data.name,
-      working_on: current.working_on || data.working_on,
-      offers: current.offers || data.offers,
-      asks: current.asks || data.asks,
-      tags: [...new Map([...splitList(current.tags, 10), ...data.tags].map((tag) => [tag.toLowerCase(), tag])).values()].slice(0, 10).join(", "),
-      groups: [...new Set([...splitList(current.groups, 5), ...data.groups])].slice(0, 5).join(", "),
+      name: text("name"), working_on: text("working_on"), offers: text("offers"), asks: text("asks"),
+      tags: list("tags", 10), groups: list("groups", 5),
     };
-    const changed = [
-      next.name !== current.name && "name",
-      next.working_on !== current.working_on && "summary",
-      next.tags !== current.tags && "skills",
-      next.offers !== current.offers && "suggested offer",
-      next.asks !== current.asks && "goals",
-      next.groups !== current.groups && "school",
-    ].filter((field): field is string => Boolean(field));
+    const changed = RESUME_FIELDS.filter(([field]) => next[field] !== current[field]);
+    const suggested = { ...previous };
+    for (const [field] of changed) suggested[field] = next[field];
+    suggestedRef.current = suggested;
+    setSuggested(suggested);
     setForm(next);
-    return changed;
+    // Tags and groups live in the optional section: open it so the person sees what was added.
+    if (changed.some(([field]) => field === "tags" || field === "groups")) setMoreOpen(true);
+    return changed.map(([, label]) => label);
+  }
+
+  /** Marks a field that still holds what the resume suggested, until the person edits it. */
+  function filled(field: ResumeField): string | undefined {
+    return suggested[field] !== undefined && form[field] === suggested[field] ? "autofilled" : undefined;
   }
 
   function toggleTag(tag: string) {
@@ -192,10 +215,7 @@ export default function Register() {
         {!signedInWith && <h3 className="divider">{providers.length > 0 ? "Or tell us about you" : "Tell us about you"}</h3>}
 
         <ErrorNote message={!signedInWith && providers.length === 0 ? signinError : ""} />
-        <details className="optional resume-option">
-          <summary>Autofill from a résumé (optional)</summary>
-          <ResumeIngest onFill={fillFromResume} />
-        </details>
+        <ResumeIngest onFill={fillFromResume} />
 
         <form onSubmit={submit} className="form" id="join-form">
           {signedInWith && (
@@ -207,24 +227,24 @@ export default function Register() {
           )}
 
           <label htmlFor="name">Your name</label>
-          <input id="name" required maxLength={80} autoComplete="name" value={form.name}
+          <input id="name" required maxLength={80} autoComplete="name" className={filled("name")} value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })} />
 
           <label htmlFor="working_on">What are you working on?</label>
-          <textarea id="working_on" required maxLength={500} rows={2} value={form.working_on}
+          <textarea id="working_on" required maxLength={500} rows={form.working_on.length > 80 ? 4 : 2} className={filled("working_on")} value={form.working_on}
             onChange={(e) => setForm({ ...form, working_on: e.target.value })} />
 
           <label htmlFor="asks">I need</label>
           <p className="hint" id="asks-hint">Advice, an intro, a reviewer, a job lead…</p>
-          <textarea id="asks" rows={2} aria-describedby="asks-hint" value={form.asks}
+          <textarea id="asks" rows={2} aria-describedby="asks-hint" className={filled("asks")} value={form.asks}
             onChange={(e) => setForm({ ...form, asks: e.target.value })} />
 
           <label htmlFor="offers">I can offer</label>
           <p className="hint" id="offers-hint">What could you help someone else with?</p>
-          <textarea id="offers" rows={2} aria-describedby="offers-hint" value={form.offers}
+          <textarea id="offers" rows={2} aria-describedby="offers-hint" className={filled("offers")} value={form.offers}
             onChange={(e) => setForm({ ...form, offers: e.target.value })} />
 
-          <details className="optional">
+          <details className="optional" open={moreOpen} onToggle={(e) => setMoreOpen(e.currentTarget.open)}>
             <summary>Optional: tags, groups, how you like to meet</summary>
 
             <label htmlFor="fun_fact">Fun fact</label>
@@ -233,13 +253,13 @@ export default function Register() {
 
             <label htmlFor="tags">Tags</label>
             <p className="hint" id="tags-hint">Comma separated, up to 10. Example: kubernetes, rust, ebpf</p>
-            <input id="tags" aria-describedby="tags-hint" autoCapitalize="none" value={form.tags}
+            <input id="tags" aria-describedby="tags-hint" autoCapitalize="none" className={filled("tags")} value={form.tags}
               onChange={(e) => setForm({ ...form, tags: e.target.value })} />
             <TagChips tags={splitList(form.tags, 10)} onToggle={toggleTag} />
 
             <label htmlFor="groups">Groups</label>
             <p className="hint" id="groups-hint">Company, community or school. Comma separated, up to 5.</p>
-            <input id="groups" aria-describedby="groups-hint" value={form.groups}
+            <input id="groups" aria-describedby="groups-hint" className={filled("groups")} value={form.groups}
               onChange={(e) => setForm({ ...form, groups: e.target.value })} />
 
             <fieldset>

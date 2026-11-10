@@ -185,6 +185,11 @@ fieldset { border: 0; padding: 0; margin: 0; }
   font-weight: 600; color: var(--text);
   background: var(--surface); border: 1px solid var(--field); border-radius: 999px;
 }
+.dropzone.done { border-style: solid; border-color: var(--accent-deep); }
+.resume-status { margin: 0.75rem 0 0; font-size: 0.95rem; }
+.resume-status.error { color: var(--bad); }
+/* A field still holding what the resume suggested. The mark goes as soon as it is edited. */
+input.autofilled, textarea.autofilled { background: #fff8e6; border-color: var(--accent-deep); }
 .resume .optional { margin-top: 0.75rem; }
 .resume .optional .button { margin-top: 0.75rem; }
 
