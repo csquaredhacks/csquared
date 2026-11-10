@@ -77,7 +77,7 @@ export default function Register() {
 
   /** One tap takes the person to the short form, which is the only step. */
   function startForm() {
-    document.getElementById("join-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("join-form")?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
     document.getElementById("name")?.focus({ preventScroll: true });
   }
 
@@ -129,6 +129,8 @@ export default function Register() {
 
   return (
     <>
+      <div className="join-intro">
+      <p className="join-eyebrow">A warmer way to walk in</p>
       <h1 className="hero">Nobody at a conference goes <em>solo</em>.</h1>
       <p className="lede">
         {hasPendingConnect()
@@ -137,6 +139,13 @@ export default function Register() {
           ? "You came from a community invitation. Fill this in once and we will take you back to it, where you can choose to join."
           : "Going to a conference? Meet your people before you get there. One form, no account: say what you need and what you can give, and we will find your five and a group to walk in with."}
       </p>
+      <ol className="join-benefits">
+        <li><strong>Find your people</strong><span>Connect through what you need and what you can offer.</span></li>
+        <li><strong>Walk in together</strong><span>Choose a group and make a plan to meet.</span></li>
+        <li><strong>Keep the conversation going</strong><span>Remember who you met and what comes next.</span></li>
+      </ol>
+      <a className="join-explore" href="/welcome/">Explore Hallway <span aria-hidden="true">↗</span></a>
+      </div>
 
       <section className="signin-card" aria-labelledby="join-title">
         <h2 id="join-title">Join Hallway</h2>
@@ -147,8 +156,6 @@ export default function Register() {
             ? "Sign in with one tap, or fill in one short form. No password."
             : "One short form and you are in. No password, no account, and no sign-in with another service."}
         </p>
-
-        <ResumeIngest onFill={fillFromResume} />
 
         {/* Only buttons that really work are shown: a provider is listed once the server has
             its client id and secret. With none, there is one Get started button. */}
@@ -164,6 +171,12 @@ export default function Register() {
         ))}
 
         {!signedInWith && <h3 className="divider">{providers.length > 0 ? "Or tell us about you" : "Tell us about you"}</h3>}
+
+        <ErrorNote message={!signedInWith && providers.length === 0 ? signinError : ""} />
+        <details className="optional resume-option">
+          <summary>Autofill from a résumé (optional)</summary>
+          <ResumeIngest onFill={fillFromResume} />
+        </details>
 
         <form onSubmit={submit} className="form" id="join-form">
           {signedInWith && (

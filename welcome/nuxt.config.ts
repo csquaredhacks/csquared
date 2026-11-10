@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   app: {
     baseURL: process.env.NUXT_APP_BASE_URL || '/welcome/',
     head: {
+      htmlAttrs: { lang: 'en' },
       title: 'Hallway | Find your people',
       meta: [{ name: 'description', content: 'Find people to meet and a group to arrive with before the conference.' }],
     },

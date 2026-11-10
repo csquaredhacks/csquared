@@ -1,14 +1,14 @@
 /* Product surfaces only. App deliberately leaves /graph (including kiosk) outside
    this scope. Keep the base stylesheet and page/auth components independent. */
 .product-theme {
-  --ink: #f5f4e9;
+  --ink: #f8f9ed;
   --surface: #eeefe3;
   --raised: #fffef8;
   --line: #d6ddce;
   --field: #788773;
   --text: #172c20;
   --muted: #53634f;
-  --accent: #69b66d;
+  --accent: #a9e47c;
   --accent-deep: #245c33;
   --on-accent: #132b1b;
   --good: #286439;
@@ -175,4 +175,40 @@
 
 @media (prefers-reduced-motion: reduce) {
   .product-theme .button:active, .product-theme .provider-btn:active { transform: none; }
+}
+
+/* A continuous welcome-to-profile journey, with the form kept in reading order. */
+.product-theme .topbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-block: 1.5rem; }
+.product-theme .header-links { display: flex; gap: 1.5rem; align-items: center; font-size: 0.9rem; }
+.product-theme .header-links a { color: var(--text); text-decoration: none; padding-block: 0.75rem; }
+.product-theme .header-links a:hover { text-decoration: underline; }
+.product-theme .wordmark::before { background: radial-gradient(circle at 0.4em 50%, #183b2b 0.35em, transparent 0.37em), radial-gradient(circle at 1em 50%, #183b2b 0.35em, transparent 0.37em); }
+.product-theme .join-intro { padding: clamp(1.5rem, 3.3vw, 3rem); background: #a9e47c; border-radius: 2rem; align-self: start; }
+.product-theme .join-eyebrow { margin: 0 0 2rem; font-size: 0.85rem; font-weight: 600; color: #183b2b; }
+.product-theme .join-intro .hero { font-size: clamp(2.75rem, 4.8vw, 4.25rem); font-weight: 650; line-height: 1.04; letter-spacing: -0.065em; text-wrap: initial; }
+.product-theme .join-intro .hero em { color: #183b2b; }
+.product-theme .join-intro .lede { color: #304d37; font-size: 1rem; line-height: 1.65; }
+.product-theme .join-benefits { padding: 0; margin: 2rem 0; list-style: none; counter-reset: benefit; }
+.product-theme .join-benefits li { position: relative; padding: 1rem 0 1rem 2.5rem; border-top: 1px solid #769d60; counter-increment: benefit; }
+.product-theme .join-benefits li::before { content: counter(benefit, decimal-leading-zero); position: absolute; left: 0; top: 1.1rem; font: 500 0.8rem var(--mono); }
+.product-theme .join-benefits strong { display: block; font-size: 1rem; }
+.product-theme .join-benefits span { display: block; color: #304d37; font-size: 0.9rem; margin-top: 0.25rem; }
+.product-theme .join-explore { color: #183b2b; font-size: 0.9rem; font-weight: 600; }
+.product-theme .join-explore span { margin-left: 0.6rem; }
+.product-theme .resume-option { margin: 1.25rem 0; }
+.product-theme .resume-option > summary { font-size: 0.9rem; }
+.product-theme .provider-btn:hover { color: var(--raised); }
+.product-theme .provider-btn.google, .product-theme .provider-btn.linkedin { background: var(--raised); color: var(--text); border-color: var(--field); box-shadow: none; }
+.product-theme .provider-btn.google:hover, .product-theme .provider-btn.linkedin:hover { background: #e4edda; color: var(--text); }
+@media (min-width: 64rem) {
+  .product-theme [data-page="/"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 2.5rem; }
+  .product-theme [data-page="/"] > .join-intro { grid-column: 1; grid-row: 1; }
+  .product-theme [data-page="/"] > .signin-card { grid-column: 2; grid-row: 1 / 6; }
+}
+@media (max-width: 48rem) {
+  .product-theme .header-links { gap: 0.75rem; font-size: 0.8rem; }
+  .product-theme .header-links > a:first-child { display: none; }
+  .product-theme .join-intro { border-radius: 1.5rem; }
+  .product-theme .join-eyebrow { margin-bottom: 1.25rem; }
+  .product-theme .join-benefits { display: none; }
 }
