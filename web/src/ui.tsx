@@ -43,73 +43,9 @@ export function ProviderButtons({ providers }: { providers: SigninProvider[] }) 
   );
 }
 
-/** What a resume gives us, and nothing else. The parser is deliberately
-    conservative: it only fills a field when it finds something that looks
-    like that field, and the person can fix anything before submitting. */
-export interface ResumeData {
-  name: string;
-  working_on: string;
-  tags: string[];
-  groups: string[];
-}
-
-const HEADINGS = ["summary", "about", "profile", "objective", "skills", "technologies", "technical skills", "experience", "work experience", "education", "projects", "contact"];
-
-/** The lines under a heading, up to the next heading. Also handles "Skills: a, b" on one line. */
-function sectionText(text: string, names: string[]): string {
-  const inline = new RegExp(`^\\s*(?:${names.join("|")})\\s*[:\u2014-]\\s*(.+)$`, "im");
-  const inlineMatch = text.match(inline);
-  if (inlineMatch) return inlineMatch[1].trim();
-  const head = new RegExp(`^\\s*(?:${names.join("|")})\\s*$`, "im");
-  const headMatch = text.match(head);
-  if (!headMatch || headMatch.index === undefined) return "";
-  const rest = text.slice(headMatch.index + headMatch[0].length);
-  const lines = rest.split(/\r?\n/);
-  const out: string[] = [];
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && HEADINGS.some((h) => new RegExp(`^${h}\\b`, "i").test(trimmed))) break;
-    out.push(line);
-  }
-  return out.join("\n").trim();
-}
-
-export function parseResumeText(raw: string): ResumeData {
-  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-
-  let name = "";
-  for (const line of lines.slice(0, 6)) {
-    if (/resume|cv|curriculum|linkedin|github\.com|@|https?:|www\.|\d{3}[-. ]\d{3}/i.test(line)) continue;
-    const words = line.split(/\s+/);
-    if (words.length >= 2 && words.length <= 4 && /^[A-Z][\w'’-]+(\s+[A-Z][\w'’-]+)+$/.test(line)) {
-      name = line;
-      break;
-    }
-  }
-
-  let working_on = "";
-  const summary = sectionText(raw, ["summary", "about", "profile", "objective"]);
-  if (summary) {
-    working_on = summary.replace(/\s+/g, " ").split(/(?<=[.!?])\s+/).slice(0, 2).join(" ").slice(0, 500);
-  }
-
-  let tags: string[] = [];
-  const skills = sectionText(raw, ["skills", "technologies", "technical skills"]);
-  if (skills) {
-    tags = skills.split(/[,•\n;|]/).map((s) => s.trim().replace(/^[-–]\s*/, ""))
-      .filter((s) => s.length > 1 && s.length < 30 && !/^(and|with|including|etc)$/i.test(s))
-      .slice(0, 10);
-  }
-
-  const groups: string[] = [];
-  const edu = sectionText(raw, ["education"]);
-  if (edu) {
-    const first = edu.split("\n").map((s) => s.trim()).filter(Boolean)[0];
-    if (first && first.length > 2 && first.length < 60) groups.push(first.replace(/,.*$/, ""));
-  }
-
-  return { name, working_on, tags, groups };
-}
+import { parseResumeText } from "./resume";
+import type { ResumeData } from "./resume";
+export type { ResumeData } from "./resume";
 
 /** PDF text, read on this device only. Loaded on demand so the main bundle stays small. */
 async function extractPdfText(file: File): Promise<string> {
@@ -129,7 +65,7 @@ async function extractPdfText(file: File): Promise<string> {
 /** Drop a resume, or paste its text, and the form fills itself in.
     Nothing leaves the browser: the file is read here and only the filled
     form is ever sent to Hallway. */
-export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => void }) {
+export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => string[] }) {
   const [status, setStatus] = useState("");
   const [dragging, setDragging] = useState(false);
   const [paste, setPaste] = useState("");
@@ -140,14 +76,20 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => void })
       data.name && "name",
       data.working_on && "summary",
       data.tags.length > 0 && "skills",
+      data.offers && "suggested offer",
+      data.asks && "goals",
       data.groups.length > 0 && "school",
     ].filter(Boolean);
     if (filled.length === 0) {
       setStatus("Could not find a name, summary or skills in that text. Fill the form in by hand, it is short.");
       return;
     }
-    onFill(data);
-    setStatus(`Filled from your resume: ${filled.join(", ")}. Fix anything wrong below.`);
+    const applied = onFill(data);
+    if (applied.length === 0) {
+      setStatus("Your form already has these details. Nothing new was added.");
+      return;
+    }
+    setStatus(`Filled from your resume: ${applied.join(", ")}. Review and edit the suggestions below. Your needs and privacy choices stay yours.`);
   }
 
   async function handleFile(file: File | undefined) {
@@ -170,7 +112,7 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => void })
         onDrop={(e) => { e.preventDefault(); setDragging(false); void handleFile(e.dataTransfer.files[0]); }}
       >
         <span className="dropzone-title">Have a resume? Drop it here</span>
-        <span className="muted">PDF, text or Markdown. We pull your name, summary and skills into the form, and nothing else.</span>
+        <span className="muted">PDF, text or Markdown. We suggest your name, summary, skills and an offer. Review everything before joining.</span>
         <input
           type="file"
           accept=".pdf,.txt,.md"

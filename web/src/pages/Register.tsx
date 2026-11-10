@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createAttendee, errorMessage, forgetPendingSignin, getConfig, getMe, getPendingSignin } from "../api/client";
@@ -34,10 +34,16 @@ export default function Register() {
   // Set when the person has just signed in and only the form is left.
   const [signedInWith, setSignedInWith] = useState<SigninProvider | null>(null);
   const [signinError, setSigninError] = useState("");
-  const [form, setForm] = useState({
+  const [form, setFormState] = useState({
     name: "", working_on: "", asks: "", offers: "",
     fun_fact: "", tags: "", groups: "", comfort: "open" as Comfort, on_graph: false, show_groups: false,
   });
+  const formRef = useRef(form);
+  function setForm(update: typeof form | ((prev: typeof form) => typeof form)) {
+    const next = typeof update === "function" ? update(formRef.current) : update;
+    formRef.current = next;
+    setFormState(next);
+  }
 
   // Already registered on this phone, or just signed in to an existing profile? Skip the form.
   useEffect(() => {
@@ -82,14 +88,27 @@ export default function Register() {
   }
 
   /** A resume fills the fields it can. Anything it could not read stays blank. */
-  function fillFromResume(data: ResumeData) {
-    setForm((prev) => ({
-      ...prev,
-      name: data.name || prev.name,
-      working_on: data.working_on || prev.working_on,
-      tags: data.tags.length > 0 ? data.tags.join(", ") : prev.tags,
-      groups: data.groups.length > 0 ? data.groups.join(", ") : prev.groups,
-    }));
+  function fillFromResume(data: ResumeData): string[] {
+    const current = formRef.current;
+    const next = {
+      ...current,
+      name: current.name || data.name,
+      working_on: current.working_on || data.working_on,
+      offers: current.offers || data.offers,
+      asks: current.asks || data.asks,
+      tags: [...new Map([...splitList(current.tags, 10), ...data.tags].map((tag) => [tag.toLowerCase(), tag])).values()].slice(0, 10).join(", "),
+      groups: [...new Set([...splitList(current.groups, 5), ...data.groups])].slice(0, 5).join(", "),
+    };
+    const changed = [
+      next.name !== current.name && "name",
+      next.working_on !== current.working_on && "summary",
+      next.tags !== current.tags && "skills",
+      next.offers !== current.offers && "suggested offer",
+      next.asks !== current.asks && "goals",
+      next.groups !== current.groups && "school",
+    ].filter((field): field is string => Boolean(field));
+    setForm(next);
+    return changed;
   }
 
   function toggleTag(tag: string) {

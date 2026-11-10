@@ -58,6 +58,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: node --experimental-strip-types --test tests/resume.test.mjs
       - run: npm run build
       - name: Build Nuxt welcome
         working-directory: welcome
