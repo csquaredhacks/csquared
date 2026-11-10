@@ -148,6 +148,8 @@ interface Crowd { registered: number;
 | POST | `/api/communities` | cookie | `CommunityIn` | 201 `Community` | 401, 422 |
 | GET | `/api/communities?q=&limit=` | optional cookie | | `Community[]` (newest first, limit 1-50, default 20) | 422 |
 | GET | `/api/communities/{id}` | | | `Community` | 404 |
+| GET | `/api/communities/{id}/messages` | cookie | | `Message[]` (most recent messages, oldest first; `?limit=` 1–100, default 50) | 401, 403 non-member, 404 |
+| POST | `/api/communities/{id}/messages` | cookie | `MessageIn` | 201 `Message` | 401, 403 non-member, 404, 422 |
 | GET | `/api/me` | cookie | | `Me` | 401 |
 | PATCH | `/api/me` | cookie | `MeUpdate` | `Me` (my own profile after the edit) | 401, 422 unknown field or invalid value |
 | POST | `/api/recover` | | `{code: string}` | `Me` + cookie | 404 |
