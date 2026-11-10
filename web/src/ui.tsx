@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { Attendee, SigninProvider } from "./api/types";
 
@@ -43,98 +43,123 @@ export function ProviderButtons({ providers }: { providers: SigninProvider[] }) 
   );
 }
 
-import { parseResumeText } from "./resume";
+import { nameFromFilename, parseResumeText } from "./resume";
 import type { ResumeData } from "./resume";
+import { ResumeFileError, readResumeFile } from "./resumeFile";
 export type { ResumeData } from "./resume";
 
-/** PDF text, read on this device only. Loaded on demand so the main bundle stays small. */
-async function extractPdfText(file: File): Promise<string> {
-  const pdfjs = await import("pdfjs-dist");
-  const worker = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  pdfjs.GlobalWorkerOptions.workerSrc = worker;
-  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-  const parts: string[] = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    parts.push(content.items.map((item) => ("str" in item ? item.str + (item.hasEOL ? "\n" : "") : "")).join(""));
-  }
-  return parts.join("\n");
-}
+type IngestStatus = { kind: "reading" | "done" | "error"; text: string };
 
-/** Drop a resume, or paste its text, and the form fills itself in.
-    Nothing leaves the browser: the file is read here and only the filled
-    form is ever sent to Hallway. */
+/** Choose a resume, drop one anywhere on the page, or paste its text, and the form
+    fills itself in straight away. Nothing leaves the browser: the file is read here
+    and only the filled form is ever sent to Hallway. */
 export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => string[] }) {
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<IngestStatus | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState("");
   const [paste, setPaste] = useState("");
+  // The page-wide drop listeners are attached once, so they reach the latest callback through a ref.
+  const handleFileRef = useRef<(file: File | undefined) => void>(() => {});
+  const latestRead = useRef(0);
 
-  async function readText(text: string) {
+  function readText(text: string, source: string, fallbackName = "") {
     const data = parseResumeText(text);
-    const filled = [
-      data.name && "name",
-      data.working_on && "summary",
-      data.tags.length > 0 && "skills",
-      data.offers && "suggested offer",
-      data.asks && "goals",
-      data.groups.length > 0 && "school",
-    ].filter(Boolean);
-    if (filled.length === 0) {
-      setStatus("Could not find a name, summary or skills in that text. Fill the form in by hand, it is short.");
+    if (!data.name) data.name = fallbackName;
+    const found = data.name || data.working_on || data.offers || data.asks || data.tags.length > 0 || data.groups.length > 0;
+    if (!found) {
+      setStatus({ kind: "error", text: `Could not find a name, summary or skills in ${source}. Fill the form in by hand, it is short.` });
       return;
     }
     const applied = onFill(data);
-    if (applied.length === 0) {
-      setStatus("Your form already has these details. Nothing new was added.");
-      return;
-    }
-    setStatus(`Filled from your resume: ${applied.join(", ")}. Review and edit the suggestions below. Your needs and privacy choices stay yours.`);
+    setStatus(applied.length === 0
+      ? { kind: "done", text: "Your form already has these details. Nothing new was added." }
+      : { kind: "done", text: `Filled in from ${source}: ${applied.join(", ")}. Check each one and change anything that is not right.` });
   }
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
-    setStatus("Reading your resume…");
+    // A big PDF can finish after a small file chosen later. Only the latest choice may fill the form.
+    const read = ++latestRead.current;
+    setFileName(file.name);
+    setStatus({ kind: "reading", text: `Reading ${file.name}…` });
     try {
-      const text = file.name.toLowerCase().endsWith(".pdf") ? await extractPdfText(file) : await file.text();
-      await readText(text);
-    } catch {
-      setStatus("That file did not open. Try a .txt or .md file, or paste the text below.");
+      const text = await readResumeFile(file);
+      if (read === latestRead.current) readText(text, file.name, nameFromFilename(file.name));
+    } catch (err) {
+      if (read !== latestRead.current) return;
+      setStatus({
+        kind: "error",
+        text: err instanceof ResumeFileError ? err.message : "That file did not open. Try a PDF or Word file, or paste the text below.",
+      });
     }
   }
+  handleFileRef.current = (file) => { void handleFile(file); };
 
+  // A file dropped anywhere on the page counts. Without this the browser would
+  // leave the form and open the file instead.
+  useEffect(() => {
+    const hasFiles = (event: DragEvent) => Array.from(event.dataTransfer?.types ?? []).includes("Files");
+    function over(event: DragEvent) {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      setDragging(true);
+    }
+    function leave(event: DragEvent) {
+      if (!event.relatedTarget) setDragging(false);
+    }
+    function drop(event: DragEvent) {
+      if (!hasFiles(event)) return;
+      event.preventDefault();
+      setDragging(false);
+      handleFileRef.current(event.dataTransfer?.files[0]);
+    }
+    window.addEventListener("dragover", over);
+    window.addEventListener("dragleave", leave);
+    window.addEventListener("drop", drop);
+    return () => {
+      window.removeEventListener("dragover", over);
+      window.removeEventListener("dragleave", leave);
+      window.removeEventListener("drop", drop);
+    };
+  }, []);
+
+  const done = status?.kind === "done";
   return (
     <div className="resume">
-      <label
-        className={dragging ? "dropzone dragging" : "dropzone"}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setDragging(false); void handleFile(e.dataTransfer.files[0]); }}
-      >
-        <span className="dropzone-title">Have a resume? Drop it here</span>
-        <span className="muted">PDF, text or Markdown. We suggest your name, summary, skills and an offer. Review everything before joining.</span>
+      <label className={["dropzone", dragging && "dragging", done && "done"].filter(Boolean).join(" ")}>
+        <span className="dropzone-title">
+          {dragging ? "Drop it to fill the form" : done ? "Résumé read" : "Upload your résumé to fill this in"}
+        </span>
+        <span className="muted">
+          {done && fileName
+            ? fileName
+            : "PDF, Word, text or Markdown. The form fills in as soon as you choose it. The file stays on your device."}
+        </span>
         <input
           type="file"
-          accept=".pdf,.txt,.md"
+          accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
           className="dropzone-input"
+          aria-label="Upload your résumé to fill in the form"
           onChange={(e) => { void handleFile(e.target.files?.[0]); e.target.value = ""; }}
         />
-        <span className="dropzone-cta">Choose a file</span>
+        <span className="dropzone-cta">{done ? "Use a different file" : "Choose a file"}</span>
       </label>
 
+      {status && (
+        <p className={status.kind === "error" ? "resume-status error" : "resume-status"} role="status">{status.text}</p>
+      )}
+
       <details className="optional">
-        <summary>Or paste your resume text</summary>
-        <label htmlFor="resume-paste">Resume text</label>
+        <summary>Or paste your résumé text</summary>
+        <label htmlFor="resume-paste">Résumé text</label>
         <textarea id="resume-paste" rows={5} value={paste}
           onChange={(e) => setPaste(e.target.value)}
-          placeholder="Paste the text of your resume here" />
+          placeholder="Paste the text of your résumé here" />
         <button type="button" className="button secondary" disabled={!paste.trim()}
-          onClick={() => { void readText(paste); }}>
+          onClick={() => { latestRead.current++; setFileName(""); readText(paste, "that text"); }}>
           Fill the form from this text
         </button>
       </details>
-
-      {status && <p className="muted" role="status">{status}</p>}
     </div>
   );
 }
