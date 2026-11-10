@@ -16,7 +16,7 @@ const progress = ref(0)
 const chapter = computed(() => story.value!.chapters[active.value] ?? defaultStory.chapters[0]!)
 const screenText = [
   { label: 'Your profile', title: 'What are you working on?', rows: ['I need a reviewer', 'I can help with Kubernetes'] },
-  { label: 'Your arrival plan', title: 'Walk in together', rows: ['Meet at the entrance', 'Agree on a place and time'] },
+  { label: 'At the conference', title: 'Make the introduction', rows: ['Share your Hallway code', 'Keep track of the people you meet'] },
   { label: 'Your recap', title: 'Keep in touch', rows: ['People you met', 'Goals you want to follow up on'] },
 ]
 const screen = computed(() => screenText[active.value] ?? screenText[0]!)
@@ -25,12 +25,18 @@ let disposed = false
 
 onMounted(async () => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = await Promise.all([
+  let motion
+  try {
+    motion = await Promise.all([
     import('lenis'), import('gsap'), import('gsap/ScrollTrigger'),
-  ])
+    ])
+  } catch {
+    return // Keep the page usable if an optional animation chunk cannot load.
+  }
+  const [{ default: Lenis }, { gsap }, { ScrollTrigger }] = motion
   if (disposed || !root.value || !storySection.value) return
   gsap.registerPlugin(ScrollTrigger)
-  const lenis = new Lenis({ smoothWheel: true })
+  const lenis = new Lenis({ smoothWheel: true, anchors: true })
   lenis.on('scroll', ScrollTrigger.update)
   const tick = (time: number) => lenis.raf(time * 1000)
   gsap.ticker.add(tick)
@@ -68,6 +74,7 @@ onBeforeUnmount(() => {
         <span class="mark" aria-hidden="true"><i /><i /></span> Hallway
       </a>
       <nav aria-label="Welcome">
+        <a class="header-link" href="#how">How it works</a>
         <a class="pill pill-outline" :href="recoverUrl">Recover</a>
         <a class="pill pill-light" :href="joinUrl">Join Hallway</a>
       </nav>
@@ -80,12 +87,13 @@ onBeforeUnmount(() => {
           <h1 id="hero-title">{{ story!.hero.title }}</h1>
           <p class="hero-description">{{ story!.hero.description }}</p>
           <div class="hero-actions">
-            <a class="pill pill-light" :href="joinUrl">{{ story!.hero.primaryLabel }}</a>
+            <a class="pill pill-dark" :href="joinUrl">{{ story!.hero.primaryLabel }} <span aria-hidden="true">↗</span></a>
             <a class="pill pill-outline" href="#how">{{ story!.hero.secondaryLabel }}</a>
           </div>
         </div>
         <div class="hero-art">
           <ConnectionTokens />
+          <p class="art-caption">A little in common. A great place to start.</p>
         </div>
         <a class="scroll-link" href="#how">Scroll to explore <span aria-hidden="true">↓</span></a>
       </section>
@@ -101,7 +109,7 @@ onBeforeUnmount(() => {
               <button v-for="(item, index) in story!.chapters" :key="item.id" type="button"
                 class="chapter" :aria-pressed="active === index" aria-controls="story-screen"
                 @click="active = index">
-                <span class="chapter-number" aria-hidden="true">0{{ index + 1 }}</span>
+                <span class="chapter-number">{{ ['Before', 'During', 'After'][index] }}</span>
                 <span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span>
               </button>
             </div>
@@ -117,7 +125,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section class="closing wrap" aria-labelledby="closing-title">
+      <section class="closing" aria-labelledby="closing-title">
         <span class="mark closing-mark" aria-hidden="true"><i /><i /></span>
         <h2 id="closing-title">{{ story!.closing.title }}</h2>
         <p>{{ story!.closing.description }}</p>

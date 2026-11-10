@@ -33,6 +33,10 @@ export default function App() {
       {!kiosk && (
         <header className="topbar">
           <Link to="/" className="wordmark">Hallway</Link>
+          {pathname !== "/graph" && <nav className="header-links" aria-label="About Hallway">
+            <a href="/welcome/">How it works</a>
+            {pathname === "/" && <Link to="/recover">Welcome back ↗</Link>}
+          </nav>}
         </header>
       )}
       <main data-page={pathname} className={kiosk ? "kiosk" : WIDE_PAGES.includes(pathname) ? "page wide" : "page"}>

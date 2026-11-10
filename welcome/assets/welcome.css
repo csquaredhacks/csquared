@@ -69,3 +69,56 @@ h1, h2, h3, p { overflow-wrap: break-word; }
 @media (max-width: 370px) {
   .site-header .pill { font-size: 0.8rem; padding-inline: 0.65rem; }
 }
+
+/* Shared visual rhythm with the profile entry. */
+.wrap { width: min(100% - 5rem, 78rem); }
+.site-header { padding-block: 1.5rem; }
+.site-header nav { align-items: center; gap: 0.75rem; }
+.header-link { margin-right: 1rem; padding-block: 0.75rem; font-size: 0.9rem; text-decoration: none; }
+.header-link:hover { text-decoration: underline; }
+.pill { min-height: 3.15rem; padding-inline: 1.4rem; gap: 1.5rem; }
+.pill-dark { background: var(--green-deep); color: var(--paper); }
+.pill-dark:hover { background: #28543b; }
+.hero { min-height: 40rem; padding: 4rem 0 6rem; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); }
+.hero-label { margin-bottom: 1.5rem; font-size: 0.85rem; }
+.hero h1 { max-width: 12ch; font-size: clamp(3.5rem, 6.7vw, 6.25rem); font-weight: 650; letter-spacing: -0.07em; line-height: 0.98; }
+.hero-description { max-width: 30rem; font-size: 1.1rem; line-height: 1.65; margin-block: 1.5rem; }
+.hero-art { width: 100%; margin: 0; }
+.art-caption { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: -1rem; }
+.scroll-link { text-decoration: none; bottom: 1.75rem; }
+.story { padding-block: 5.5rem; }
+.story h2, .closing h2 { font-size: clamp(2.5rem, 4.7vw, 4.6rem); line-height: 1.04; letter-spacing: -0.06em; font-weight: 650; }
+.story-intro { margin-bottom: 3rem; }
+.story-intro p, .closing p { font-size: 1.05rem; line-height: 1.7; }
+.chapter { align-items: flex-start; padding: 1.25rem; }
+.chapter-number { min-width: 3rem; padding-top: 0.2rem; font-weight: 600; }
+.chapter strong { font-size: 1.1rem; }
+.chapter small { margin-top: 0.5rem; line-height: 1.6; }
+.story-screen { grid-template-columns: minmax(0, 1fr); padding: 2.5rem; gap: 1rem; }
+.screen-copy h3 { max-width: 16ch; font-size: clamp(2rem, 3.5vw, 3.25rem); letter-spacing: -0.05em; line-height: 1.08; }
+.screen-art { width: min(100%, 21rem); justify-self: end; }
+.closing { justify-items: center; text-align: center; padding: 5rem 1.5rem; background: var(--green-deep); color: var(--paper); }
+.closing h2 { max-width: 15ch; }
+.closing p { color: #d9efd1; }
+.closing .mark i { background: var(--green); border-color: var(--green-deep); }
+.closing .pill { color: var(--ink); }
+.closing .pill:hover { background: var(--green); }
+.closing :focus-visible { outline-color: var(--paper); }
+.site-footer { border: 0; padding-block: 1.5rem; font-size: 0.9rem; }
+@media (max-width: 760px) {
+  .wrap { width: calc(100% - 2.5rem); }
+  .site-header { padding-block: 1rem; flex-wrap: wrap; }
+  .site-header nav { gap: 0.4rem; }
+  .header-link { display: none; }
+  .site-header .pill { min-height: 2.75rem; padding-inline: 0.85rem; font-size: 0.8rem; }
+  .hero { grid-template-columns: minmax(0, 1fr); padding-top: 2rem; min-height: auto; gap: 1rem; }
+  .hero h1 { font-size: clamp(3rem, 10.8vw, 4.8rem); max-width: 13ch; }
+  .hero-description { font-size: 1rem; }
+  .hero-art { max-width: 28rem; justify-self: center; }
+  .story { padding-block: 3.5rem; }
+  .story-intro { gap: 1.25rem; margin-bottom: 2rem; }
+  .story-screen { padding: 1.5rem; }
+  .screen-art { width: min(100%, 18rem); justify-self: center; }
+  .closing { padding-block: 3.5rem; }
+  .site-footer { flex-wrap: wrap; gap: 0.75rem; }
+}
