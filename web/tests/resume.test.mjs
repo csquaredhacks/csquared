@@ -74,6 +74,29 @@ test("a summary wins over experience, and prose that mentions a heading word sta
   assert.deepEqual(result.groups, ["University of Washington"]);
 });
 
+test("a one-line tech stack under a job does not end the experience section", () => {
+  const result = parseResumeText([
+    "Alex Chen",
+    "EXPERIENCE",
+    "Backend Engineer, Acme",
+    "\u2022 Built the billing service.",
+    "Tech stack: React, Node.js,",
+    "PostgreSQL",
+    "Data Engineer, Foo Corp",
+    "\u2022 Built pipelines with Spark",
+    "PROJECTS",
+    "Hallway",
+    "Tools: Git, Docker",
+    "Matches people at conferences.",
+    "Goals: Find a mentor",
+    "Second Project",
+  ].join("\n"));
+  assert.deepEqual(result.tags, ["React", "Node.js", "PostgreSQL", "Git", "Docker"]);
+  assert.equal(result.offers, "I can help with React, Node.js, PostgreSQL, Git, Docker.");
+  assert.equal(result.working_on, "Backend Engineer, Acme. Built the billing service.");
+  assert.equal(result.asks, "Find a mentor");
+});
+
 test("falls back to a project, then a degree, for what someone is working on", () => {
   const project = parseResumeText("Alex Chen\nProjects\nStudyBuddy\n- Mobile app that matches students for study sessions\n- 500 weekly users");
   assert.equal(project.working_on, "StudyBuddy. Mobile app that matches students for study sessions.");

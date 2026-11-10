@@ -61,12 +61,23 @@ function headingOf(line: string): { key: SectionKey; rest: string } | null {
 function splitSections(raw: string): Record<SectionKey | "head", string[]> {
   const sections: Record<SectionKey | "head", string[]> = { head: [], summary: [], skills: [], experience: [], education: [], projects: [], asks: [], interests: [], other: [] };
   let current: SectionKey | "head" = "head";
+  // Set while a one-line heading inside a job or project ("Tech stack: React,") wraps onto the next line.
+  let wrapped: SectionKey | null = null;
   for (const line of raw.split(/\r?\n/)) {
     if (!line.trim()) continue;
     const heading = headingOf(line);
-    if (heading) {
+    if (heading && heading.rest && (current === "experience" || current === "projects")) {
+      // Many resumes close each job with "Tech stack: React, Node.js". That is one line of
+      // skills, not the end of the experience section: the next job still belongs to it.
+      sections[heading.key].push(heading.rest);
+      wrapped = heading.rest.endsWith(",") ? heading.key : null;
+    } else if (heading) {
       current = heading.key;
+      wrapped = null;
       if (heading.rest) sections[current].push(heading.rest);
+    } else if (wrapped) {
+      sections[wrapped].push(line.trim());
+      if (!line.trim().endsWith(",")) wrapped = null;
     } else {
       sections[current].push(line.trim());
     }

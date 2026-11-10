@@ -60,6 +60,7 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => string[
   const [paste, setPaste] = useState("");
   // The page-wide drop listeners are attached once, so they reach the latest callback through a ref.
   const handleFileRef = useRef<(file: File | undefined) => void>(() => {});
+  const latestRead = useRef(0);
 
   function readText(text: string, source: string, fallbackName = "") {
     const data = parseResumeText(text);
@@ -77,11 +78,15 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => string[
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
+    // A big PDF can finish after a small file chosen later. Only the latest choice may fill the form.
+    const read = ++latestRead.current;
     setFileName(file.name);
     setStatus({ kind: "reading", text: `Reading ${file.name}…` });
     try {
-      readText(await readResumeFile(file), file.name, nameFromFilename(file.name));
+      const text = await readResumeFile(file);
+      if (read === latestRead.current) readText(text, file.name, nameFromFilename(file.name));
     } catch (err) {
+      if (read !== latestRead.current) return;
       setStatus({
         kind: "error",
         text: err instanceof ResumeFileError ? err.message : "That file did not open. Try a PDF or Word file, or paste the text below.",
@@ -151,7 +156,7 @@ export function ResumeIngest({ onFill }: { onFill: (data: ResumeData) => string[
           onChange={(e) => setPaste(e.target.value)}
           placeholder="Paste the text of your résumé here" />
         <button type="button" className="button secondary" disabled={!paste.trim()}
-          onClick={() => { setFileName(""); readText(paste, "that text"); }}>
+          onClick={() => { latestRead.current++; setFileName(""); readText(paste, "that text"); }}>
           Fill the form from this text
         </button>
       </details>
